@@ -5,6 +5,9 @@ export type MatchRow = {
   id: string
   scheduled_at: string
   location: string | null
+  round_number: number | null
+  kickoff_confirmed: boolean
+  public_note: string | null
   status: 'programme' | 'a_venir' | 'jour_j' | 'en_cours' | 'termine'
   home_score: number | null
   away_score: number | null
@@ -33,7 +36,7 @@ export type StandingRow = {
 
 // Un match, avec ses deux équipes déjà jointes.
 const MATCH_SELECT = `
-  id, scheduled_at, location, status, home_score, away_score,
+  id, scheduled_at, location, round_number, kickoff_confirmed, public_note, status, home_score, away_score,
   home_team:teams!matches_home_team_id_fkey(id,name,city,logo_url,is_esi),
   away_team:teams!matches_away_team_id_fkey(id,name,city,logo_url,is_esi)
 `

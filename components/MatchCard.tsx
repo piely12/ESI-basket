@@ -14,7 +14,7 @@ export default function MatchCard({ match, large = false }: { match: MatchRow; l
   return (
     <Link href={`/matchs/${match.id}`} className={`group block rounded-lg border p-4 transition hover:-translate-y-0.5 hover:shadow-md ${esiHome || esiAway ? 'border-[var(--gold-500)] bg-[var(--surface)]' : 'border-[var(--line)] bg-[var(--surface)]'}`}>
       <div className="mb-3 flex items-center justify-between gap-2 text-xs font-semibold uppercase tracking-wider text-[var(--ink-soft)]">
-        <span>{formatMatchDate(match.scheduled_at)}</span>
+        <span>{formatMatchDate(match.scheduled_at, match.kickoff_confirmed)}</span>
         {played ? <span className={won ? 'text-[var(--gold-deep)]' : lost ? 'text-[var(--maroon-700)]' : ''}>{won ? 'Victoire ESI' : lost ? 'Défaite ESI' : 'Terminé'}</span> : <span>À venir</span>}
       </div>
       <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 sm:gap-3">
@@ -26,7 +26,9 @@ export default function MatchCard({ match, large = false }: { match: MatchRow; l
         ))}
         <span className="order-2 font-display text-3xl tabular-nums text-[var(--maroon-700)] sm:text-4xl">{played ? `${match.home_score}–${match.away_score}` : 'VS'}</span>
       </div>
-      <div className="mt-2 text-center text-xs text-[var(--ink-soft)]">{match.location || 'Lieu à confirmer'}</div>
+      {match.round_number && <div className="mt-2 text-center text-xs font-semibold uppercase tracking-wider text-[var(--gold-deep)]">Journée {match.round_number}</div>}
+      {match.public_note && <div className="mt-1 text-center text-sm font-semibold text-[var(--maroon-700)]">{match.public_note}</div>}
+      <div className="mt-2 text-center text-xs text-[var(--ink-soft)]">{match.kickoff_confirmed ? match.location || 'Lieu à confirmer' : 'Horaire et lieu à confirmer'}</div>
     </Link>
   )
 }

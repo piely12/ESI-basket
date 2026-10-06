@@ -1,11 +1,17 @@
-const DAY = ['dim.', 'lun.', 'mar.', 'mer.', 'jeu.', 'ven.', 'sam.']
 const MONTH = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.']
 
-export function formatMatchDate(iso: string): string {
-  const d = new Date(iso)
-  const h = String(d.getHours()).padStart(2, '0')
-  const m = String(d.getMinutes()).padStart(2, '0')
-  return `${DAY[d.getDay()]} ${d.getDate()} ${MONTH[d.getMonth()]} · ${h}h${m}`
+export function formatMatchDate(iso: string, kickoffConfirmed = true): string {
+  const value = new Date(iso)
+  const parts = new Intl.DateTimeFormat('fr-FR', {
+    weekday: 'short', day: 'numeric', month: 'short', timeZone: 'Africa/Abidjan',
+  }).formatToParts(value)
+  const part = (type: string) => parts.find((item) => item.type === type)?.value ?? ''
+  const date = `${part('weekday')} ${part('day')} ${part('month')}`
+  if (!kickoffConfirmed) return date
+  const time = new Intl.DateTimeFormat('fr-FR', {
+    hour: '2-digit', minute: '2-digit', hourCycle: 'h23', timeZone: 'Africa/Abidjan',
+  }).format(value).replace(':', 'h')
+  return `${date} · ${time}`
 }
 
 export function shortDate(iso: string): string {

@@ -21,7 +21,7 @@ export default async function CoachMatchPage({ params, searchParams }: PageProps
   if (!profile || !COACH_ROLES.includes(profile.role)) redirect('/acces-refuse')
 
   const { data: match, error: matchError } = await supabase.from('matches')
-    .select('id,scheduled_at,location,status,home_score,away_score,home_team_id,away_team_id,home_team:teams!matches_home_team_id_fkey(id,name,city,logo_url,is_esi),away_team:teams!matches_away_team_id_fkey(id,name,city,logo_url,is_esi)')
+    .select('id,scheduled_at,location,round_number,kickoff_confirmed,public_note,status,home_score,away_score,home_team_id,away_team_id,home_team:teams!matches_home_team_id_fkey(id,name,city,logo_url,is_esi),away_team:teams!matches_away_team_id_fkey(id,name,city,logo_url,is_esi)')
     .eq('id', id).maybeSingle()
   if (matchError || !match) notFound()
   if (profile.role !== 'admin' && (!profile.team_id || ![match.home_team_id, match.away_team_id].includes(profile.team_id))) redirect('/acces-refuse')
@@ -63,7 +63,8 @@ export default async function CoachMatchPage({ params, searchParams }: PageProps
       <header className={styles.hero}>
         <div className={styles.pageHeader}>
           <div><p className={styles.eyebrow}>Gestion du match</p><h1 className={styles.title}>{homeTeam.name} · {awayTeam.name}</h1>
-            <p className={styles.subtitle}>{new Date(match.scheduled_at).toLocaleString('fr-FR', { dateStyle: 'full', timeStyle: 'short', timeZone: 'Africa/Abidjan' })} · {match.location || 'Lieu à confirmer'}</p></div>
+            <p className={styles.subtitle}>{new Date(match.scheduled_at).toLocaleDateString('fr-FR', { dateStyle: 'full', timeZone: 'Africa/Abidjan' })}{match.kickoff_confirmed ? ` · ${new Date(match.scheduled_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', timeZone: 'Africa/Abidjan' })}` : ' · Horaire à confirmer'} · {match.location || 'Lieu à confirmer'}</p>
+            {match.public_note && <p className={styles.help}>{match.public_note}</p>}</div>
           <span className={styles.privateLabel}>{statusLabels[match.status] ?? match.status}</span>
         </div>
         <div className={styles.teams} style={{ marginTop: 18 }}>
@@ -80,7 +81,7 @@ export default async function CoachMatchPage({ params, searchParams }: PageProps
         <div className={styles.sectionHead}><div><p className={styles.eyebrow}>Organisation</p><h2 className={styles.cardTitle}>Date, lieu et statut</h2></div></div>
         <form action={saveMatchDetails} className={styles.form}>
           <input type="hidden" name="match_id" value={match.id} />
-          <div className={styles.field}><label htmlFor="match-date">Date et heure (Abidjan)</label><input id="match-date" name="scheduled_at" type="datetime-local" defaultValue={scheduleValue} required /></div>
+          <div className={styles.field}><label htmlFor="match-date">Date et heure (Abidjan)</label><input id="match-date" name="scheduled_at" type="datetime-local" defaultValue={scheduleValue} required />{!match.kickoff_confirmed && <small className={styles.help}>Horaire provisoire: indique l’heure officielle avant de partager le calendrier.</small>}</div>
           <div className={styles.field}><label htmlFor="match-location">Salle / lieu</label><input id="match-location" name="location" maxLength={160} defaultValue={match.location ?? ''} /></div>
           <button className={styles.button} type="submit">Enregistrer les détails</button>
         </form>

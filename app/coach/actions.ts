@@ -242,6 +242,7 @@ export async function updateMatchDetails(formData: FormData) {
   const { error } = await supabase.from('matches').update({
     scheduled_at: scheduledAt,
     location: location || null,
+    kickoff_confirmed: true,
   }).eq('id', match.id)
   if (error) throw new Error('Impossible de modifier les informations du match.')
   revalidatePath('/coach')

@@ -10,6 +10,9 @@ type CoachMatch = {
   scheduled_at: string
   location: string | null
   status: string
+  kickoff_confirmed: boolean
+  round_number: number | null
+  public_note: string | null
   home_score: number | null
   away_score: number | null
   home_team: Team
@@ -19,8 +22,12 @@ type CoachMatch = {
 type CoachPlayer = { id: string; first_name: string; last_name: string; jersey_number: number | null; status: string }
 const COACH_ROLES = ['coach', 'coach_adjoint', 'admin']
 
-function formatMatchDate(value: string) {
-  return new Date(value).toLocaleString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'Africa/Abidjan' })
+function formatMatchDate(value: string, kickoffConfirmed: boolean) {
+  return new Date(value).toLocaleString('fr-FR', {
+    weekday: 'short', day: 'numeric', month: 'short',
+    ...(kickoffConfirmed ? { hour: '2-digit' as const, minute: '2-digit' as const } : {}),
+    timeZone: 'Africa/Abidjan',
+  })
 }
 
 export default async function CoachHomePage() {
@@ -39,14 +46,14 @@ export default async function CoachHomePage() {
 
   const [matchesResult, rosterResult, resultsResult] = await Promise.all([
     supabase.from('matches')
-      .select('id,scheduled_at,location,status,home_score,away_score,home_team:teams!matches_home_team_id_fkey(id,name,city,logo_url,is_esi),away_team:teams!matches_away_team_id_fkey(id,name,city,logo_url,is_esi)')
+      .select('id,scheduled_at,location,round_number,kickoff_confirmed,public_note,status,home_score,away_score,home_team:teams!matches_home_team_id_fkey(id,name,city,logo_url,is_esi),away_team:teams!matches_away_team_id_fkey(id,name,city,logo_url,is_esi)')
       .or('home_team_id.eq.' + teamId + ',away_team_id.eq.' + teamId)
       .in('status', ['programme', 'a_venir', 'jour_j', 'en_cours'])
       .order('scheduled_at', { ascending: true }).limit(8),
     supabase.from('players').select('id,first_name,last_name,jersey_number,status')
       .eq('team_id', teamId).order('jersey_number', { ascending: true }),
     supabase.from('matches')
-      .select('id,scheduled_at,location,status,home_score,away_score,home_team:teams!matches_home_team_id_fkey(id,name,city,logo_url,is_esi),away_team:teams!matches_away_team_id_fkey(id,name,city,logo_url,is_esi)')
+      .select('id,scheduled_at,location,round_number,kickoff_confirmed,public_note,status,home_score,away_score,home_team:teams!matches_home_team_id_fkey(id,name,city,logo_url,is_esi),away_team:teams!matches_away_team_id_fkey(id,name,city,logo_url,is_esi)')
       .or('home_team_id.eq.' + teamId + ',away_team_id.eq.' + teamId)
       .eq('status', 'termine').order('scheduled_at', { ascending: false }).limit(4),
   ])
@@ -87,7 +94,8 @@ export default async function CoachHomePage() {
         ) : (
           <div className={styles.matchList}>
             {matches.map((match) => <article className={styles.matchCard} key={match.id}>
-              <div className={styles.matchMeta}><time dateTime={match.scheduled_at}>{formatMatchDate(match.scheduled_at)}</time><span>{match.location || 'Lieu à confirmer'}</span></div>
+              <div className={styles.matchMeta}><time dateTime={match.scheduled_at}>{formatMatchDate(match.scheduled_at, match.kickoff_confirmed)}</time><span>{match.location || 'Lieu à confirmer'}</span></div>
+              {match.public_note && <p className={styles.help}>{match.public_note}</p>}
               <div className={styles.teams}><strong>{match.home_team.name}</strong><span className={styles.vs}>VS</span><strong>{match.away_team.name}</strong></div>
               <Link className={styles.button} href={'/coach/matchs/' + match.id}>Ouvrir la fiche match</Link>
             </article>)}
@@ -111,7 +119,7 @@ export default async function CoachHomePage() {
       {recentResults.length > 0 && <section className={styles.page} aria-labelledby="results-heading">
         <div><p className={styles.eyebrow}>Après-match</p><h2 id="results-heading" className={styles.cardTitle}>Derniers résultats</h2></div>
         <div className={styles.matchList}>{recentResults.map((match) => <article className={styles.matchCard} key={match.id}>
-          <div className={styles.matchMeta}><time dateTime={match.scheduled_at}>{formatMatchDate(match.scheduled_at)}</time><span>{match.location || 'Match terminé'}</span></div>
+          <div className={styles.matchMeta}><time dateTime={match.scheduled_at}>{formatMatchDate(match.scheduled_at, match.kickoff_confirmed)}</time><span>{match.location || 'Match terminé'}</span></div>
           <div className={styles.teams}><strong>{match.home_team.name}</strong><span className={styles.score}>{match.home_score ?? 0} - {match.away_score ?? 0}</span><strong>{match.away_team.name}</strong></div>
           <Link className={styles.link} href={'/coach/matchs/' + match.id}>Consulter les statistiques</Link>
         </article>)}</div>
