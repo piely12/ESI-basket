@@ -32,26 +32,26 @@ on conflict (name) do update set organizer = excluded.organizer;
 
 do $$
 declare
-  competition_id uuid;
-  season_id uuid;
-  esi_team_id uuid;
+  v_competition_id uuid;
+  v_season_id uuid;
+  v_esi_team_id uuid;
   fixture record;
 begin
-  select c.id into competition_id
+  select c.id into v_competition_id
   from public.competitions c
   where c.name = 'Ligue de Basketball INP-HB';
 
   update public.seasons set is_current = false where is_current = true;
   insert into public.seasons (competition_id, name, starts_on, ends_on, is_current)
-  values (competition_id, '2026-2027', '2026-11-21', '2027-01-30', true)
+  values (v_competition_id, '2026-2027', '2026-11-21', '2027-01-30', true)
   on conflict (competition_id, name) do update
     set starts_on = excluded.starts_on,
         ends_on = excluded.ends_on,
         is_current = true
-  returning id into season_id;
+  returning id into v_season_id;
 
-  select t.id into esi_team_id from public.teams t where t.is_esi = true;
-  if esi_team_id is null then
+  select t.id into v_esi_team_id from public.teams t where t.is_esi = true;
+  if v_esi_team_id is null then
     raise exception 'The ESI team is missing. Apply 007_seed_esi_roster.sql first.';
   end if;
 
@@ -95,13 +95,13 @@ begin
       fixture_note text;
     begin
       if fixture.home_code = 'ESI' then
-        home_id := esi_team_id;
+        home_id := v_esi_team_id;
       else
         select t.id into home_id from public.teams t where t.name = fixture.home_code;
       end if;
 
       if fixture.away_code = 'ESI' then
-        away_id := esi_team_id;
+        away_id := v_esi_team_id;
       else
         select t.id into away_id from public.teams t where t.name = fixture.away_code;
       end if;
@@ -128,14 +128,14 @@ begin
           competition_id, season_id, home_team_id, away_team_id,
           scheduled_at, location, status, round_number, kickoff_confirmed, public_note
         ) values (
-          competition_id, season_id, home_id, away_id,
+          v_competition_id, v_season_id, home_id, away_id,
           fixture.match_date::timestamp at time zone 'Africa/Abidjan',
           null, 'programme', fixture.round_number, false, fixture_note
         );
       else
         update public.matches m
-        set competition_id = coalesce(m.competition_id, competition_id),
-            season_id = coalesce(m.season_id, season_id),
+        set competition_id = coalesce(m.competition_id, v_competition_id),
+            season_id = coalesce(m.season_id, v_season_id),
             round_number = coalesce(m.round_number, fixture.round_number),
             public_note = coalesce(m.public_note, fixture_note)
         where m.id = existing_match_id;
