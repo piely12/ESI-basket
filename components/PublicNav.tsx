@@ -44,9 +44,6 @@ export default function PublicNav() {
               <span className="mt-1 block truncate text-[9px] uppercase tracking-[0.18em] opacity-80">Inter-Écoles INP-HB</span>
             </span>
           </Link>
-          <Link href="/login" className="shrink-0 rounded border border-[var(--gold-500)]/70 px-2.5 py-2 text-[10px] font-bold uppercase tracking-wide text-[var(--gold-500)] transition hover:bg-[var(--gold-500)] hover:text-[var(--maroon-900)] sm:text-xs">
-            Espaces
-          </Link>
         </div>
       </header>
       <nav aria-label="Navigation principale" className="fixed inset-x-0 bottom-0 z-30 grid h-[calc(65px+env(safe-area-inset-bottom))] grid-cols-6 border-t border-[var(--line)] bg-[var(--surface)] pb-[env(safe-area-inset-bottom)] shadow-[0_-2px_8px_rgba(35,23,18,0.08)]">

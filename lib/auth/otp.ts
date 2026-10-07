@@ -21,6 +21,10 @@ export function hashOtp(userId: string, code: string): string {
   return createHmac('sha256', pepper()).update(`otp:${userId}:${code}`).digest('hex')
 }
 
+export function hashFirstLoginOtp(userId: string, code: string): string {
+  return createHmac('sha256', pepper()).update(`first-login:${userId}:${code}`).digest('hex')
+}
+
 export function safeEqualHex(a: string, b: string): boolean {
   const ba = Buffer.from(a, 'hex')
   const bb = Buffer.from(b, 'hex')

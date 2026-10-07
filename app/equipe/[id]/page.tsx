@@ -14,9 +14,8 @@ export default async function PlayerPage({ params }: { params: Promise<{ id: str
     rebounds: acc.rebounds + Number(stat.rebounds ?? 0),
     assists: acc.assists + Number(stat.assists ?? 0),
     steals: acc.steals + Number(stat.steals ?? stat.stl ?? 0),
-    plusMinus: acc.plusMinus + Number(stat.plus_minus ?? 0),
     games: acc.games + 1,
-  }), { points: 0, rebounds: 0, assists: 0, steals: 0, plusMinus: 0, games: 0 })
+  }), { points: 0, rebounds: 0, assists: 0, steals: 0, games: 0 })
   const average = (value: number) => totals.games ? (value / totals.games).toFixed(1) : '—'
 
   return (
@@ -28,7 +27,7 @@ export default async function PlayerPage({ params }: { params: Promise<{ id: str
         <section className="grid grid-cols-3 gap-2 sm:gap-3">
           {[
             ['MJ', totals.games], ['PTS / match', average(totals.points)], ['REB / match', average(totals.rebounds)],
-            ['AST / match', average(totals.assists)], ['STL', totals.steals], ['+/-', totals.plusMinus],
+            ['AST / match', average(totals.assists)], ['STL', totals.steals],
           ].map(([label, value]) => <div key={label} className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-3 text-center sm:p-4"><div className="font-display text-3xl text-[var(--maroon-900)] sm:text-4xl">{value}</div><div className="text-[10px] font-bold uppercase tracking-wide text-[var(--ink-soft)] sm:text-xs">{label}</div></div>)}
         </section>
         <section className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-4 sm:p-5">

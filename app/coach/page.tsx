@@ -1,7 +1,6 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { getCurrentUserProfile } from '@/lib/auth/roles'
-import { createClient } from '@/lib/supabase/server'
+import { requireAnyRole } from '@/lib/auth/requireUser'
 import type { Team } from '@/lib/data/public'
 import styles from './coach.module.css'
 
@@ -20,8 +19,6 @@ type CoachMatch = {
 }
 
 type CoachPlayer = { id: string; first_name: string; last_name: string; jersey_number: number | null; status: string }
-const COACH_ROLES = ['coach', 'coach_adjoint', 'admin']
-
 function formatMatchDate(value: string, kickoffConfirmed: boolean) {
   return new Date(value).toLocaleString('fr-FR', {
     weekday: 'short', day: 'numeric', month: 'short',
@@ -31,11 +28,7 @@ function formatMatchDate(value: string, kickoffConfirmed: boolean) {
 }
 
 export default async function CoachHomePage() {
-  const supabase = await createClient()
-  const { data: auth } = await supabase.auth.getUser()
-  if (!auth.user) redirect('/login')
-  const profile = await getCurrentUserProfile(supabase)
-  if (!profile || !COACH_ROLES.includes(profile.role)) redirect('/acces-refuse')
+  const { supabase, profile } = await requireAnyRole(['coach', 'coach_adjoint', 'admin'])
 
   let teamId = profile.team_id
   if (!teamId && profile.role === 'admin') {

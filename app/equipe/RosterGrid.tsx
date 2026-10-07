@@ -5,6 +5,7 @@ import { useMemo, useState } from 'react'
 import type { Player } from '@/lib/data/public'
 import { playerCardInfo } from '@/lib/data/player-card'
 import PlayerCardVisual from '@/components/PlayerCardVisual'
+import EmptyState from '@/components/ui/EmptyState'
 
 const positions = ['Meneur', 'Arrière', 'Ailier', 'Ailier fort', 'Pivot']
 
@@ -19,7 +20,7 @@ export default function RosterGrid({ players }: { players: Player[] }) {
       </div>
       {filtered.length ? <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
         {filtered.map((player) => <Link key={player.id} href={`/equipe/${player.id}`} className="transition hover:-translate-y-0.5 hover:shadow-xl focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--gold-500)]"><PlayerCardVisual player={player} variant="compact" /></Link>)}
-      </div> : <div className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-6 text-center text-sm text-[var(--ink-soft)]">Aucun joueur pour ce poste.</div>}
+      </div> : <EmptyState title={players.length ? 'Aucun joueur pour ce poste' : 'Aucun joueur dans l’effectif'} description={players.length ? 'Choisis un autre poste ou affiche tout l’effectif.' : 'Les fiches des joueurs apparaîtront ici dès leur ajout.'} actionLabel={players.length && position ? 'Afficher tout l’effectif' : undefined} onAction={players.length && position ? () => setPosition(null) : undefined} />}
     </>
   )
 }

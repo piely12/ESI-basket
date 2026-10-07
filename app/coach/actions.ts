@@ -2,20 +2,14 @@
 
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
-import { getCurrentUserProfile } from '@/lib/auth/roles'
+import { requireAnyRole } from '@/lib/auth/requireUser'
 import { createClient } from '@/lib/supabase/server'
 
-const COACH_ROLES = ['coach', 'coach_adjoint', 'admin']
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 
 async function getAuthorizedMatch(matchId: string) {
   if (!UUID.test(matchId)) throw new Error('Match invalide.')
-  const supabase = await createClient()
-  const { data: auth } = await supabase.auth.getUser()
-  if (!auth.user) throw new Error('Connexion requise.')
-
-  const profile = await getCurrentUserProfile(supabase)
-  if (!profile || !COACH_ROLES.includes(profile.role)) throw new Error('Accès réservé au staff coach.')
+  const { supabase, profile, user } = await requireAnyRole(['coach', 'coach_adjoint', 'admin'])
 
   const { data: match, error } = await supabase.from('matches')
     .select('id, home_team_id, away_team_id')
@@ -30,7 +24,7 @@ async function getAuthorizedMatch(matchId: string) {
   return {
     supabase,
     profile,
-    userId: auth.user.id,
+    userId: user.id,
     match,
     teamIds: profile.role === 'admin'
       ? [match.home_team_id, match.away_team_id]
@@ -149,11 +143,7 @@ export async function saveComposition(formData: FormData) {
 }
 
 async function getCoachIdentity() {
-  const supabase = await createClient()
-  const { data: auth } = await supabase.auth.getUser()
-  if (!auth.user) redirect('/login')
-  const profile = await getCurrentUserProfile(supabase)
-  if (!profile || !COACH_ROLES.includes(profile.role)) redirect('/acces-refuse')
+  const { supabase, profile, user } = await requireAnyRole(['coach', 'coach_adjoint', 'admin'])
 
   let teamId = profile.team_id
   if (!teamId && profile.role === 'admin') {
@@ -161,7 +151,7 @@ async function getCoachIdentity() {
     teamId = esi?.id ?? null
   }
   if (!teamId) redirect('/acces-refuse')
-  return { supabase, profile, userId: auth.user.id, teamId }
+  return { supabase, profile, userId: user.id, teamId }
 }
 
 function formText(formData: FormData, key: string, maxLength: number) {

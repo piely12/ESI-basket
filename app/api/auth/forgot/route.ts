@@ -1,61 +1,82 @@
-import { type NextRequest } from 'next/server'
+import { after, type NextRequest } from 'next/server'
+import { z } from 'zod'
 import { createAdminClient } from '@/lib/supabase/admin'
-import {
-  generateOtp, hashOtp, OTP_TTL_MINUTES, OTP_MAX_ATTEMPTS,
-  OTP_MAX_PER_WINDOW, OTP_WINDOW_MINUTES,
-} from '@/lib/auth/otp'
+import { generateOtp, hashOtp, OTP_TTL_MINUTES, OTP_MAX_ATTEMPTS, OTP_WINDOW_MINUTES } from '@/lib/auth/otp'
 import { sendOtpEmail } from '@/lib/auth/brevo'
-import { normalizeEmail, isValidEmail } from '@/lib/validation'
-import { json, assertSameOrigin, clientIp, clientUserAgent, rlKey, isLimited, recordHit, audit } from '@/lib/security'
+import { json, assertSameOrigin, clientIp, clientUserAgent, rlKey, consumeRateLimit, audit } from '@/lib/security'
 
-// Réponse identique que l'e-mail existe ou non : on ne révèle pas qui a un compte.
 const GENERIC = { ok: true, message: "Si un compte existe pour cet e-mail, un code vient d'être envoyé." }
+const requestSchema = z.object({
+  email: z.string().trim().toLowerCase().email().max(254),
+}).strict()
+
+async function keepMinimumResponseTime(startedAt: number) {
+  const remaining = 250 - (Date.now() - startedAt)
+  if (remaining > 0) await new Promise((resolve) => setTimeout(resolve, remaining))
+}
 
 export async function POST(request: NextRequest) {
   const blocked = assertSameOrigin(request)
   if (blocked) return blocked
+  const startedAt = Date.now()
 
-  const body = await request.json().catch(() => null)
-  const email = normalizeEmail(body?.email)
-  if (!isValidEmail(email)) return json({ error: 'E-mail invalide.' }, 400)
+  let body: unknown
+  try {
+    const raw = await request.text()
+    if (Buffer.byteLength(raw, 'utf8') > 2048) return json({ error: 'E-mail invalide.' }, 400)
+    body = JSON.parse(raw)
+  } catch {
+    return json({ error: 'E-mail invalide.' }, 400)
+  }
+  const parsed = requestSchema.safeParse(body)
+  if (!parsed.success) return json({ error: 'E-mail invalide.' }, 400)
 
   try {
     const admin = createAdminClient()
-
-    // Limite par IP : 10 demandes / 15 min (empêche d'arroser des comptes d'e-mails).
-    const ipKey = rlKey('forgot-ip', clientIp(request))
-    if (await isLimited(admin, [{ key: ipKey, limit: 10 }], OTP_WINDOW_MINUTES * 60)) {
-      return json({ error: 'Trop de demandes. Réessayez dans quelques minutes.' }, 429,
-        { 'Retry-After': String(OTP_WINDOW_MINUTES * 60) })
+    const ip = clientIp(request)
+    const windowSeconds = OTP_WINDOW_MINUTES * 60
+    const ipLimit = await consumeRateLimit(admin, rlKey('forgot-ip', ip), 10, windowSeconds)
+    if (!ipLimit.allowed) {
+      return json({ error: 'Trop de demandes. Réessayez plus tard.' }, 429, {
+        'Retry-After': String(ipLimit.retryAfterSeconds),
+      })
     }
-    await recordHit(admin, [ipKey])
 
-    const { data: userId } = await admin.rpc('user_id_by_email', { p_email: email })
-    if (!userId) return json(GENERIC)
-
-    // Limite par compte : 3 codes / 15 min.
-    const since = new Date(Date.now() - OTP_WINDOW_MINUTES * 60_000).toISOString()
-    const { count } = await admin
-      .from('otp_codes').select('id', { count: 'exact', head: true })
-      .eq('user_id', userId).gte('created_at', since)
-    if ((count ?? 0) >= OTP_MAX_PER_WINDOW) return json(GENERIC)
-
-    // Un seul code valide à la fois : on invalide les précédents.
-    await admin.from('otp_codes').update({ used_at: new Date().toISOString() })
-      .eq('user_id', userId).is('used_at', null)
-
-    const code = generateOtp()
-    await admin.from('otp_codes').insert({
-      user_id: userId,
-      code_hash: hashOtp(userId, code),
-      expires_at: new Date(Date.now() + OTP_TTL_MINUTES * 60_000).toISOString(),
-      max_attempts: OTP_MAX_ATTEMPTS,
+    const { data: userId, error: lookupError } = await admin.rpc('user_id_by_email', {
+      p_email: parsed.data.email,
     })
-    await sendOtpEmail(email, code, OTP_TTL_MINUTES)
-    await audit(admin, 'otp_requested', userId, { ip: clientIp(request), userAgent: clientUserAgent(request) })
-  } catch (e) {
-    console.error('[forgot]', e)
-    return json({ error: "Impossible d'envoyer le code pour le moment." }, 500)
+    if (lookupError) throw new Error('Account lookup unavailable')
+    if (userId) {
+      const accountLimit = await consumeRateLimit(admin, rlKey('forgot-account', userId), 3, windowSeconds)
+      if (accountLimit.allowed) {
+        const code = generateOtp()
+        const { data: otpId, error: issueError } = await admin.rpc('issue_recovery_otp', {
+          p_user_id: userId,
+          p_code_hash: hashOtp(userId, code),
+          p_expires_at: new Date(Date.now() + OTP_TTL_MINUTES * 60_000).toISOString(),
+          p_max_attempts: OTP_MAX_ATTEMPTS,
+        })
+        if (issueError || !otpId) throw new Error('OTP issuance unavailable')
+
+        const ipAddress = ip
+        const userAgent = clientUserAgent(request)
+        after(async () => {
+          try {
+            await sendOtpEmail(parsed.data.email, code, OTP_TTL_MINUTES)
+            await audit(admin, 'otp_requested', userId, { ip: ipAddress, userAgent })
+          } catch {
+            await admin.from('otp_codes').update({ used_at: new Date().toISOString() }).eq('id', otpId)
+            await audit(admin, 'otp_delivery_failed', userId, { ip: ipAddress, userAgent })
+          }
+        })
+      }
+    }
+  } catch {
+    // Keep account existence and internal service errors out of the response.
+    await keepMinimumResponseTime(startedAt)
+    return json(GENERIC)
   }
+
+  await keepMinimumResponseTime(startedAt)
   return json(GENERIC)
 }

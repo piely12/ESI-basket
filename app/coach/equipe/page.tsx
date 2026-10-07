@@ -1,16 +1,10 @@
 import { redirect } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
-import { getCurrentUserProfile } from '@/lib/auth/roles'
+import { requireAnyRole } from '@/lib/auth/requireUser'
 import { updatePlayerAvailability } from '../actions'
 import styles from '../coach.module.css'
 
-const COACH_ROLES = ['coach', 'coach_adjoint', 'admin']
 export default async function CoachRosterPage() {
-  const supabase = await createClient()
-  const { data: auth } = await supabase.auth.getUser()
-  if (!auth.user) redirect('/login')
-  const profile = await getCurrentUserProfile(supabase)
-  if (!profile || !COACH_ROLES.includes(profile.role)) redirect('/acces-refuse')
+  const { supabase, profile } = await requireAnyRole(['coach', 'coach_adjoint', 'admin'])
   let teamId = profile.team_id
   if (!teamId && profile.role === 'admin') {
     const { data } = await supabase.from('teams').select('id').eq('is_esi', true).maybeSingle()

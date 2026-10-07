@@ -1,5 +1,6 @@
 import 'server-only'
 import { createHash } from 'node:crypto'
+import { isIP } from 'node:net'
 import { NextResponse, type NextRequest } from 'next/server'
 import type { SupabaseClient } from '@supabase/supabase-js'
 
@@ -23,8 +24,10 @@ export function assertSameOrigin(request: NextRequest): NextResponse | null {
 }
 
 export function clientIp(request: NextRequest): string {
-  const fwd = request.headers.get('x-forwarded-for')
-  return (fwd ? fwd.split(',')[0].trim() : request.headers.get('x-real-ip')) || 'unknown'
+  // Vercel overwrites x-real-ip with the address it observes. Never trust
+  // x-forwarded-for here because callers can provide spoofed values.
+  const candidate = request.headers.get('x-real-ip')?.trim()
+  return candidate && isIP(candidate) ? candidate.toLowerCase() : 'unknown'
 }
 
 export function clientUserAgent(request: NextRequest): string {
@@ -37,6 +40,26 @@ export function rlKey(...parts: string[]): string {
 }
 
 type Rule = { key: string; limit: number }
+
+/** Atomically consume one allowance through the service-role-only SQL RPC. */
+export async function consumeRateLimit(
+  admin: SupabaseClient,
+  key: string,
+  limit: number,
+  windowSeconds: number,
+): Promise<{ allowed: boolean; retryAfterSeconds: number }> {
+  const { data, error } = await admin.rpc('consume_rate_limit', {
+    p_key: key,
+    p_limit: limit,
+    p_window_seconds: windowSeconds,
+  })
+  if (error) throw new Error('Rate-limit service unavailable')
+  const result = Array.isArray(data) ? data[0] : null
+  if (!result || typeof result.allowed !== 'boolean' || typeof result.retry_after_seconds !== 'number') {
+    throw new Error('Invalid rate-limit response')
+  }
+  return { allowed: result.allowed, retryAfterSeconds: result.retry_after_seconds }
+}
 
 export async function isLimited(admin: SupabaseClient, rules: Rule[], windowSec: number): Promise<boolean> {
   const since = new Date(Date.now() - windowSec * 1000).toISOString()
@@ -73,7 +96,9 @@ const PROGRESSIVE_THRESHOLD = 5
 const HARD_BLOCK_THRESHOLD = 10
 const PROGRESSIVE_DELAYS_SEC = [2, 4, 8, 16, 32] // pour le 5e, 6e, 7e, 8e, 9e échec
 
-export type LockoutState = { blocked: false } | { blocked: true; retryAfterSec: number }
+export type LockoutState =
+  | { blocked: false; failedAttempts: number }
+  | { blocked: true; retryAfterSec: number; failedAttempts: number }
 
 export async function checkProgressiveLockout(
   admin: SupabaseClient, key: string, windowSec: number
@@ -83,23 +108,23 @@ export async function checkProgressiveLockout(
     .from('rate_limits').select('created_at')
     .eq('key', key).gte('created_at', since)
     .order('created_at', { ascending: false })
-  if (error || !data) return { blocked: false }
+  if (error || !data) return { blocked: false, failedAttempts: 0 }
 
   const count = data.length
   if (count >= HARD_BLOCK_THRESHOLD) {
     const oldest = new Date(data[data.length - 1].created_at).getTime()
     const retryAfterSec = Math.max(1, Math.ceil((oldest + windowSec * 1000 - Date.now()) / 1000))
-    return { blocked: true, retryAfterSec }
+    return { blocked: true, retryAfterSec, failedAttempts: count }
   }
   if (count >= PROGRESSIVE_THRESHOLD) {
     const requiredDelay = PROGRESSIVE_DELAYS_SEC[Math.min(count - PROGRESSIVE_THRESHOLD, PROGRESSIVE_DELAYS_SEC.length - 1)]
     const lastAt = new Date(data[0].created_at).getTime()
     const elapsed = (Date.now() - lastAt) / 1000
     if (elapsed < requiredDelay) {
-      return { blocked: true, retryAfterSec: Math.ceil(requiredDelay - elapsed) }
+      return { blocked: true, retryAfterSec: Math.ceil(requiredDelay - elapsed), failedAttempts: count }
     }
   }
-  return { blocked: false }
+  return { blocked: false, failedAttempts: count }
 }
 
 // Journal d'audit (§8 du cahier des charges). Ne jamais y mettre de mot de passe ni de code.
@@ -113,7 +138,7 @@ export async function audit(
     actor_user_id: userId,
     action,
     entity_type: 'auth',
-    ip_address: opts.ip ?? null,
+    ip_address: opts.ip && isIP(opts.ip) ? opts.ip : null,
     user_agent: opts.userAgent ?? null,
     metadata: opts.metadata ?? {},
   })

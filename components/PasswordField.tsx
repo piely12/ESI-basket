@@ -11,9 +11,11 @@ type Props = {
   autoComplete: 'current-password' | 'new-password'
   describedBy?: string
   invalid?: boolean
+  onCapsLockChange?: (active: boolean) => void
+  maxLength?: number
 }
 
-export default function PasswordField({ id, label, value, onChange, autoComplete, describedBy, invalid }: Props) {
+export default function PasswordField({ id, label, value, onChange, autoComplete, describedBy, invalid, onCapsLockChange, maxLength }: Props) {
   const [visible, setVisible] = useState(false)
   return (
     <div className="flex flex-col gap-1">
@@ -26,10 +28,15 @@ export default function PasswordField({ id, label, value, onChange, autoComplete
           value={value}
           onChange={(e) => onChange(e.target.value)}
           autoComplete={autoComplete}
-          maxLength={PASSWORD_MAX}
+          maxLength={maxLength ?? PASSWORD_MAX}
           required
           aria-invalid={invalid || undefined}
           aria-describedby={describedBy}
+          onKeyDown={(event) => {
+            onCapsLockChange?.(event.getModifierState('CapsLock'))
+            if (event.key === 'Escape') setVisible(false)
+          }}
+          onKeyUp={(event) => onCapsLockChange?.(event.getModifierState('CapsLock'))}
           className="w-full rounded border p-2 pr-20"
         />
         <button

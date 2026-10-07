@@ -1,8 +1,7 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import LogoutButton from '@/components/LogoutButton'
-import { createClient } from '@/lib/supabase/server'
-import { getCurrentUserProfile } from '@/lib/auth/roles'
+import { requireAnyRole } from '@/lib/auth/requireUser'
 import styles from './coach.module.css'
 
 const navigation = [
@@ -12,12 +11,8 @@ const navigation = [
 ]
 
 export default async function CoachLayout({ children }: { children: React.ReactNode }) {
-  const supabase = await createClient()
-  const [{ data }, profile] = await Promise.all([
-    supabase.auth.getUser(),
-    getCurrentUserProfile(supabase),
-  ])
-  const person = profile ? `${profile.first_name} ${profile.last_name}` : data.user?.email ?? ''
+  const { profile } = await requireAnyRole(['coach', 'coach_adjoint', 'admin'])
+  const person = `${profile.first_name} ${profile.last_name}`
 
   return (
     <div className={styles.shell}>

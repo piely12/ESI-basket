@@ -4,11 +4,14 @@ import { useState } from 'react'
 import Link from 'next/link'
 import type { StandingRow } from '@/lib/data/public'
 import TeamLogo from '@/components/TeamLogo'
+import EmptyState from '@/components/ui/EmptyState'
 
 export default function StandingsView({ rows }: { rows: StandingRow[] }) {
   const [selectedId, setSelectedId] = useState(rows.find((row) => row.team.is_esi)?.team_id ?? rows[0]?.team_id ?? null)
   const selected = rows.find((row) => row.team_id === selectedId) ?? null
   const headers = ['#', 'École', 'J', 'V', 'D', 'PP', 'PC', 'Diff', 'Pts']
+
+  if (rows.length === 0) return <EmptyState title="Le classement est vide" description="Le classement sera affiché dès que les résultats des matchs seront disponibles." />
 
   return (
     <>

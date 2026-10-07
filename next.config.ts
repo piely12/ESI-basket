@@ -7,13 +7,34 @@ const securityHeaders = [
   { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
   { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains" },
   // Anti-clickjacking, anti-injection de <base>, formulaires uniquement vers ce site.
-  { key: "Content-Security-Policy", value: "frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'" },
 ];
+
+const supabaseHostname = (() => {
+  try {
+    return new URL(process.env.NEXT_PUBLIC_SUPABASE_URL ?? 'https://example.supabase.co').hostname;
+  } catch {
+    return '*.supabase.co';
+  }
+})();
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  images: {
+    remotePatterns: [{
+      protocol: 'https',
+      hostname: supabaseHostname,
+      pathname: '/storage/v1/object/public/**',
+    }],
+  },
+  experimental: {
+    serverActions: { bodySizeLimit: '2mb' },
+  },
   async headers() {
-    return [{ source: "/:path*", headers: securityHeaders }];
+    return [
+      { source: "/:path*", headers: securityHeaders },
+      { source: "/login", headers: [{ key: "Cache-Control", value: "private, no-store, max-age=0, must-revalidate" }] },
+      { source: "/premiere-connexion", headers: [{ key: "Cache-Control", value: "private, no-store, max-age=0, must-revalidate" }] },
+    ];
   },
 };
 

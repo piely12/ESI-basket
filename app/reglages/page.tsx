@@ -36,7 +36,6 @@ export default function ReglagesPage() {
       <PublicNav />
       <main className="mx-auto max-w-5xl space-y-4 px-4 pb-28 pt-8 sm:px-5">
         <header className="mb-5">
-          <p className="text-xs font-bold uppercase tracking-[0.25em] text-[var(--gold-deep)]">Préférences</p>
           <h1 className="font-display text-5xl leading-none text-[var(--maroon-900)] sm:text-6xl">Réglages</h1>
         </header>
         <section className="flex items-center justify-between rounded-lg border border-[var(--line)] bg-[var(--surface)] p-4">

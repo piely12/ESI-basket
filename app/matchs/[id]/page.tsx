@@ -73,9 +73,9 @@ export default async function MatchDetailPage({ params }: { params: Promise<{ id
 
         {rankStats && playerStats.length > 0 && <section className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-4 sm:p-5">
           <p className="text-xs font-bold uppercase tracking-[0.2em] text-[var(--gold-deep)]">Performance des joueurs</p><h2 className="mb-3 font-display text-3xl text-[var(--maroon-900)]">Statistiques individuelles</h2>
-          <div className="overflow-x-auto"><table className="w-full min-w-[640px] text-sm">
-            <thead className="text-xs uppercase text-[var(--ink-soft)]"><tr className="text-left"><th className="py-2">Joueur</th><th>MIN</th><th>PTS</th><th>REB</th><th>AST</th><th>+/-</th></tr></thead>
-            <tbody>{playerStats.map((stat) => <tr key={stat.id} className="border-t border-[var(--line)]"><td className="py-2 font-semibold">#{stat.player.jersey_number} {stat.player.first_name} {stat.player.last_name}</td><td>{stat.minutes_played}</td><td className="font-bold">{stat.points}</td><td>{stat.rebounds}</td><td>{stat.assists}</td><td className={stat.plus_minus >= 0 ? 'text-[var(--gold-deep)]' : 'text-[var(--maroon-700)]'}>{stat.plus_minus > 0 ? '+' : ''}{stat.plus_minus}</td></tr>)}</tbody>
+          <div className="overflow-x-auto"><table className="w-full min-w-[760px] text-sm">
+            <thead className="text-xs uppercase text-[var(--ink-soft)]"><tr className="text-left"><th className="py-2">Joueur</th><th>MIN</th><th>PTS</th><th>REB</th><th>REB DEF</th><th>REB OFF</th><th>Fautes</th><th>AST</th></tr></thead>
+            <tbody>{playerStats.map((stat) => <tr key={stat.id} className="border-t border-[var(--line)]"><td className="py-2 font-semibold">#{stat.player.jersey_number} {stat.player.first_name} {stat.player.last_name}</td><td>{stat.minutes_played}</td><td className="font-bold">{stat.points}</td><td>{stat.rebounds}</td><td>{stat.rebounds_defensive ?? '—'}</td><td>{stat.rebounds_offensive ?? '—'}</td><td>{stat.personal_fouls ?? '—'}</td><td>{stat.assists}</td></tr>)}</tbody>
           </table></div>
         </section>}
 

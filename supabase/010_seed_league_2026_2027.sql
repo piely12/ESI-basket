@@ -43,7 +43,7 @@ begin
 
   update public.seasons set is_current = false where is_current = true;
   insert into public.seasons (competition_id, name, starts_on, ends_on, is_current)
-  values (v_competition_id, '2026-2027', '2026-11-21', '2027-01-30', true)
+  values (v_competition_id, '2026-2027', '2026-11-28', '2027-02-06', true)
   on conflict (competition_id, name) do update
     set starts_on = excluded.starts_on,
         ends_on = excluded.ends_on,
@@ -58,34 +58,34 @@ begin
   -- Each row is one game from the PDF, grouped by league matchday.
   for fixture in
     select * from (values
-      (1, date '2026-11-21', 'ESCPE', 'EPGE'),
-      (2, date '2026-11-28', 'ESTP', 'E. Projet'),
-      (2, date '2026-11-28', 'ESCAE', 'ESI'),
-      (2, date '2026-11-28', 'ESA', 'ESMG'),
-      (3, date '2026-12-05', 'ESCPE', 'E. Projet'),
-      (3, date '2026-12-05', 'EPGE', 'ESI'),
-      (3, date '2026-12-05', 'ESTP', 'ESMG'),
-      (3, date '2026-12-05', 'ESCAE', 'ESA'),
-      (4, date '2026-12-12', 'ESCPE', 'ESI'),
-      (4, date '2026-12-12', 'E. Projet', 'ESMG'),
-      (4, date '2026-12-12', 'EPGE', 'ESA'),
-      (4, date '2026-12-12', 'ESTP', 'ESCAE'),
-      (5, date '2027-01-09', 'ESCPE', 'ESMG'),
-      (5, date '2027-01-09', 'ESI', 'ESA'),
-      (5, date '2027-01-09', 'E. Projet', 'ESCAE'),
-      (5, date '2027-01-09', 'EPGE', 'ESTP'),
-      (6, date '2027-01-16', 'ESCPE', 'ESA'),
-      (6, date '2027-01-16', 'ESMG', 'ESCAE'),
-      (6, date '2027-01-16', 'ESI', 'ESTP'),
-      (6, date '2027-01-16', 'E. Projet', 'EPGE'),
-      (7, date '2027-01-23', 'ESCPE', 'ESCAE'),
-      (7, date '2027-01-23', 'ESA', 'ESTP'),
-      (7, date '2027-01-23', 'ESMG', 'EPGE'),
-      (7, date '2027-01-23', 'ESI', 'E. Projet'),
-      (8, date '2027-01-30', 'ESCPE', 'ESTP'),
-      (8, date '2027-01-30', 'ESCAE', 'EPGE'),
-      (8, date '2027-01-30', 'ESA', 'E. Projet'),
-      (8, date '2027-01-30', 'ESMG', 'ESI')
+      (1, date '2026-11-28', 'ESCPE', 'EPGE'),
+      (2, date '2026-12-05', 'ESTP', 'E. Projet'),
+      (2, date '2026-12-05', 'ESCAE', 'ESI'),
+      (2, date '2026-12-05', 'ESA', 'ESMG'),
+      (3, date '2026-12-12', 'ESCPE', 'E. Projet'),
+      (3, date '2026-12-12', 'EPGE', 'ESI'),
+      (3, date '2026-12-12', 'ESTP', 'ESMG'),
+      (3, date '2026-12-12', 'ESCAE', 'ESA'),
+      (4, date '2027-01-09', 'ESCPE', 'ESI'),
+      (4, date '2027-01-09', 'E. Projet', 'ESMG'),
+      (4, date '2027-01-09', 'EPGE', 'ESA'),
+      (4, date '2027-01-09', 'ESTP', 'ESCAE'),
+      (5, date '2027-01-16', 'ESCPE', 'ESMG'),
+      (5, date '2027-01-16', 'ESI', 'ESA'),
+      (5, date '2027-01-16', 'E. Projet', 'ESCAE'),
+      (5, date '2027-01-16', 'EPGE', 'ESTP'),
+      (6, date '2027-01-23', 'ESCPE', 'ESA'),
+      (6, date '2027-01-23', 'ESMG', 'ESCAE'),
+      (6, date '2027-01-23', 'ESI', 'ESTP'),
+      (6, date '2027-01-23', 'E. Projet', 'EPGE'),
+      (7, date '2027-01-30', 'ESCPE', 'ESCAE'),
+      (7, date '2027-01-30', 'ESA', 'ESTP'),
+      (7, date '2027-01-30', 'ESMG', 'EPGE'),
+      (7, date '2027-01-30', 'ESI', 'E. Projet'),
+      (8, date '2027-02-06', 'ESCPE', 'ESTP'),
+      (8, date '2027-02-06', 'ESCAE', 'EPGE'),
+      (8, date '2027-02-06', 'ESA', 'E. Projet'),
+      (8, date '2027-02-06', 'ESMG', 'ESI')
     ) as schedule(round_number, match_date, home_code, away_code)
   loop
     declare
@@ -119,7 +119,7 @@ begin
       from public.matches m
       where m.home_team_id = home_id
         and m.away_team_id = away_id
-        and (m.scheduled_at at time zone 'Africa/Abidjan')::date = fixture.match_date
+        and m.season_id = v_season_id
       order by m.created_at
       limit 1;
 

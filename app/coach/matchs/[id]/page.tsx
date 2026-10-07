@@ -1,12 +1,10 @@
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
-import { getCurrentUserProfile } from '@/lib/auth/roles'
-import { createClient } from '@/lib/supabase/server'
+import { requireAnyRole } from '@/lib/auth/requireUser'
 import type { Team } from '@/lib/data/public'
-import { saveComposition, saveConvocations, saveMatchDetails, saveMatchPreparation, saveMatchResult, savePlayerStats, updateMatchStatus } from '../../actions'
+import { saveComposition, saveConvocations, updateMatchDetails, saveMatchPreparation, saveMatchResult, savePlayerStats, updateMatchStatus } from '../../actions'
 import styles from '../../coach.module.css'
 
-const COACH_ROLES = ['coach', 'coach_adjoint', 'admin']
 type PageProps = { params: Promise<{ id: string }>; searchParams: Promise<{ saved?: string }> }
 type Player = { id: string; first_name: string; last_name: string; jersey_number: number | null; position: string | null; status: string; team_id: string }
 type PlayerStat = { player_id: string; minutes_played: number; points: number; rebounds: number; assists: number; steals: number; blocks: number; turnovers: number; plus_minus: number; evaluation: number | null }
@@ -14,11 +12,7 @@ const statusLabels: Record<string, string> = { programme: 'Programmé', a_venir:
 
 export default async function CoachMatchPage({ params, searchParams }: PageProps) {
   const [{ id }, query] = await Promise.all([params, searchParams])
-  const supabase = await createClient()
-  const { data: auth } = await supabase.auth.getUser()
-  if (!auth.user) redirect('/login')
-  const profile = await getCurrentUserProfile(supabase)
-  if (!profile || !COACH_ROLES.includes(profile.role)) redirect('/acces-refuse')
+  const { supabase, profile } = await requireAnyRole(['coach', 'coach_adjoint', 'admin'])
 
   const { data: match, error: matchError } = await supabase.from('matches')
     .select('id,scheduled_at,location,round_number,kickoff_confirmed,public_note,status,home_score,away_score,home_team_id,away_team_id,home_team:teams!matches_home_team_id_fkey(id,name,city,logo_url,is_esi),away_team:teams!matches_away_team_id_fkey(id,name,city,logo_url,is_esi)')
@@ -79,7 +73,7 @@ export default async function CoachMatchPage({ params, searchParams }: PageProps
 
       <section className={styles.card}>
         <div className={styles.sectionHead}><div><p className={styles.eyebrow}>Organisation</p><h2 className={styles.cardTitle}>Date, lieu et statut</h2></div></div>
-        <form action={saveMatchDetails} className={styles.form}>
+        <form action={updateMatchDetails} className={styles.form}>
           <input type="hidden" name="match_id" value={match.id} />
           <div className={styles.field}><label htmlFor="match-date">Date et heure (Abidjan)</label><input id="match-date" name="scheduled_at" type="datetime-local" defaultValue={scheduleValue} required />{!match.kickoff_confirmed && <small className={styles.help}>Horaire provisoire: indique l’heure officielle avant de partager le calendrier.</small>}</div>
           <div className={styles.field}><label htmlFor="match-location">Salle / lieu</label><input id="match-location" name="location" maxLength={160} defaultValue={match.location ?? ''} /></div>

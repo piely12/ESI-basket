@@ -3,7 +3,7 @@ import type { Site } from '@/lib/sites'
 export type AppRole =
   | 'coach' | 'coach_adjoint' | 'statisticienne' | 'videaste' | 'admin' | 'joueur'
 
-// Espace « maison » de chaque rôle
+// Route d'accueil de chaque rôle après connexion.
 export const HOME_SITE: Record<AppRole, Site> = {
   coach: 'coach',
   coach_adjoint: 'coach',
@@ -13,7 +13,7 @@ export const HOME_SITE: Record<AppRole, Site> = {
   joueur: 'joueurs',
 }
 
-// Sous-domaines auxquels un rôle a accès. L'admin (coach principal) accède à tout.
+// Routes auxquelles un rôle a accès. L'admin (coach principal) accède à tout.
 export function allowedSites(role: AppRole): Site[] {
   if (role === 'admin') return ['admin', 'coach', 'stats', 'actus', 'joueurs']
   return [HOME_SITE[role]]
