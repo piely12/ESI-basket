@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 export type Team = { id: string; name: string; city: string | null; logo_url: string | null; is_esi: boolean }
 export type MatchRow = {
   id: string
+  season_id: string | null
   scheduled_at: string
   location: string | null
   round_number: number | null
@@ -105,10 +106,18 @@ export type PlayerProfileStat = {
 
 // Un match, avec ses deux équipes déjà jointes.
 const MATCH_SELECT = `
-  id, scheduled_at, location, round_number, kickoff_confirmed, public_note, status, home_score, away_score,
+  id, season_id, scheduled_at, location, round_number, kickoff_confirmed, public_note, status, home_score, away_score,
   home_team:teams!matches_home_team_id_fkey(id,name,city,logo_url,is_esi),
   away_team:teams!matches_away_team_id_fkey(id,name,city,logo_url,is_esi)
 `
+
+async function optionalData<T>(query: PromiseLike<{ data: T | null }>): Promise<T | null> {
+  try {
+    return (await query).data
+  } catch {
+    return null
+  }
+}
 
 export async function getNextMatch(): Promise<MatchRow | null> {
   const supabase = await createClient()
@@ -152,19 +161,45 @@ export async function getMatchById(id: string) {
 
   const matchRow = match as unknown as MatchRow
   const esiTeam = matchRow.home_team.is_esi ? matchRow.home_team : matchRow.away_team
-  const [{ data: teamStats }, { data: playerStats }, { data: workflow }, { data: coach }] = await Promise.all([
-    supabase.from('match_team_stats')
+  const [teamStats, playerStats, workflow, coach] = await Promise.all([
+    optionalData(supabase.from('match_team_stats')
       .select('id, match_id, team_id, points, rebounds, assists, fg_made, fg_attempted, three_made, three_attempted, ft_made, ft_attempted, published_at, created_at')
-      .eq('match_id', id).not('published_at', 'is', null),
-    supabase.from('match_player_stats')
+      .eq('match_id', id).not('published_at', 'is', null)),
+    optionalData(supabase.from('match_player_stats')
       .select('id,match_id,player_id,minutes_played,points,rebounds,rebounds_defensive,rebounds_offensive,personal_fouls,assists,steals,blocks,turnovers,fg_made,fg_attempted,three_made,three_attempted,ft_made,ft_attempted,plus_minus,evaluation,published_at,created_at,updated_at,player:players(id,first_name,last_name,jersey_number,position)')
-      .eq('match_id', id).not('published_at', 'is', null),
-    supabase.from('match_composition_public_status').select('status').eq('match_id', id).eq('team_id', esiTeam.id).maybeSingle(),
-    supabase.from('public_esi_coaches').select('first_name,last_name').eq('team_id', esiTeam.id).order('last_name').limit(1).maybeSingle(),
+      .eq('match_id', id).not('published_at', 'is', null)),
+    optionalData<{ status: string }>(supabase.from('match_composition_public_status').select('status').eq('match_id', id).eq('team_id', esiTeam.id).maybeSingle() as unknown as PromiseLike<{ data: { status: string } | null }>),
+    optionalData<{ first_name: string; last_name: string }>(supabase.from('public_esi_coaches').select('first_name,last_name').eq('team_id', esiTeam.id).order('last_name').limit(1).maybeSingle() as unknown as PromiseLike<{ data: { first_name: string; last_name: string } | null }>),
   ])
-  const { data: lineups } = workflow && ['publiee','verrouillee'].includes(workflow.status)
-    ? await supabase.from('match_lineups').select('is_starter,court_slot,player:players(id,first_name,last_name,jersey_number,position,photo_url,team_id)').eq('match_id', id)
-    : { data: [] }
+  const lineups = workflow && ['publiee','verrouillee'].includes(workflow.status)
+    ? await optionalData(supabase.from('match_lineups').select('is_starter,court_slot,player:players(id,first_name,last_name,jersey_number,position,photo_url,team_id)').eq('match_id', id))
+    : []
+
+  const historyFor = (teamId: string) => {
+    let query = supabase.from('matches').select(MATCH_SELECT)
+      .or(`home_team_id.eq.${teamId},away_team_id.eq.${teamId}`)
+      .eq('status', 'termine').neq('id', id)
+      .not('home_score', 'is', null).not('away_score', 'is', null)
+      .order('scheduled_at', { ascending: false }).limit(5)
+    if (matchRow.season_id) query = query.eq('season_id', matchRow.season_id)
+    return query
+  }
+  const confrontationQuery = supabase.from('matches').select(MATCH_SELECT)
+    .or(`home_team_id.eq.${matchRow.home_team.id},away_team_id.eq.${matchRow.home_team.id}`)
+    .eq('status', 'termine').neq('id', id)
+    .not('home_score', 'is', null).not('away_score', 'is', null)
+    .order('scheduled_at', { ascending: false })
+  if (matchRow.season_id) confrontationQuery.eq('season_id', matchRow.season_id)
+  const [homeHistory, awayHistory, confrontationRows, standings] = await Promise.all([
+    optionalData(historyFor(matchRow.home_team.id)),
+    optionalData(historyFor(matchRow.away_team.id)),
+    optionalData(confrontationQuery),
+    getStandings(matchRow.season_id ?? undefined).catch(() => []),
+  ])
+  const confrontations = ((confrontationRows ?? []) as unknown as MatchRow[])
+    .filter((game) => (game.home_team.id === matchRow.home_team.id && game.away_team.id === matchRow.away_team.id)
+      || (game.home_team.id === matchRow.away_team.id && game.away_team.id === matchRow.home_team.id))
+    .slice(0, 5)
 
 
   return {
@@ -172,6 +207,12 @@ export async function getMatchById(id: string) {
     teamStats: teamStats ?? [],
     playerStats: (playerStats ?? []) as unknown as PublicMatchPlayerStat[],
     lineups: (lineups ?? []) as unknown as LineupRow[],
+    standings,
+    teamHistory: [
+      { team: matchRow.home_team, matches: (homeHistory ?? []) as unknown as MatchRow[] },
+      { team: matchRow.away_team, matches: (awayHistory ?? []) as unknown as MatchRow[] },
+    ],
+    confrontations: (confrontations ?? []) as unknown as MatchRow[],
     compositionPublished: Boolean(workflow && ['publiee', 'verrouillee'].includes(workflow.status)),
     coachName: coach ? `${coach.first_name} ${coach.last_name}`.trim() : null,
   }

@@ -2,6 +2,7 @@
 @import "tailwindcss";
 
 :root {
+  color-scheme: light;
   --maroon-900: oklch(0.33 0.12 18);
   --maroon-700: oklch(0.33 0.12 18);
   --gold-500: oklch(0.8 0.14 82);
@@ -16,17 +17,18 @@
 }
 
 .dark {
-  --maroon-900: oklch(0.42 0.14 18);
-  --maroon-700: oklch(0.42 0.14 18);
+  color-scheme: dark;
+  --maroon-900: oklch(0.39 0.12 18);
+  --maroon-700: oklch(0.74 0.12 20);
   --gold-500: oklch(0.8 0.14 82);
   --gold-deep: oklch(0.8 0.14 82);
-  --paper: oklch(0.17 0.03 18);
+  --paper: oklch(0.12 0.025 18);
   --ink: oklch(0.95 0.02 80);
   --ink-soft: oklch(0.72 0.03 60);
   --line: oklch(1 0 0 / 12%);
-  --surface: oklch(0.22 0.04 18);
-  --sk-base: oklch(0.31 0.035 20);
-  --sk-shine: oklch(0.39 0.04 22);
+  --surface: oklch(0.18 0.03 18);
+  --sk-base: oklch(0.25 0.035 20);
+  --sk-shine: oklch(0.32 0.04 22);
 }
 
 @theme inline {

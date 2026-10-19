@@ -9,6 +9,7 @@ const LINKS = [
   { href: '/matchs', label: 'Matchs' },
   { href: '/classement', label: 'Classement' },
   { href: '/equipe', label: 'Équipe' },
+  { href: '/actualites', label: 'Actus' },
   { href: '/reglages', label: 'Réglages' },
 ]
 
@@ -19,6 +20,8 @@ function NavIcon({ name }: { name: string }) {
       return <svg viewBox="0 0 24 24" aria-hidden="true" {...shared}><path d="m3 10 9-7 9 7" /><path d="M5 9v12h14V9M9 21v-7h6v7" /></svg>
     case 'Matchs':
       return <svg viewBox="0 0 24 24" aria-hidden="true" {...shared}><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M16 3v4M8 3v4M3 10h18M8 14h.01M12 14h.01M16 14h.01M8 17h.01M12 17h.01" /></svg>
+    case 'Actus':
+      return <svg viewBox="0 0 24 24" aria-hidden="true" {...shared}><path d="M5 4.5h13a2 2 0 0 1 2 2V20H7a3 3 0 0 1-3-3V6.5a2 2 0 0 1 1-2Z" /><path d="M7 16.5h13M8 8h8M8 12h8M4 17a3 3 0 0 0 3 3" /></svg>
     case 'Classement':
       return <svg viewBox="0 0 24 24" aria-hidden="true" {...shared}><path d="M8 21h8M12 17v4M7 4H4v3a5 5 0 0 0 5 5M17 4h3v3a5 5 0 0 1-5 5" /><path d="M7 3h10v7a5 5 0 0 1-10 0V3Z" /></svg>
     case 'Équipe':
@@ -54,9 +57,9 @@ export default function PublicNav() {
           </div>
         </div>
       </header>
-      <nav aria-label="Navigation principale" className="fixed inset-x-0 bottom-0 z-30 grid h-[calc(65px+env(safe-area-inset-bottom))] grid-cols-5 border-t border-[var(--line)] bg-[var(--surface)] pb-[env(safe-area-inset-bottom)] shadow-[0_-2px_8px_rgba(35,23,18,0.08)]">
+      <nav aria-label="Navigation principale" className="fixed inset-x-0 bottom-0 z-30 grid h-[calc(65px+env(safe-area-inset-bottom))] grid-cols-6 border-t border-[var(--line)] bg-[var(--surface)] pb-[env(safe-area-inset-bottom)] shadow-[0_-2px_8px_rgba(35,23,18,0.08)]">
         {LINKS.map((link) => (
-          <Link key={link.href} href={link.href} aria-current={pathname === link.href ? 'page' : undefined} className={`flex flex-col items-center justify-center gap-0.5 px-0.5 text-center text-xs leading-tight transition-colors [&_svg]:h-6 [&_svg]:w-6 ${pathname === link.href ? 'text-[var(--maroon-700)]' : 'text-[#806c66]'}`}>
+          <Link key={link.href} href={link.href} aria-current={pathname === link.href ? 'page' : undefined} className={`flex flex-col items-center justify-center gap-0.5 px-0.5 text-center text-[10px] leading-tight transition-colors sm:text-xs [&_svg]:h-5 [&_svg]:w-5 sm:[&_svg]:h-6 sm:[&_svg]:w-6 ${pathname === link.href ? 'text-[var(--maroon-700)]' : 'text-[#806c66]'}`}>
             <NavIcon name={link.label} />
             <span>{link.label}</span>
           </Link>

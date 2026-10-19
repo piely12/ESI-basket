@@ -6,12 +6,12 @@ import { getPlayerProfile } from '@/lib/data/public'
 
 export default async function PlayerPage({ params, searchParams }: {
   params: Promise<{ id: string }>
-  searchParams: Promise<{ season?: string; round?: string; period?: string }>
+  searchParams: Promise<{ season?: string; round?: string }>
 }) {
   const [{ id }, query] = await Promise.all([params, searchParams])
   const roundValue = query.round ? Number(query.round) : undefined
   const round = Number.isInteger(roundValue) && roundValue! > 0 && roundValue! <= 99 ? roundValue : undefined
-  const period = query.period === '30d' || query.period === '90d' ? query.period : 'all'
+  const period = 'all'
   const result = await getPlayerProfile(id, { seasonId: query.season, round, period })
   if (!result) notFound()
   const { player, season, seasons, seasonStats, stats } = result
@@ -58,9 +58,6 @@ export default async function PlayerPage({ params, searchParams }: {
           </label>
           <label className="grid gap-1 text-xs font-bold uppercase tracking-wide text-[var(--ink-soft)]">Journée
             <select name="round" defaultValue={query.round ?? ''} className="min-h-11 rounded-lg border border-[var(--line)] bg-[var(--paper)] px-3 text-sm font-semibold normal-case tracking-normal text-[var(--ink)]"><option value="">Toutes les journées</option>{rounds.map((value) => <option key={value} value={value}>Journée {value}</option>)}</select>
-          </label>
-          <label className="grid gap-1 text-xs font-bold uppercase tracking-wide text-[var(--ink-soft)]">Période
-            <select name="period" defaultValue={period} className="min-h-11 rounded-lg border border-[var(--line)] bg-[var(--paper)] px-3 text-sm font-semibold normal-case tracking-normal text-[var(--ink)]"><option value="all">Toute la saison</option><option value="90d">90 derniers jours</option><option value="30d">30 derniers jours</option></select>
           </label>
           <div className="flex gap-2"><button type="submit" className="min-h-11 flex-1 rounded-lg bg-[var(--maroon-900)] px-4 text-sm font-bold text-white">Appliquer</button><Link href={`/equipe/${id}`} className="inline-flex min-h-11 items-center justify-center rounded-lg border border-[var(--line)] px-4 text-sm font-semibold text-[var(--maroon-900)]">Réinitialiser</Link></div>
         </form>

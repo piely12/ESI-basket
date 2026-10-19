@@ -18,8 +18,12 @@ export default function ReglagesPage() {
   useEffect(() => setDark(document.documentElement.classList.contains('dark')), [])
 
   function toggleTheme() {
-    document.documentElement.classList.toggle('dark')
-    setDark(document.documentElement.classList.contains('dark'))
+    const nextDark = !document.documentElement.classList.contains('dark')
+    document.documentElement.classList.toggle('dark', nextDark)
+    try {
+      localStorage.setItem('lions-theme', nextDark ? 'dark' : 'light')
+    } catch { /* Keep the current tab setting if storage is unavailable. */ }
+    setDark(nextDark)
   }
 
   function submitContact(event: React.FormEvent<HTMLFormElement>) {
@@ -40,7 +44,7 @@ export default function ReglagesPage() {
         </header>
         <section className="flex items-center justify-between rounded-lg border border-[var(--line)] bg-[var(--surface)] p-4">
           <span className="font-semibold">Mode sombre</span>
-          <button type="button" role="switch" aria-checked={dark} aria-label="Activer le mode sombre" onClick={toggleTheme} className={`h-7 w-12 rounded-full p-1 transition ${dark ? 'bg-[var(--gold-500)]' : 'bg-[var(--line)]'}`}>
+          <button type="button" role="switch" aria-checked={dark} aria-label={dark ? 'Désactiver le mode sombre' : 'Activer le mode sombre'} onClick={toggleTheme} className={`h-7 w-12 rounded-full p-1 transition ${dark ? 'bg-[var(--gold-500)]' : 'bg-[var(--line)]'}`}>
             <span className={`block h-5 w-5 rounded-full bg-[var(--maroon-900)] transition ${dark ? 'translate-x-5' : ''}`} />
           </button>
         </section>

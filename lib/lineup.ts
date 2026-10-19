@@ -1,9 +1,9 @@
 export const COURT_SLOTS = [
-  { key: 'meneur', label: 'Meneur', courtLabel: 'MENEUR', x: 50, y: 82 },
-  { key: 'arriere', label: 'Arrière', courtLabel: 'ARRIÈRE', x: 82, y: 57 },
-  { key: 'ailier', label: 'Ailier', courtLabel: 'AILIER', x: 18, y: 57 },
-  { key: 'ailier_fort', label: 'Ailier fort', courtLabel: 'AILIER FORT', x: 27, y: 24 },
-  { key: 'pivot', label: 'Pivot', courtLabel: 'PIVOT', x: 73, y: 24 },
+  { key: 'meneur', label: 'Meneur', courtLabel: 'MENEUR', x: 50, y: 80 },
+  { key: 'arriere', label: 'Arrière', courtLabel: 'ARRIÈRE', x: 77, y: 55 },
+  { key: 'ailier', label: 'Ailier', courtLabel: 'AILIER', x: 23, y: 55 },
+  { key: 'ailier_fort', label: 'Ailier fort', courtLabel: 'AILIER FORT', x: 30, y: 21 },
+  { key: 'pivot', label: 'Pivot', courtLabel: 'PIVOT', x: 70, y: 21 },
 ] as const
 
 export type CourtSlot = (typeof COURT_SLOTS)[number]['key']

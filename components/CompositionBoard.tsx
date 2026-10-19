@@ -46,15 +46,14 @@ export default function CompositionBoard({
 
       <div className={styles.content}>
         <div className={styles.court}>
-          <svg className={styles.courtLines} viewBox="0 0 640 600" role="img" aria-label="Demi-terrain de basketball">
+          <svg className={styles.courtLines} viewBox="0 0 640 480" role="img" aria-label="Demi-terrain de basketball">
             <g fill="none" stroke="currentColor" strokeOpacity=".43" strokeWidth="3">
-              <rect x="20" y="20" width="600" height="540" />
-              <rect x="220" y="20" width="200" height="240" className={styles.keyArea} />
-              <circle cx="320" cy="260" r="70" />
-              <path d="M60 20 V170 A260 260 0 0 0 580 170 V20" />
-              <path d="M260 560 A60 60 0 0 1 380 560" />
-              <path d="M290 40 H350" />
-              <circle cx="320" cy="56" r="10" className={styles.hoop} />
+              <rect x="20" y="20" width="600" height="440" />
+              <path d="M218 20 V193 H422 V20" className={styles.keyArea} />
+              <path d="M218 193 A102 67 0 0 0 422 193" />
+              <path d="M60 20 V110 A260 260 0 0 0 580 110 V20" />
+              <path d="M290 30 H350" />
+              <path d="M290 30 V42 H350 V30" className={styles.hoop} />
             </g>
           </svg>
           {COURT_SLOTS.map((slot) => {
@@ -62,7 +61,7 @@ export default function CompositionBoard({
             return <div className={styles.token} key={slot.key} style={{ left: `${slot.x}%`, top: `${slot.y}%` }}>
               {entry ? <>
                 <span className={styles.number}>{entry.player.jersey_number ?? '·'}</span>
-                <span className={styles.playerName}>{entry.player.first_name} {entry.player.last_name}</span>
+                <span className={styles.playerName}>{entry.player.last_name} {entry.player.first_name}</span>
                 <span className={styles.position}>{slot.courtLabel}</span>
               </> : <>
                 <span className={`${styles.number} ${styles.emptyNumber}`}>—</span>
@@ -77,7 +76,7 @@ export default function CompositionBoard({
           <h3>Les remplaçants</h3>
           {bench.length ? <ul className={styles.benchList}>{bench.map(({ player }) => <li key={player.id}>
             <span className={styles.benchNumber}>{player.jersey_number ?? '·'}</span>
-            <span className={styles.benchName}>{player.first_name} {player.last_name}</span>
+            <span className={styles.benchName}>{player.last_name} {player.first_name}</span>
             <span className={styles.benchPosition}>{player.position || 'Poste à préciser'}</span>
           </li>)}</ul> : <p className={styles.emptyBench}>Aucun remplaçant enregistré.</p>}
           <div className={styles.coach}><span>Coach</span><strong>{coachName || 'Staff technique'}</strong></div>

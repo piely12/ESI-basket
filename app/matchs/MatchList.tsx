@@ -5,15 +5,21 @@ import type { MatchRow } from '@/lib/data/public'
 import MatchCard from '@/components/MatchCard'
 import EmptyState from '@/components/ui/EmptyState'
 
-type Filter = 'tous' | 'avenir' | 'passes'
+type Filter = 'tous' | 'termines' | 'avenir'
 type CalendarDay = { key: string; inMonth: boolean; count: number }
 
 const WEEKDAYS = ['Lun.', 'Mar.', 'Mer.', 'Jeu.', 'Ven.', 'Sam.', 'Dim.']
 const FILTERS: { id: Filter; label: string }[] = [
-  { id: 'tous', label: 'Tous les matchs' },
+  { id: 'tous', label: 'Tous' },
+  { id: 'termines', label: 'Terminés' },
   { id: 'avenir', label: 'À venir' },
-  { id: 'passes', label: 'Passés' },
 ]
+
+function matchesFilter(match: MatchRow, day: string, filter: Filter, today: string) {
+  if (filter === 'termines') return match.status === 'termine'
+  if (filter === 'avenir') return day >= today && match.status !== 'termine'
+  return true
+}
 
 function dateKey(iso: string) {
   const parts = new Intl.DateTimeFormat('en-CA', {
@@ -63,7 +69,7 @@ export default function MatchList({
   today: string
   initialMonth: string
 }) {
-  const [filter, setFilter] = useState<Filter>('avenir')
+  const [filter, setFilter] = useState<Filter>('tous')
   const [viewMonth, setViewMonth] = useState(initialMonth)
   const [selectedDate, setSelectedDate] = useState<string | null>(null)
   const [calendarOpen, setCalendarOpen] = useState(false)
@@ -77,17 +83,19 @@ export default function MatchList({
   }, [indexedMatches])
   const days = useMemo(() => calendarDays(viewMonth, countsByDay), [viewMonth, countsByDay])
 
-  const categoryMatches = indexedMatches.filter(({ match, day }) => {
-    if (filter === 'avenir') return day >= today && match.status !== 'termine'
-    if (filter === 'passes') return day < today || match.status === 'termine'
-    return true
-  })
+  const categoryMatches = indexedMatches.filter(({ match, day }) => matchesFilter(match, day, filter, today))
   const weekMatches = selectedWeek
     ? indexedMatches.filter(({ day }) => weekKey(day) === selectedWeek)
     : null
   const visibleMatches = categoryMatches
     .filter(({ day }) => !selectedWeek || weekKey(day) === selectedWeek)
-    .sort((a, b) => a.day.localeCompare(b.day) || a.match.scheduled_at.localeCompare(b.match.scheduled_at))
+    .sort((a, b) => {
+      const aIsEsi = a.match.home_team.is_esi || a.match.away_team.is_esi
+      const bIsEsi = b.match.home_team.is_esi || b.match.away_team.is_esi
+      return Number(bIsEsi) - Number(aIsEsi)
+        || a.day.localeCompare(b.day)
+        || a.match.scheduled_at.localeCompare(b.match.scheduled_at)
+    })
 
   const monthLabel = new Date(`${viewMonth}-01T12:00:00Z`).toLocaleDateString('fr-FR', {
     month: 'long', year: 'numeric', timeZone: 'Africa/Abidjan',
@@ -98,13 +106,9 @@ export default function MatchList({
 
   function chooseFilter(nextFilter: Filter) {
     setFilter(nextFilter)
-    const filtered = indexedMatches.filter(({ match, day }) => {
-      if (nextFilter === 'avenir') return day >= today && match.status !== 'termine'
-      if (nextFilter === 'passes') return day < today || match.status === 'termine'
-      return true
-    })
+    const filtered = indexedMatches.filter(({ match, day }) => matchesFilter(match, day, nextFilter, today))
     if (filtered.length) {
-      const target = nextFilter === 'passes' ? filtered[filtered.length - 1] : filtered[0]
+      const target = nextFilter === 'termines' ? filtered[filtered.length - 1] : filtered[0]
       setViewMonth(target.day.slice(0, 7))
     }
   }
@@ -202,11 +206,11 @@ export default function MatchList({
           <div className="grid gap-3 md:grid-cols-2">{visibleMatches.map(({ match }) => <MatchCard key={match.id} match={match} />)}</div>
         ) : selectedWeek ? (
           <div className="rounded-2xl border border-dashed border-[var(--line)] bg-[var(--surface)] p-6 text-center text-sm text-[var(--ink-soft)]">
-            {filter === 'avenir' ? 'Aucun match à venir cette semaine.' : filter === 'passes' ? 'Aucun match passé cette semaine.' : 'Aucun match cette semaine.'}
+            {filter === 'avenir' ? 'Aucun match à venir cette semaine.' : filter === 'termines' ? 'Aucun match terminé cette semaine.' : 'Aucun match cette semaine.'}
           </div>
         ) : (
           <div className="rounded-2xl border border-dashed border-[var(--line)] bg-[var(--surface)] p-6 text-center text-sm text-[var(--ink-soft)]">
-            {filter === 'avenir' ? 'Aucun match à venir pour le moment.' : filter === 'passes' ? 'Aucun match passé dans le calendrier.' : 'Aucun match dans le calendrier pour le moment.'}
+            {filter === 'avenir' ? 'Aucun match à venir pour le moment.' : filter === 'termines' ? 'Aucun match terminé dans le calendrier.' : 'Aucun match dans le calendrier pour le moment.'}
           </div>
         )}
       </section>

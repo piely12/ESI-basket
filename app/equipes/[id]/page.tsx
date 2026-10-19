@@ -13,12 +13,12 @@ function StatValue({ value }: { value: number | null }) {
 
 export default async function TeamPage({ params, searchParams }: {
   params: Promise<{ id: string }>
-  searchParams: Promise<{ season?: string; round?: string; period?: string; metric?: string; mode?: string }>
+  searchParams: Promise<{ season?: string; round?: string; metric?: string; mode?: string }>
 }) {
   const [{ id }, query] = await Promise.all([params, searchParams])
   const roundValue = query.round ? Number(query.round) : undefined
   const round = Number.isInteger(roundValue) && roundValue! > 0 && roundValue! <= 99 ? roundValue : undefined
-  const period = query.period === '30d' || query.period === '90d' ? query.period : 'all'
+  const period = 'all'
   const allowedMetrics = ['points', 'rebounds', 'assists', 'steals', 'blocks', 'fieldGoalPct'] as const
   const metric = allowedMetrics.find((value) => value === query.metric) ?? 'points'
   const mode = query.mode === 'total' ? 'total' : 'average'
@@ -128,7 +128,6 @@ export default async function TeamPage({ params, searchParams }: {
             <div className="min-w-0">
               <p className="text-xs font-bold uppercase tracking-[0.22em] text-[var(--gold-500)]">{season?.name ?? 'Saison en cours'}</p>
               <h1 className="mt-1 font-display text-4xl leading-none sm:text-5xl lg:text-6xl">{team.is_esi ? 'ESI Basketball' : team.name}</h1>
-              <p className="mt-2 text-sm text-white/75 sm:text-base">{team.city || 'Championnat INTER-ÉCOLES INP-HB'}</p>
             </div>
           </div>
         </header>
@@ -142,11 +141,6 @@ export default async function TeamPage({ params, searchParams }: {
           <label className="grid gap-1 text-xs font-bold uppercase tracking-wide text-[var(--ink-soft)]">Journée
             <select name="round" defaultValue={query.round ?? ''} className="min-h-11 rounded-lg border border-[var(--line)] bg-[var(--paper)] px-3 text-sm font-semibold normal-case tracking-normal text-[var(--ink)]">
               <option value="">Toutes les journées</option>{rounds.map((value) => <option key={value} value={value}>Journée {value}</option>)}
-            </select>
-          </label>
-          <label className="grid gap-1 text-xs font-bold uppercase tracking-wide text-[var(--ink-soft)]">Période
-            <select name="period" defaultValue={period} className="min-h-11 rounded-lg border border-[var(--line)] bg-[var(--paper)] px-3 text-sm font-semibold normal-case tracking-normal text-[var(--ink)]">
-              <option value="all">Toute la saison</option><option value="90d">90 derniers jours</option><option value="30d">30 derniers jours</option>
             </select>
           </label>
           {team.is_esi && <>

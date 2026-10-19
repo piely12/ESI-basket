@@ -1,38 +1,106 @@
 import Link from 'next/link'
-import type { MatchRow } from '@/lib/data/public'
+import type { CSSProperties, ReactNode } from 'react'
+import type { MatchRow, Team } from '@/lib/data/public'
 import { formatMatchDate } from '@/lib/format'
-import TeamLogo from '@/components/TeamLogo'
+import TeamLogo, { teamLogoSrc } from '@/components/TeamLogo'
+import styles from './MatchCard.module.css'
 
-export default function MatchCard({ match, large = false }: { match: MatchRow; large?: boolean }) {
+function teamLabel(team: Team) {
+  return team.is_esi ? 'ESI' : team.name
+}
+
+function VenueIcon() {
+  return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a7 7 0 0 0-7 7c0 5.2 7 13 7 13s7-7.8 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z" /></svg>
+}
+
+function TeamSide({ team, large, right = false }: { team: Team; large: boolean; right?: boolean }) {
+  return (
+    <div className={`${styles.teamSide} ${right ? styles.rightSide : ''}`}>
+      <TeamLogo team={team} size={large ? 96 : 64} className={styles.logo} />
+      <div className={styles.teamIdentity}>
+        <div className={`${styles.teamName} ${team.is_esi ? styles.esiName : ''}`}>{teamLabel(team)}</div>
+        <div className={`${styles.underline} ${team.is_esi ? styles.esiUnderline : ''}`} />
+      </div>
+    </div>
+  )
+}
+
+function MatchLink({ match, children, className }: { match: MatchRow; children: ReactNode; className: string }) {
+  return (
+    <Link
+      href={`/matchs/${match.id}`}
+      aria-label={`Voir la confrontation ${teamLabel(match.home_team)} contre ${teamLabel(match.away_team)}`}
+      className={className}
+    >
+      {children}
+    </Link>
+  )
+}
+
+function EsiCard({ match, large }: { match: MatchRow; large: boolean }) {
   const played = match.status === 'termine' && match.home_score !== null && match.away_score !== null
-  const esiHome = match.home_team.is_esi
-  const esiAway = match.away_team.is_esi
-  const won = played && ((esiHome && match.home_score! > match.away_score!) || (esiAway && match.away_score! > match.home_score!))
-  const lost = played && ((esiHome && match.home_score! < match.away_score!) || (esiAway && match.away_score! < match.home_score!))
-  const logoSize = large ? 64 : 44
-  const matchHref = `/matchs/${match.id}`
+  const tied = played && match.home_score === match.away_score
+  const homeWon = played && match.home_score! > match.away_score!
+  const awayWon = played && match.away_score! > match.home_score!
+  const esiWon = (match.home_team.is_esi && homeWon) || (match.away_team.is_esi && awayWon)
+  const status = played ? (tied ? 'Match nul' : esiWon ? 'Victoire' : 'Défaite') : match.status === 'en_cours' ? 'En cours' : match.status === 'jour_j' ? 'Jour de match' : 'À venir'
+  const homeWatermark = { '--watermark-image': `url("${teamLogoSrc(match.home_team)}")` } as CSSProperties
+  const awayWatermark = { '--watermark-image': `url("${teamLogoSrc(match.away_team)}")` } as CSSProperties
 
   return (
-    <article className={`rounded-lg border p-4 transition hover:-translate-y-0.5 hover:shadow-md ${esiHome || esiAway ? 'border-[var(--gold-500)] bg-[var(--surface)]' : 'border-[var(--line)] bg-[var(--surface)]'}`}>
-      <Link href={matchHref} className="mb-3 flex items-center justify-between gap-2 rounded text-xs font-semibold uppercase tracking-wider text-[var(--ink-soft)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--gold-deep)]">
-        <span>{formatMatchDate(match.scheduled_at, match.kickoff_confirmed)}</span>
-        {played ? <span className={won ? 'text-[var(--gold-deep)]' : lost ? 'text-[var(--maroon-700)]' : ''}>{won ? 'Victoire ESI' : lost ? 'Défaite ESI' : 'Terminé'}</span>
-          : <span>{match.status === 'en_cours' ? 'En cours' : match.status === 'jour_j' ? 'Jour de match' : 'À venir'}</span>}
-      </Link>
-      <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 sm:gap-3">
-        {[match.home_team, match.away_team].map((team, index) => (
-          <Link key={team.id} href={`/equipes/${team.id}`} aria-label={`Voir l'équipe ${team.name}`} className={`flex min-w-0 items-center gap-2 rounded focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--gold-deep)] ${index === 1 ? 'order-3 flex-row-reverse text-right' : ''}`}>
-            <TeamLogo team={team} size={logoSize} className={large ? 'h-14 w-14 sm:h-16 sm:w-16' : 'h-10 w-10'} />
-            <span className={`truncate font-display text-xl leading-none sm:text-2xl ${team.is_esi ? 'text-[var(--maroon-700)]' : 'text-[var(--ink)]'}`}>{team.is_esi ? 'ESI' : team.name}</span>
-          </Link>
-        ))}
-        <Link href={matchHref} aria-label="Voir les détails du match" className="order-2 rounded font-display text-3xl tabular-nums text-[var(--maroon-700)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--gold-deep)] sm:text-4xl">{played ? `${match.home_score}–${match.away_score}` : 'VS'}</Link>
+    <MatchLink match={match} className={`${styles.card} ${large ? styles.large : ''}`}>
+      <div className={styles.homePanel} aria-hidden="true" />
+      <div className={`${styles.watermark} ${styles.homeWatermark}`} style={homeWatermark} aria-hidden="true" />
+      <div className={`${styles.watermark} ${styles.awayWatermark}`} style={awayWatermark} aria-hidden="true" />
+      <div className={`${styles.stripe} ${styles.goldStripe}`} aria-hidden="true" />
+      <div className={`${styles.stripe} ${styles.orangeStripe}`} aria-hidden="true" />
+
+      <span className={`${styles.chip} ${styles.date}`}>{formatMatchDate(match.scheduled_at, match.kickoff_confirmed)}</span>
+      <span className={`${styles.chip} ${styles.status}`}>
+        <span className={`${styles.statusDot} ${!played ? styles.pulse : ''}`} />{status}
+      </span>
+
+      <div className={styles.stage}>
+        <TeamSide team={match.home_team} large={large} />
+        <TeamSide team={match.away_team} large={large} right />
       </div>
-      <Link href={matchHref} className="mt-2 block rounded text-center focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--gold-deep)]">
-        {match.round_number && <div className="text-xs font-semibold uppercase tracking-wider text-[var(--gold-deep)]">Journée {match.round_number}</div>}
-        {match.public_note && <div className="mt-1 text-sm font-semibold text-[var(--maroon-700)]">{match.public_note}</div>}
-        <div className="mt-2 text-xs text-[var(--ink-soft)]">{match.kickoff_confirmed ? match.location || 'Lieu à confirmer' : 'Horaire et lieu à confirmer'}</div>
-      </Link>
-    </article>
+
+      <div className={`${styles.score} ${played ? styles.played : ''}`} aria-label={played ? `Score ${match.home_score} à ${match.away_score}` : 'Match à venir'}>
+        {played ? <span><b className={homeWon ? styles.winner : ''}>{match.home_score}</b><i>–</i><b className={awayWon ? styles.winner : ''}>{match.away_score}</b></span> : <span>VS</span>}
+      </div>
+
+      <div className={styles.details}>
+        {match.round_number && <span className={styles.round}>Journée {match.round_number}</span>}
+        {match.public_note && <span className={styles.note}>{match.public_note}</span>}
+        <span className={styles.venue}><VenueIcon />{match.kickoff_confirmed ? match.location || 'Lieu à confirmer' : 'Horaire et lieu à confirmer'}</span>
+      </div>
+      <span className={styles.screenReader}>Ouvrir la confrontation</span>
+    </MatchLink>
   )
+}
+
+function OtherCard({ match }: { match: MatchRow }) {
+  const played = match.status === 'termine' && match.home_score !== null && match.away_score !== null
+  return (
+    <MatchLink match={match} className={styles.otherCard}>
+      <div className={styles.otherMeta}>
+        <span>{formatMatchDate(match.scheduled_at, match.kickoff_confirmed)}</span>
+        <span>{played ? 'Terminé' : match.status === 'en_cours' ? 'En cours' : 'À venir'}</span>
+      </div>
+      <div className={styles.otherTeams}>
+        <TeamSide team={match.home_team} large={false} />
+        <div className={styles.otherScore}>{played ? <>{match.home_score}–{match.away_score}</> : 'VS'}</div>
+        <TeamSide team={match.away_team} large={false} right />
+      </div>
+      {match.round_number && <div className={styles.otherRound}>Journée {match.round_number}</div>}
+      {match.public_note && <div className={styles.otherNote}>{match.public_note}</div>}
+      <div className={styles.otherVenue}><VenueIcon />{match.kickoff_confirmed ? match.location || 'Lieu à confirmer' : 'Horaire et lieu à confirmer'}</div>
+    </MatchLink>
+  )
+}
+
+export default function MatchCard({ match, large = false }: { match: MatchRow; large?: boolean }) {
+  return match.home_team.is_esi || match.away_team.is_esi
+    ? <EsiCard match={match} large={large} />
+    : <OtherCard match={match} />
 }

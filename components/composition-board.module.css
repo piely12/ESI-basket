@@ -29,16 +29,16 @@
 .opponentName { margin: 0; font-family: var(--font-bebas-neue), 'Bebas Neue', Impact, sans-serif; font-size: clamp(30px, 2.8vw, 46px); line-height: 1; white-space: nowrap; }
 .matchMeta { margin: 7px 0 0; color: var(--board-soft); font-size: 13px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
 .content { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(320px, .9fr); gap: clamp(24px, 2.4vw, 36px); align-items: stretch; }
-.court { position: relative; width: 100%; min-width: 0; aspect-ratio: 640 / 600; overflow: hidden; border-radius: 18px; background: var(--board-surface); }
+.court { position: relative; width: 100%; min-width: 0; aspect-ratio: 4 / 3; overflow: hidden; border: 1px solid oklch(0.8 0.14 82 / 28%); border-radius: 18px; background: var(--board-surface); }
 .courtLines { position: absolute; inset: 0; width: 100%; height: 100%; color: var(--board-ink); }
-.keyArea { fill: oklch(0.42 0.14 18 / 60%); }
+.keyArea { fill: oklch(0.42 0.14 18 / 28%); }
 .hoop { stroke: var(--board-gold); stroke-opacity: 1; }
-.token { position: absolute; display: flex; max-width: 31%; align-items: center; transform: translate(-50%, -50%); flex-direction: column; gap: clamp(2px, .45vw, 6px); text-align: center; }
-.number { display: grid; width: clamp(38px, 5vw, 64px); aspect-ratio: 1; place-items: center; border: 3px solid var(--board-ink); border-radius: 50%; background: var(--board-gold); color: var(--board-ink-dark); font-family: var(--font-bebas-neue), 'Bebas Neue', Impact, sans-serif; font-size: clamp(23px, 3vw, 36px); line-height: 1; }
+.token { position: absolute; display: flex; max-width: 24%; align-items: center; transform: translate(-50%, -50%); flex-direction: column; gap: clamp(2px, .45vw, 6px); text-align: center; }
+.number { display: grid; width: clamp(36px, 4.2vw, 44px); aspect-ratio: 1; place-items: center; border: 2px solid oklch(1 0 0 / 32%); border-radius: 50%; background: var(--board-gold); color: var(--board-ink-dark); font-family: var(--font-bebas-neue), 'Bebas Neue', Impact, sans-serif; font-size: clamp(20px, 2.4vw, 28px); line-height: 1; }
 .emptyNumber { background: transparent; color: var(--board-soft); }
-.playerName, .emptyName { max-width: 100%; border-radius: 5px; background: var(--board-ink); color: var(--board-ink-dark); padding: 3px 8px; font-size: clamp(8px, 1.18vw, 15px); font-weight: 700; line-height: 1.15; overflow-wrap: anywhere; }
+.playerName, .emptyName { max-width: 100%; border-radius: 5px; background: var(--board-ink); color: var(--board-ink-dark); padding: 3px 6px; font-size: clamp(8px, 1.18vw, 15px); font-weight: 700; line-height: 1.15; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .emptyName { background: transparent; color: var(--board-soft); }
-.position { color: var(--board-ink); font-size: clamp(7px, .95vw, 12px); font-weight: 700; letter-spacing: .16em; line-height: 1.1; }
+.position { color: var(--board-gold); font-size: clamp(7px, .95vw, 12px); font-weight: 700; letter-spacing: .16em; line-height: 1.1; text-transform: uppercase; }
 .benchPanel { display: flex; min-width: 0; flex-direction: column; }
 .benchPanel h3 { margin: 0 0 8px; color: var(--board-gold); font-family: var(--font-bebas-neue), 'Bebas Neue', Impact, sans-serif; font-size: 32px; font-weight: 400; letter-spacing: .06em; text-transform: uppercase; }
 .benchList { margin: 0; padding: 0; list-style: none; }
@@ -64,7 +64,7 @@
   .content { grid-template-columns: minmax(0, 1fr); gap: 20px; }
   .court { width: min(100%, 600px); margin-inline: auto; }
   .token { max-width: 29%; }
-  .number { width: clamp(36px, 10vw, 52px); font-size: clamp(21px, 6vw, 30px); }
+  .number { width: clamp(36px, 10vw, 44px); font-size: clamp(20px, 5vw, 26px); }
   .playerName, .emptyName { font-size: clamp(9px, 2.2vw, 13px); }
   .position { font-size: clamp(7px, 1.8vw, 10px); }
   .benchPanel h3 { font-size: 28px; }
