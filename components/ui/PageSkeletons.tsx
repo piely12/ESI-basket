@@ -1,7 +1,7 @@
 import PublicNav from '@/components/PublicNav'
 import { MatchCardSkeleton, PageHeaderSkeleton, Skeleton, SkeletonRegion, SkeletonText } from './Skeleton'
 
-type Kind = 'home' | 'matches' | 'detail' | 'standings' | 'roster' | 'news' | 'settings' | 'admin' | 'workspace'
+type Kind = 'home' | 'matches' | 'detail' | 'standings' | 'roster' | 'settings' | 'admin' | 'workspace'
 
 export default function PageSkeleton({ kind }: { kind: Kind }) {
   if (kind === 'workspace') return <SkeletonRegion className="mx-auto grid max-w-5xl gap-6 px-4 py-8 sm:px-5">
@@ -24,7 +24,6 @@ export default function PageSkeleton({ kind }: { kind: Kind }) {
       {kind === 'detail' && <><Skeleton className="mb-4 h-52 rounded-xl" /><div className="grid gap-3 sm:grid-cols-2"><Skeleton className="h-36 rounded-xl" /><Skeleton className="h-36 rounded-xl" /></div></>}
       {kind === 'standings' && <><Skeleton className="h-72 rounded-lg" /><Skeleton className="mt-4 h-40 rounded-lg" /></>}
       {kind === 'roster' && <><div className="mb-5 flex gap-2">{Array.from({ length: 5 }, (_, i) => <Skeleton key={i} className="h-9 w-20 rounded-full" />)}</div><div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">{Array.from({ length: 8 }, (_, i) => <Skeleton key={i} className="h-48 rounded-xl" />)}</div></>}
-      {kind === 'news' && <div className="grid gap-4 sm:grid-cols-2"><Skeleton className="h-64 rounded-xl sm:col-span-2" /><Skeleton className="h-40 rounded-xl" /><Skeleton className="h-40 rounded-xl" /></div>}
       {kind === 'settings' && <div className="grid gap-4"><Skeleton className="h-40 rounded-xl" /><Skeleton className="h-40 rounded-xl" /><Skeleton className="h-56 rounded-xl" /></div>}
     </SkeletonRegion>}
   </main></>

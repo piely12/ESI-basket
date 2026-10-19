@@ -5,6 +5,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { getCurrentUserProfile, HOME_SITE, isSingleSessionRole } from '@/lib/auth/roles'
 import { hashFirstLoginOtp, safeEqualHex } from '@/lib/auth/otp'
 import { assertSameOrigin, audit, clientIp, clientUserAgent, isLimited, json, recordHit, rlKey } from '@/lib/security'
+import { validateNewPassword } from '@/lib/validation'
 
 const invalidCode = 'Code invalide ou expiré.'
 const inputSchema = z.object({
@@ -12,15 +13,6 @@ const inputSchema = z.object({
   password: z.string().min(1).max(256),
   confirmation: z.string().min(1).max(256),
 }).strict()
-
-function validatePassword(password: string) {
-  return [...password].length <= 72
-    && Buffer.byteLength(password, 'utf8') <= 72
-    && /[A-Z]/.test(password)
-    && /[a-z]/.test(password)
-    && /\d/.test(password)
-    && /[^A-Za-z0-9]/.test(password)
-}
 
 function sessionIdFromJwt(jwt: string): string | null {
   try { return JSON.parse(Buffer.from(jwt.split('.')[1], 'base64url').toString()).session_id ?? null }
@@ -35,7 +27,6 @@ export async function POST(request: NextRequest) {
   if (!parsed.success) return json({ error: invalidCode }, 400)
   const { otp, password, confirmation } = parsed.data
   if (confirmation !== password) return json({ error: 'Les mots de passe ne correspondent pas.' }, 400)
-  if (!validatePassword(password)) return json({ error: 'Mot de passe trop faible.' }, 400)
 
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -48,6 +39,8 @@ export async function POST(request: NextRequest) {
   if (access.error || !profile || !state || state.is_active !== true || state.must_change_password !== true) {
     return json({ error: invalidCode }, 401)
   }
+  const passwordError = validateNewPassword(password, user.email ?? undefined, `${profile.first_name} ${profile.last_name}`)
+  if (passwordError) return json({ error: passwordError }, 400)
 
   const admin = createAdminClient()
   const ip = clientIp(request)
@@ -70,8 +63,8 @@ export async function POST(request: NextRequest) {
   })
   if (finishError || consumed !== true) return json({ error: invalidCode }, 400)
 
-  const { error: passwordError } = await admin.auth.admin.updateUserById(user.id, { password })
-  if (passwordError) return json({ error: 'Connexion impossible. Redemandez un code et réessayez.' }, 503)
+  const { error: updatePasswordError } = await admin.auth.admin.updateUserById(user.id, { password })
+  if (updatePasswordError) return json({ error: 'Connexion impossible. Redemandez un code et réessayez.' }, 503)
   const changedAt = new Date().toISOString()
   const { error: stateError } = await admin.from('users').update({
     must_change_password: false,

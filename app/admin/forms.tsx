@@ -2,9 +2,13 @@
 
 import { useActionState } from 'react'
 import {
+  cancelAccountBinding,
   createOrLinkAccount,
-  updatePlayerStatus,
+  createHeadCoachProfile,
+  resendInvitation,
+  updateAccountAccess,
 } from './actions'
+import type { AccountProfile } from './data'
 
 export type AccountTarget = { value: string; label: string }
 const INITIAL_ACTION_STATE = { error: '', success: '' }
@@ -32,9 +36,9 @@ export function AdminAccountForm({ targets }: { targets: AccountTarget[] }) {
         </select>
       </div>
       <div>
-        <label htmlFor="account-mode" className={labelClass}>Type d’association</label>
+        <label htmlFor="account-mode" className={labelClass}>Compte</label>
         <select id="account-mode" name="mode" className={fieldClass} defaultValue="creer">
-          <option value="creer">Créer un compte Supabase</option>
+          <option value="creer">Créer un compte invité</option>
           <option value="lier">Rattacher un compte existant</option>
         </select>
       </div>
@@ -42,13 +46,9 @@ export function AdminAccountForm({ targets }: { targets: AccountTarget[] }) {
         <label htmlFor="account-email" className={labelClass}>Adresse e-mail du compte</label>
         <input id="account-email" name="email" type="email" autoComplete="email" maxLength={254} className={fieldClass} required />
       </div>
-      <div>
-        <label htmlFor="initial-password" className={labelClass}>Mot de passe initial</label>
-        <input id="initial-password" name="password" type="password" autoComplete="new-password" minLength={8} maxLength={128} className={fieldClass} />
-        <p className="mt-1 text-xs text-[var(--ink-soft)]">À remplir uniquement pour créer un compte. Pour un compte existant, laisse vide.</p>
-      </div>
+      <p className="self-center text-sm text-[var(--ink-soft)]">Aucun mot de passe n’est défini ou affiché ici. La personne le choisira après vérification par e-mail.</p>
       <div className="md:col-span-2">
-        <p className="mb-3 text-xs text-[var(--ink-soft)]">Un compte créé ici est activé immédiatement. Transmets le mot de passe initial directement à la personne concernée.</p>
+        <p className="mb-3 text-xs text-[var(--ink-soft)]">Une fiche déjà liée doit d’abord être détachée explicitement avant de recevoir une autre adresse e-mail.</p>
         <button type="submit" className={buttonClass} disabled={pending}>
           {pending ? 'Enregistrement…' : 'Enregistrer le compte'}
         </button>
@@ -60,38 +60,75 @@ export function AdminAccountForm({ targets }: { targets: AccountTarget[] }) {
   )
 }
 
-export function AdminPlayerStatusForm({
-  playerId,
-  playerName,
-  status,
-}: {
-  playerId: string
-  playerName: string
-  status: string
-}) {
-  const [state, formAction, pending] = useActionState(updatePlayerStatus, INITIAL_ACTION_STATE)
+export function HeadCoachProfileForm() {
+  const [state, formAction, pending] = useActionState(createHeadCoachProfile, INITIAL_ACTION_STATE)
+  return <form action={formAction} className="grid gap-4 sm:grid-cols-2">
+    <div>
+      <label htmlFor="head-coach-first-name" className={labelClass}>Prénom du coach principal</label>
+      <input id="head-coach-first-name" name="first_name" autoComplete="given-name" maxLength={80} className={fieldClass} required />
+    </div>
+    <div>
+      <label htmlFor="head-coach-last-name" className={labelClass}>Nom du coach principal</label>
+      <input id="head-coach-last-name" name="last_name" autoComplete="family-name" maxLength={80} className={fieldClass} required />
+    </div>
+    <div className="sm:col-span-2">
+      <button type="submit" className={buttonClass} disabled={pending}>
+        {pending ? 'Création…' : 'Créer la fiche du coach'}
+      </button>
+      <p aria-live="polite" role={state.error ? 'alert' : 'status'} className={`mt-3 min-h-5 text-sm ${state.error ? 'text-red-700' : 'text-[var(--maroon-900)]'}`}>
+        {state.error || state.success}
+      </p>
+    </div>
+  </form>
+}
+
+export function ProfileAccountRow({ profile }: { profile: AccountProfile }) {
+  const [resendState, resendAction, resendPending] = useActionState(resendInvitation, INITIAL_ACTION_STATE)
+  const [cancelState, cancelAction, cancelPending] = useActionState(cancelAccountBinding, INITIAL_ACTION_STATE)
+  const [accessState, accessAction, accessPending] = useActionState(updateAccountAccess, INITIAL_ACTION_STATE)
+  const badge = profile.status === 'actif' ? 'bg-green-100 text-green-900'
+    : profile.status === 'invité' ? 'bg-amber-100 text-amber-900' : 'bg-stone-200 text-stone-800'
 
   return (
-    <form action={formAction} className="flex flex-wrap items-center gap-2 sm:justify-end">
-      <input type="hidden" name="player_id" value={playerId} />
-      <label className="sr-only" htmlFor={`status-${playerId}`}>Disponibilité de {playerName}</label>
-      <select id={`status-${playerId}`} name="status" defaultValue={status} className="min-h-11 rounded-xl border border-[var(--line)] bg-[var(--surface)] px-3 text-sm text-[var(--ink)] focus:border-[var(--gold-deep)] focus:outline-none focus:ring-2 focus:ring-[var(--gold-500)]/30">
-        <option value="actif">Disponible</option>
-        <option value="blesse">Blessé</option>
-        <option value="suspendu">Suspendu</option>
-      </select>
-      <button type="submit" className="min-h-11 rounded-xl border border-[var(--line)] px-4 text-sm font-semibold text-[var(--maroon-900)] transition hover:bg-[var(--paper)] disabled:cursor-wait" disabled={pending}>
-        {pending ? '…' : 'Enregistrer'}
-      </button>
-      <span aria-live="polite" className="w-full text-xs text-[var(--ink-soft)] sm:text-right">
-        {state.error || state.success || STATUS_LABELS[status]}
-      </span>
-    </form>
+    <article className="grid gap-3 border-b border-[var(--line)] py-4 sm:grid-cols-[minmax(0,1fr)_minmax(17rem,auto)] sm:items-center">
+      <div className="min-w-0">
+        <p className="font-semibold text-[var(--ink)]">{profile.label}</p>
+        {profile.kind === 'joueur' && <p className="text-sm text-[var(--ink-soft)]">{profile.name}</p>}
+        <p className="break-all text-sm text-[var(--ink-soft)]">{profile.email ?? 'Aucune adresse rattachée'}</p>
+        <span className={`mt-1 inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${badge}`}>{profile.status}</span>
+        {profile.status === 'suspendu' && profile.reason && <p className="mt-1 text-xs text-[var(--ink-soft)]">Motif : {profile.reason}</p>}
+      </div>
+      {profile.userId && <div className="flex flex-col gap-2 sm:items-end">
+        {profile.status === 'invité' && <>
+          <form action={resendAction} className="flex flex-wrap items-center gap-2">
+            <input type="hidden" name="profile_ref" value={profile.ref} />
+            <button className="min-h-10 rounded-lg border border-[var(--line)] px-3 text-sm font-semibold" disabled={resendPending}>{resendPending ? 'Envoi…' : 'Renvoyer l’invitation'}</button>
+            <span aria-live="polite" role={resendState.error ? 'alert' : 'status'} className="text-xs">{resendState.error || resendState.success}</span>
+          </form>
+        </>}
+        <form action={cancelAction} className="flex flex-wrap items-center gap-2">
+          <input type="hidden" name="profile_ref" value={profile.ref} />
+          <label className="flex items-center gap-2 text-xs"><input name="confirm" type="checkbox" value="yes" required />Confirmer l’annulation du rattachement</label>
+          <button className="min-h-10 rounded-lg border border-red-300 px-3 text-sm font-semibold text-red-800" disabled={cancelPending}>{cancelPending ? 'Annulation…' : 'Annuler le rattachement'}</button>
+          <span aria-live="polite" role={cancelState.error ? 'alert' : 'status'} className="w-full text-xs">{cancelState.error || cancelState.success}</span>
+        </form>
+        {profile.status === 'actif' && <form action={accessAction} className="flex flex-col gap-2 sm:items-end">
+          <input type="hidden" name="user_id" value={profile.userId} /><input type="hidden" name="action" value="suspendre" />
+          <label className="flex items-center gap-2 text-xs"><input name="confirm" type="checkbox" value="yes" required />Confirmer la suspension</label>
+          <label className="w-full text-left text-xs font-medium">Motif obligatoire
+            <input name="reason" minLength={5} maxLength={500} required className="mt-1 min-h-10 w-full rounded-lg border border-[var(--line)] px-3 text-sm" placeholder="Indique le motif" />
+          </label>
+          <button className="min-h-10 rounded-lg border border-red-300 px-3 text-sm font-semibold text-red-800" disabled={accessPending}>{accessPending ? 'Mise à jour…' : 'Suspendre le compte'}</button>
+          <span aria-live="polite" role={accessState.error ? 'alert' : 'status'} className="text-xs">{accessState.error || accessState.success}</span>
+        </form>}
+        {profile.status === 'suspendu' && <form action={accessAction} className="flex flex-wrap items-center gap-2">
+          <input type="hidden" name="user_id" value={profile.userId} /><input type="hidden" name="action" value="reactiver" />
+          <label className="flex items-center gap-2 text-xs"><input name="confirm" type="checkbox" value="yes" required />Confirmer la réactivation</label>
+          <button className="min-h-10 rounded-lg border border-[var(--line)] px-3 text-sm font-semibold" disabled={accessPending}>{accessPending ? 'Mise à jour…' : 'Réactiver le compte'}</button>
+          <span aria-live="polite" role={accessState.error ? 'alert' : 'status'} className="text-xs">{accessState.error || accessState.success}</span>
+        </form>}
+      </div>}
+    </article>
   )
 }
 
-const STATUS_LABELS: Record<string, string> = {
-  actif: 'Disponible',
-  blesse: 'Blessé',
-  suspendu: 'Suspendu',
-}

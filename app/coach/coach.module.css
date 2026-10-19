@@ -93,7 +93,7 @@
 .button:hover { border-color: var(--coach-gold-deep); background: color-mix(in oklch, var(--coach-gold) 24%, white); }
 .primaryButton { border-color: var(--coach-gold-deep); background: var(--coach-gold); color: var(--coach-maroon); }
 .primaryButton:hover { background: oklch(0.75 0.14 78); }
-.button:disabled { cursor: wait; }
+.button:disabled { cursor: not-allowed; opacity: .55; }
 .form { display: grid; gap: 16px; }
 .field { display: grid; gap: 6px; }
 .field label, .fieldLabel { color: var(--coach-maroon); font-size: 14px; font-weight: 700; }

@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
     'Retry-After': String(ipLimit.retryAfterSeconds),
   })
 
-  const { data: userId, error: lookupError } = await admin.rpc('user_id_by_email', {
+  const { data: userId, error: lookupError } = await admin.rpc('linked_auth_user_by_email', {
     p_email: parsed.data.email,
   })
   if (lookupError) return json({ error: 'Vérification indisponible. Réessayez.' }, 503)

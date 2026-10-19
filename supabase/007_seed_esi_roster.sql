@@ -16,7 +16,7 @@ with team as (
     (2, 'Chris-Ivann', 'KOUAO', 'Arrière'),
     (3, 'Almamy', 'KEITA', 'Arrière'),
     (4, 'Pethuel', 'BOTCHI', 'Meneur'),
-    (5, 'Imad', 'COULIBALY ZIE', 'Ailier'),
+    (5, 'Imad', 'COULIBALY ', 'Ailier'),
     (6, 'Salomon', 'M’BOUA', 'Arrière / Ailier'),
     (7, 'LOIC-OTHNIEL', 'AMON', 'Meneur'),
     (8, 'Marc', 'GBAGO', 'Ailier'),

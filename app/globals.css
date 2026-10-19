@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Bebas+Neue&display=swap');
 @import "tailwindcss";
 
 :root {
@@ -35,18 +36,18 @@
   --color-maroon-dark: var(--maroon-900);
   --color-gold: var(--gold-500);
   --color-line: var(--line);
-  --font-display: var(--font-bebas-neue);
-  --font-body: var(--font-barlow);
+  --font-display: "Bebas Neue";
+  --font-body: "Barlow";
 }
 
 body {
   background: var(--paper);
   color: var(--ink);
-  font-family: var(--font-barlow), Arial, sans-serif;
+  font-family: "Barlow", "Segoe UI", Arial, sans-serif;
 }
 
 .font-display {
-  font-family: var(--font-bebas-neue), Impact, sans-serif;
+  font-family: "Bebas Neue", Impact, "Arial Narrow", sans-serif;
 }
 
 .tnum {

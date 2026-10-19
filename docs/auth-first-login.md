@@ -43,6 +43,6 @@ Le script utilise une réponse d'authentification simulée; il vérifie dimensio
 
 ## Tests d'intégration qui exigent le projet Supabase
 
-Les tests nécessitant des comptes, une migration appliquée, l'envoi Brevo et les rôles provisionnés doivent être exécutés sur un projet de test. Pour chaque rôle (`admin`, `coach`, `coach_adjoint`, `statisticienne`, `videaste`, `joueur`), conserver seulement le résultat, le code HTTP, et une route de redirection non personnelle. Tester aussi OTP valide/expiré/réutilisé/après cinq erreurs et les tentatives concurrentes. Ne jamais enregistrer le mot de passe, le code, le jeton, les en-têtes `Set-Cookie` ou une adresse e-mail réelle dans les preuves.
+Les tests nécessitant des comptes, une migration appliquée, l'envoi Brevo et les rôles provisionnés doivent être exécutés sur un projet de test. Pour chaque rôle (`admin`, `coach`, `statisticienne`, `joueur`), conserver seulement le résultat, le code HTTP, et une route de redirection non personnelle. Tester aussi OTP valide/expiré/réutilisé/après cinq erreurs et les tentatives concurrentes. Ne jamais enregistrer le mot de passe, le code, le jeton, les en-têtes `Set-Cookie` ou une adresse e-mail réelle dans les preuves.
 
 Tout test non exécuté est à inscrire comme **NON EXÉCUTÉ**, jamais comme PASS. Les scripts actuels couvrent seulement les contrôles explicitement indiqués ci-dessus; ils ne remplacent pas une campagne d'intégration complète.

@@ -10,8 +10,8 @@ begin
     ('roles'), ('users'), ('teams'), ('competitions'), ('seasons'), ('staff'),
     ('players'), ('matches'), ('match_rosters'), ('match_lineups'),
     ('match_team_stats'), ('match_player_stats'), ('standings'), ('injuries'),
-    ('suspensions'), ('convocations'), ('notifications'), ('news'), ('news_media'),
-    ('mvp_awards'), ('hall_of_fame'), ('historical_results'), ('contact_messages'),
+    ('suspensions'), ('convocations'), ('notifications'),
+    ('hall_of_fame'), ('historical_results'), ('contact_messages'),
     ('audit_logs'), ('otp_codes'), ('active_sessions'), ('stats_import_jobs'),
     ('stats_import_checkpoints'), ('rate_limits'), ('match_preparations'),
     ('first_login_otps')

@@ -12,12 +12,12 @@ function createCsp() {
   const directives = [
     "default-src 'self'",
     `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${isDev ? " 'unsafe-eval'" : ''}`,
-    `style-src 'self' 'nonce-${nonce}'`,
+    `style-src 'self' 'nonce-${nonce}' https://fonts.googleapis.com`,
     // The UI uses React style props for a few measured values (for example
     // the password strength meter); script execution remains nonce-only.
     "style-src-attr 'unsafe-inline'",
     "img-src 'self' data: blob:",
-    "font-src 'self' data:",
+    "font-src 'self' data: https://fonts.gstatic.com",
     "connect-src 'self'",
     "object-src 'none'",
     "base-uri 'self'",
@@ -48,9 +48,12 @@ export async function proxy(request: NextRequest) {
   requestHeaders.set('x-nonce', csp.nonce)
   requestHeaders.set('Content-Security-Policy', csp.value)
   // Private workspaces share the public site's origin, as specified in the
-  // project brief: esi-basket.ci/coach, /stats, /actus, /joueurs and /admin.
+  // project brief: esi-basket.ci/coach, /stats, /joueurs and /admin.
   const site = SITES.find((candidate) => pathname === `/${candidate}` || pathname.startsWith(`/${candidate}/`)) ?? null
   const isShared = SHARED_PATHS.some((p) => pathname === p || pathname.startsWith(p + '/'))
+  // First-login password setup is part of authentication, but still contains
+  // account-specific state and must never be rendered for an anonymous user.
+  const requiresSession = site !== null || pathname === '/premiere-connexion'
 
   // Rafraîchit la session Supabase pour les routes privées ou un visiteur connecté.
   const hasAuthCookie = request.cookies.getAll().some((c) => c.name.startsWith('sb-'))
@@ -109,7 +112,7 @@ export async function proxy(request: NextRequest) {
 
   // Espace privé : connexion obligatoire.
   if (hasAuthCookie && !user) {
-    const response = site && !isShared
+    const response = requiresSession && !isShared
       ? NextResponse.redirect(new URL('/login', request.url))
       : NextResponse.next({ request: { headers: requestHeaders } })
     request.cookies.getAll().filter((cookie) => cookie.name.startsWith('sb-')).forEach(({ name }) => {
@@ -118,7 +121,7 @@ export async function proxy(request: NextRequest) {
     return finalize(response)
   }
 
-  if (site && !isShared && !user) {
+  if (requiresSession && !isShared && !user) {
     return finalize(NextResponse.redirect(new URL('/login', request.url)))
   }
 

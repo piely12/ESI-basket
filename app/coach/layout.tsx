@@ -11,7 +11,7 @@ const navigation = [
 ]
 
 export default async function CoachLayout({ children }: { children: React.ReactNode }) {
-  const { profile } = await requireAnyRole(['coach', 'coach_adjoint', 'admin'])
+  const { profile } = await requireAnyRole(['coach', 'admin'])
   const person = `${profile.first_name} ${profile.last_name}`
 
   return (

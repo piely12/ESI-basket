@@ -3,13 +3,13 @@
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { requireAnyRole } from '@/lib/auth/requireUser'
-import { createClient } from '@/lib/supabase/server'
+import { COURT_SLOTS, type CourtSlot } from '@/lib/lineup'
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 
 async function getAuthorizedMatch(matchId: string) {
   if (!UUID.test(matchId)) throw new Error('Match invalide.')
-  const { supabase, profile, user } = await requireAnyRole(['coach', 'coach_adjoint', 'admin'])
+  const { supabase, profile, user } = await requireAnyRole(['coach', 'admin'])
 
   const { data: match, error } = await supabase.from('matches')
     .select('id, home_team_id, away_team_id')
@@ -32,118 +32,110 @@ async function getAuthorizedMatch(matchId: string) {
   }
 }
 
+async function getCoachAuthorizedMatch(matchId: string) {
+  if (!UUID.test(matchId)) throw new Error('Match invalide.')
+  const { supabase, profile, user } = await requireAnyRole(['coach'])
+  const { data: match, error } = await supabase.from('matches')
+    .select('id, home_team_id, away_team_id')
+    .eq('id', matchId)
+    .maybeSingle()
+  if (error || !match) throw new Error('Match introuvable.')
+  if (!profile.team_id || ![match.home_team_id, match.away_team_id].includes(profile.team_id)) {
+    throw new Error('Ce match ne concerne pas votre équipe.')
+  }
+  return { supabase, profile, userId: user.id, match, teamIds: [profile.team_id] }
+}
+
 function formIds(formData: FormData, name: string) {
   return [...new Set(formData.getAll(name)
     .filter((value): value is string => typeof value === 'string' && UUID.test(value)))]
 }
 
-async function syncRows(
-  supabase: Awaited<ReturnType<typeof createClient>>,
-  table: 'match_rosters' | 'convocations',
-  desiredIds: string[],
-  existingRows: { id: string; player_id: string }[],
-  newRows: (playerId: string) => Record<string, string | number | boolean | null>,
-) {
-  const desired = new Set(desiredIds)
-  const retained = new Set<string>()
-  const removeIds: string[] = []
-  for (const row of existingRows) {
-    if (!desired.has(row.player_id) || retained.has(row.player_id)) removeIds.push(row.id)
-    else retained.add(row.player_id)
-  }
+export type MatchAvailability = { player_id: string; availability_status: 'disponible' | 'blesse' | 'indisponible' }
+export type CompositionActionResult = { ok: boolean; error?: string; status?: string }
 
-  for (const rowId of removeIds) {
-    const { error } = await supabase.from(table).delete().eq('id', rowId)
-    if (error) throw new Error(`Impossible de mettre à jour ${table}.`)
-  }
+function compositionRpcError(operation: string, error: { code?: string; message: string; details?: string | null; hint?: string | null }) {
+  console.error(`Composition RPC ${operation} failed`, {
+    code: error.code ?? null,
+    message: error.message,
+    details: error.details ?? null,
+    hint: error.hint ?? null,
+  })
 
-  const missing = desiredIds.filter((id) => !retained.has(id))
-  if (missing.length) {
-    const { error } = await supabase.from(table).insert(missing.map(newRows))
-    if (error) throw new Error(`Impossible d’enregistrer ${table}.`)
+  const missingRpc = error.code === 'PGRST202'
+    || (error.code === '42883' && error.message.includes(operation) && /does not exist/i.test(error.message))
+  if (missingRpc) {
+    return 'La fonction de composition est introuvable dans Supabase. Vérifie que la migration 027 a été exécutée sur le projet utilisé par cette application.'
   }
+  if (error.code === '42501' || /coach access required|coach principal requis/i.test(error.message)) {
+    return 'Ce compte doit être rattaché au rôle Coach principal de l’équipe ESI.'
+  }
+  if (error.message.includes('verrouillée')) return 'La composition est verrouillée après le coup d’envoi.'
+  return operation === 'save_match_composition_draft'
+    ? 'Impossible d’enregistrer le brouillon. Vérifie les droits et la configuration Supabase.'
+    : 'La publication a échoué. Vérifie les disponibilités et les droits du coach.'
 }
 
-export async function saveConvocations(formData: FormData) {
-  const matchId = String(formData.get('match_id') ?? '')
-  const { supabase, userId, match, teamIds } = await getAuthorizedMatch(matchId)
-  const playerIds = formIds(formData, 'player_ids')
-
-  const { data: players, error: playersError } = await supabase.from('players')
-    .select('id,team_id,jersey_number')
-    .in('team_id', teamIds)
-    .in('id', playerIds.length ? playerIds : ['00000000-0000-0000-0000-000000000000'])
-  if (playersError || (players?.length ?? 0) !== playerIds.length) throw new Error('La sélection contient un joueur hors effectif.')
-
-  const [{ data: roster, error: rosterError }, { data: convocations, error: convocationsError }] = await Promise.all([
-    supabase.from('match_rosters').select('id,player_id').eq('match_id', matchId),
-    supabase.from('convocations').select('id,player_id').eq('match_id', matchId),
-  ])
-  if (rosterError || convocationsError) throw new Error('Impossible de lire les convocations existantes.')
-
-  await syncRows(supabase, 'match_rosters', playerIds, roster ?? [], (playerId) => ({
-    match_id: matchId,
-    player_id: playerId,
-    is_called_up: true,
-  }))
-  await syncRows(supabase, 'convocations', playerIds, convocations ?? [], (playerId) => ({
-    match_id: matchId,
-    player_id: playerId,
-    sent_by: userId,
-  }))
-
+export async function saveMatchCompositionDraft(input: {
+  matchId: string
+  teamId: string
+  availability: MatchAvailability[]
+  selectedPlayerIds: string[]
+  courtSlots: Partial<Record<CourtSlot, string>>
+}): Promise<CompositionActionResult> {
+  if (!UUID.test(input.matchId) || !UUID.test(input.teamId)
+    || !Array.isArray(input.availability) || !Array.isArray(input.selectedPlayerIds)
+    || input.availability.some((item) => !UUID.test(item.player_id) || !['disponible','blesse','indisponible'].includes(item.availability_status))
+    || input.selectedPlayerIds.some((id) => !UUID.test(id))) {
+    return { ok: false, error: 'Données de composition invalides.' }
+  }
+  const { supabase, match, teamIds } = await getCoachAuthorizedMatch(input.matchId)
+  if (!teamIds.includes(input.teamId)) return { ok: false, error: 'Cette équipe ne fait pas partie de votre périmètre.' }
+  const { error } = await supabase.rpc('save_match_composition_draft', {
+    p_match_id: input.matchId,
+    p_team_id: input.teamId,
+    p_availability: input.availability,
+    p_selected_player_ids: input.selectedPlayerIds,
+    p_court_slots: input.courtSlots,
+  })
+  if (error) return { ok: false, error: compositionRpcError('save_match_composition_draft', error) }
   revalidatePath('/coach')
-  revalidatePath(`/matchs/${match.id}`)
-  revalidatePath(`/coach/matchs/${match.id}`)
-  redirect(`/coach/matchs/${match.id}?saved=convocations`)
+  revalidatePath('/coach/matchs/' + match.id)
+  return { ok: true, status: 'brouillon' }
 }
 
-export async function saveComposition(formData: FormData) {
-  const matchId = String(formData.get('match_id') ?? '')
-  const { supabase, match } = await getAuthorizedMatch(matchId)
-  const starters = formIds(formData, 'starter_ids')
-  if (starters.length !== 5) throw new Error('Sélectionne exactement cinq titulaires pour le cinq majeur.')
-
-  const [{ data: roster, error: rosterError }, { data: current, error: currentError }] = await Promise.all([
-    supabase.from('match_rosters').select('player_id').eq('match_id', matchId),
-    supabase.from('match_lineups').select('id,player_id,is_starter').eq('match_id', matchId),
-  ])
-  if (rosterError || currentError) throw new Error('Impossible de lire la composition existante.')
-
-  const rosterIds = new Set((roster ?? []).map((row) => row.player_id))
-  if (starters.some((id) => !rosterIds.has(id))) throw new Error('Les titulaires doivent être choisis parmi les joueurs convoqués.')
-
-  const existingByPlayer = new Map((current ?? []).map((row) => [row.player_id, row]))
-  for (const row of current ?? []) {
-    if (!rosterIds.has(row.player_id)) {
-      const { error } = await supabase.from('match_lineups').delete().eq('id', row.id)
-      if (error) throw new Error('Impossible de nettoyer la composition précédente.')
-    }
+export async function publishMatchComposition(matchId: string, teamId: string): Promise<CompositionActionResult> {
+  if (!UUID.test(matchId) || !UUID.test(teamId)) return { ok: false, error: 'Match ou équipe invalide.' }
+  const { supabase, match, teamIds } = await getCoachAuthorizedMatch(matchId)
+  if (!teamIds.includes(teamId)) return { ok: false, error: 'Cette équipe ne fait pas partie de votre périmètre.' }
+  const { data, error } = await supabase.rpc('publish_match_composition', {
+    p_match_id: matchId,
+    p_team_id: teamId,
+  })
+  if (error) {
+    const message = error.message.toLowerCase()
+    const rpcError = compositionRpcError('publish_match_composition', error)
+    const friendly = message.includes('12 joueurs') ? 'Il faut exactement 12 joueurs disponibles.'
+      : message.includes('cinq titulaires') || message.includes('cinq postes') ? 'Choisis cinq titulaires sur des postes différents.'
+      : rpcError
+    return { ok: false, error: friendly }
   }
+  revalidatePath('/coach')
+  revalidatePath('/coach/matchs/' + match.id)
+  revalidatePath('/matchs')
+  revalidatePath('/matchs/' + match.id)
+  revalidatePath('/joueurs')
+  return { ok: true, status: String(data ?? 'publiee') }
+}
 
-  for (const playerId of rosterIds) {
-    const isStarter = starters.includes(playerId)
-    const existing = existingByPlayer.get(playerId)
-    if (!existing) {
-      const { error } = await supabase.from('match_lineups').insert({
-        match_id: matchId,
-        player_id: playerId,
-        is_starter: isStarter,
-      })
-      if (error) throw new Error('Impossible d’enregistrer la composition.')
-    } else if (existing.is_starter !== isStarter) {
-      const { error } = await supabase.from('match_lineups').update({ is_starter: isStarter }).eq('id', existing.id)
-      if (error) throw new Error('Impossible de modifier la composition.')
-    }
-  }
-
-  revalidatePath(`/coach/matchs/${match.id}`)
-  revalidatePath(`/matchs/${match.id}`)
-  redirect(`/coach/matchs/${match.id}?saved=composition`)
+async function getAdminAuthorizedMatch(matchId: string) {
+  const context = await getAuthorizedMatch(matchId)
+  if (context.profile.role !== 'admin') throw new Error('Cette action est réservée à l’administration.')
+  return context
 }
 
 async function getCoachIdentity() {
-  const { supabase, profile, user } = await requireAnyRole(['coach', 'coach_adjoint', 'admin'])
+  const { supabase, profile, user } = await requireAnyRole(['coach', 'admin'])
 
   let teamId = profile.team_id
   if (!teamId && profile.role === 'admin') {
@@ -179,7 +171,8 @@ function formInteger(formData: FormData, key: string, options: { min?: number; m
 }
 
 export async function createMatch(formData: FormData) {
-  const { supabase, teamId } = await getCoachIdentity()
+  const { supabase, profile, teamId } = await getCoachIdentity()
+  if (profile.role !== 'admin') throw new Error('Seule l’administration peut modifier le calendrier.')
   const opponentId = formText(formData, 'opponent_id', 64)
   const homeAway = formText(formData, 'home_away', 8)
   const location = formText(formData, 'location', 160)
@@ -211,7 +204,8 @@ export async function createMatch(formData: FormData) {
 }
 
 export async function updatePlayerAvailability(formData: FormData) {
-  const { supabase, teamId } = await getCoachIdentity()
+  const { supabase, profile, teamId } = await getCoachIdentity()
+  if (profile.role !== 'admin') throw new Error('Les disponibilités globales sont réservées à l’administration. Utilise l’étape 1 pour ce match.')
   const playerId = formText(formData, 'player_id', 64)
   const status = formText(formData, 'status', 24)
   if (!UUID.test(playerId) || !['actif', 'blesse', 'suspendu'].includes(status)) throw new Error('La disponibilité sélectionnée est invalide.')
@@ -226,7 +220,7 @@ export async function updatePlayerAvailability(formData: FormData) {
 
 export async function updateMatchDetails(formData: FormData) {
   const matchId = formText(formData, 'match_id', 64)
-  const { supabase, match } = await getAuthorizedMatch(matchId)
+  const { supabase, match } = await getAdminAuthorizedMatch(matchId)
   const location = formText(formData, 'location', 160)
   const scheduledAt = formDateTime(formData, 'scheduled_at')
   const { error } = await supabase.from('matches').update({
@@ -242,7 +236,7 @@ export async function updateMatchDetails(formData: FormData) {
 
 export async function updateMatchStatus(formData: FormData) {
   const matchId = formText(formData, 'match_id', 64)
-  const { supabase, match } = await getAuthorizedMatch(matchId)
+  const { supabase, match } = await getAdminAuthorizedMatch(matchId)
   const status = formText(formData, 'status', 24)
   if (!['programme', 'a_venir', 'jour_j', 'en_cours'].includes(status)) throw new Error('Le statut choisi est invalide.')
   const { error } = await supabase.from('matches').update({ status }).eq('id', match.id)
@@ -254,7 +248,7 @@ export async function updateMatchStatus(formData: FormData) {
 
 export async function saveMatchPreparation(formData: FormData) {
   const matchId = formText(formData, 'match_id', 64)
-  const { supabase, userId, teamIds, match } = await getAuthorizedMatch(matchId)
+  const { supabase, userId, teamIds, match } = await getAdminAuthorizedMatch(matchId)
   const gamePlan = formText(formData, 'game_plan', 5000)
   const opponentNotes = formText(formData, 'opponent_notes', 5000)
   const teamId = teamIds[0]
@@ -269,22 +263,28 @@ export async function saveMatchPreparation(formData: FormData) {
 
 export async function saveMatchResult(formData: FormData) {
   const matchId = formText(formData, 'match_id', 64)
-  const { supabase, match } = await getAuthorizedMatch(matchId)
+  const { supabase, match } = await getAdminAuthorizedMatch(matchId)
   const homeScore = formInteger(formData, 'home_score', { max: 250 })
   const awayScore = formInteger(formData, 'away_score', { max: 250 })
+  if (homeScore === awayScore) throw new Error('Un match de basketball terminé doit désigner une équipe gagnante.')
   const { error } = await supabase.from('matches').update({
     home_score: homeScore, away_score: awayScore, status: 'termine',
   }).eq('id', match.id)
   if (error) throw new Error('Impossible d’enregistrer le résultat.')
   revalidatePath('/coach')
   revalidatePath('/coach/matchs/' + match.id)
+  revalidatePath('/')
+  revalidatePath('/classement')
+  revalidatePath('/matchs')
   revalidatePath('/matchs/' + match.id)
+  revalidatePath('/equipes/' + match.home_team_id)
+  revalidatePath('/equipes/' + match.away_team_id)
   redirect('/coach/matchs/' + match.id + '?saved=resultat')
 }
 
 export async function savePlayerStats(formData: FormData) {
   const matchId = formText(formData, 'match_id', 64)
-  const { supabase, match } = await getAuthorizedMatch(matchId)
+  const { supabase, match } = await getAdminAuthorizedMatch(matchId)
   const playerIds = formIds(formData, 'player_ids')
   const [{ data: roster, error: rosterError }, { data: players, error: playersError }] = await Promise.all([
     supabase.from('match_rosters').select('player_id').eq('match_id', match.id).eq('is_called_up', true),

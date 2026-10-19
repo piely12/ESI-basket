@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    const { data: userId, error: lookupError } = await admin.rpc('user_id_by_email', {
+    const { data: userId, error: lookupError } = await admin.rpc('linked_auth_user_by_email', {
       p_email: parsed.data.email,
     })
     if (lookupError) throw new Error('Account lookup unavailable')

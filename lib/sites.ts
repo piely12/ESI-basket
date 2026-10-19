@@ -1,5 +1,5 @@
 // Espaces privés servis sous forme de routes sur l'origine principale.
-export const SITES = ['coach', 'stats', 'actus', 'joueurs', 'admin'] as const
+export const SITES = ['coach', 'stats', 'joueurs', 'admin'] as const
 export type Site = (typeof SITES)[number]
 
 // Chemins publics ou API partagés, sans garde d'accès à un espace privé.

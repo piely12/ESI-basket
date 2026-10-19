@@ -26,12 +26,81 @@ export type Player = {
 export type StandingRow = {
   team_id: string
   team: Team
+  rank: number
   played: number
   won: number
   lost: number
   points_for: number
   points_against: number
   ranking_points: number
+  difference: number
+}
+
+export type TeamSeasonStat = {
+  match_id: string
+  team_id: string
+  points: number | null
+  rebounds: number | null
+  assists: number | null
+  steals: number | null
+  blocks: number | null
+  turnovers: number | null
+  personal_fouls: number | null
+  fg_made: number | null
+  fg_attempted: number | null
+  three_made: number | null
+  three_attempted: number | null
+  ft_made: number | null
+  ft_attempted: number | null
+  published_at: string | null
+}
+
+export type PlayerSeasonStat = TeamSeasonStat & {
+  id: string
+  player_id: string
+  minutes_played: number | null
+  rebounds_defensive: number | null
+  rebounds_offensive: number | null
+  player: Player
+}
+
+export type PublicMatchPlayerStat = {
+  id: string
+  player_id: string
+  minutes_played: number | null
+  points: number | null
+  rebounds: number | null
+  rebounds_defensive: number | null
+  rebounds_offensive: number | null
+  personal_fouls: number | null
+  assists: number | null
+  player: Pick<Player, 'id' | 'first_name' | 'last_name' | 'jersey_number' | 'position'>
+}
+
+export type PlayerProfileStat = {
+  id: string
+  match_id: string
+  minutes_played: number | null
+  points: number | null
+  rebounds: number | null
+  rebounds_defensive: number | null
+  rebounds_offensive: number | null
+  assists: number | null
+  steals: number | null
+  blocks: number | null
+  turnovers: number | null
+  personal_fouls: number | null
+  fg_made: number | null
+  fg_attempted: number | null
+  three_made: number | null
+  three_attempted: number | null
+  ft_made: number | null
+  ft_attempted: number | null
+  match: (Pick<MatchRow, 'id' | 'scheduled_at' | 'status' | 'home_score' | 'away_score' | 'round_number'> & {
+    season_id: string | null
+    home_team: Pick<Team, 'id' | 'name' | 'is_esi'>
+    away_team: Pick<Team, 'id' | 'name' | 'is_esi'>
+  }) | null
 }
 
 // Un match, avec ses deux équipes déjà jointes.
@@ -71,7 +140,8 @@ export async function getAllMatches(): Promise<MatchRow[]> {
 
 export type LineupRow = {
   is_starter: boolean
-  player: { id: string; first_name: string; last_name: string; jersey_number: number | null; position: string | null; photo_url: string | null }
+  court_slot: 'meneur' | 'arriere' | 'ailier' | 'ailier_fort' | 'pivot' | null
+  player: { id: string; first_name: string; last_name: string; jersey_number: number | null; position: string | null; photo_url: string | null; team_id: string }
 }
 
 export async function getMatchById(id: string) {
@@ -80,36 +150,170 @@ export async function getMatchById(id: string) {
     .from('matches').select(MATCH_SELECT).eq('id', id).maybeSingle()
   if (!match) return null
 
-  const [{ data: teamStats }, { data: playerStats }, { data: lineups }] = await Promise.all([
+  const matchRow = match as unknown as MatchRow
+  const esiTeam = matchRow.home_team.is_esi ? matchRow.home_team : matchRow.away_team
+  const [{ data: teamStats }, { data: playerStats }, { data: workflow }, { data: coach }] = await Promise.all([
     supabase.from('match_team_stats')
       .select('id, match_id, team_id, points, rebounds, assists, fg_made, fg_attempted, three_made, three_attempted, ft_made, ft_attempted, published_at, created_at')
       .eq('match_id', id).not('published_at', 'is', null),
-    supabase
-      .from('match_player_stats')
-      .select('*, player:players(id,first_name,last_name,jersey_number,position)')
+    supabase.from('match_player_stats')
+      .select('id,match_id,player_id,minutes_played,points,rebounds,rebounds_defensive,rebounds_offensive,personal_fouls,assists,steals,blocks,turnovers,fg_made,fg_attempted,three_made,three_attempted,ft_made,ft_attempted,plus_minus,evaluation,published_at,created_at,updated_at,player:players(id,first_name,last_name,jersey_number,position)')
       .eq('match_id', id).not('published_at', 'is', null),
-    supabase
-      .from('match_lineups')
-      .select('is_starter, player:players(id,first_name,last_name,jersey_number,position,photo_url)')
-      .eq('match_id', id),
+    supabase.from('match_composition_public_status').select('status').eq('match_id', id).eq('team_id', esiTeam.id).maybeSingle(),
+    supabase.from('public_esi_coaches').select('first_name,last_name').eq('team_id', esiTeam.id).order('last_name').limit(1).maybeSingle(),
   ])
+  const { data: lineups } = workflow && ['publiee','verrouillee'].includes(workflow.status)
+    ? await supabase.from('match_lineups').select('is_starter,court_slot,player:players(id,first_name,last_name,jersey_number,position,photo_url,team_id)').eq('match_id', id)
+    : { data: [] }
+
 
   return {
-    match: match as unknown as MatchRow,
+    match: matchRow,
     teamStats: teamStats ?? [],
-    playerStats: playerStats ?? [],
+    playerStats: (playerStats ?? []) as unknown as PublicMatchPlayerStat[],
     lineups: (lineups ?? []) as unknown as LineupRow[],
+    compositionPublished: Boolean(workflow && ['publiee', 'verrouillee'].includes(workflow.status)),
+    coachName: coach ? `${coach.first_name} ${coach.last_name}`.trim() : null,
   }
 }
 
-export async function getStandings(): Promise<StandingRow[]> {
+export async function getStandings(seasonId?: string): Promise<StandingRow[]> {
   const supabase = await createClient()
-  const { data } = await supabase
-    .from('standings')
-    .select('team_id, played, won, lost, points_for, points_against, ranking_points, team:teams(id,name,city,logo_url,is_esi)')
-    .order('ranking_points', { ascending: false })
-    .order('points_for', { ascending: false })
-  return (data as unknown as StandingRow[]) ?? []
+  const teamQuery = supabase.from('teams').select('id,name,city,logo_url,is_esi').order('name')
+  const seasonQuery = supabase.from('seasons').select('id,name').eq('is_current', true).maybeSingle()
+  const [{ data: teams }, { data: currentSeason }] = await Promise.all([teamQuery, seasonQuery])
+  const { data: selectedSeason } = seasonId
+    ? await supabase.from('seasons').select('id,name').eq('id', seasonId).maybeSingle()
+    : { data: currentSeason }
+  const season = selectedSeason ?? currentSeason
+  if (!teams?.length) return []
+
+  const standings = new Map(teams.map((team) => [team.id, {
+    team_id: team.id,
+    team: team as Team,
+    rank: 0,
+    played: 0,
+    won: 0,
+    lost: 0,
+    points_for: 0,
+    points_against: 0,
+    ranking_points: 0,
+    difference: 0,
+  } satisfies StandingRow]))
+
+  if (season) {
+    const { data: results } = await supabase.from('matches')
+      .select('home_team_id,away_team_id,home_score,away_score')
+      .eq('season_id', season.id)
+      .eq('status', 'termine')
+      .not('home_score', 'is', null)
+      .not('away_score', 'is', null)
+
+    for (const result of results ?? []) {
+      const home = standings.get(result.home_team_id)
+      const away = standings.get(result.away_team_id)
+      if (!home || !away || result.home_score === result.away_score) continue
+
+      home.played += 1
+      away.played += 1
+      home.points_for += result.home_score
+      home.points_against += result.away_score
+      away.points_for += result.away_score
+      away.points_against += result.home_score
+      if (result.home_score > result.away_score) {
+        home.won += 1
+        away.lost += 1
+      } else {
+        away.won += 1
+        home.lost += 1
+      }
+    }
+  }
+
+  const ordered = [...standings.values()].map((row) => ({
+    ...row,
+    ranking_points: row.won * 2 + row.lost,
+    difference: row.points_for - row.points_against,
+  })).sort((a, b) => b.ranking_points - a.ranking_points || b.difference - a.difference || a.team.name.localeCompare(b.team.name, 'fr'))
+
+  let previous: StandingRow | undefined
+  return ordered.map((row, index) => {
+    const sameRank = previous?.ranking_points === row.ranking_points && previous.difference === row.difference
+    const ranked = { ...row, rank: sameRank ? previous!.rank : index + 1 }
+    previous = ranked
+    return ranked
+  })
+}
+
+export async function getTeams(): Promise<Team[]> {
+  const supabase = await createClient()
+  const { data } = await supabase.from('teams').select('id,name,city,logo_url,is_esi').order('name')
+  return (data as Team[] | null) ?? []
+}
+
+export async function getTeamPageData(id: string, filters: { seasonId?: string; round?: number; period?: 'all' | '30d' | '90d' } = {}) {
+  const supabase = await createClient()
+  const [{ data: team }, { data: seasons }] = await Promise.all([
+    supabase.from('teams').select('id,name,city,logo_url,is_esi').eq('id', id).maybeSingle(),
+    supabase.from('seasons').select('id,name,is_current,starts_on,ends_on').order('starts_on', { ascending: false }),
+  ])
+  if (!team) return null
+  const seasonList = seasons ?? []
+  const season = seasonList.find((item) => item.id === filters.seasonId)
+    ?? seasonList.find((item) => item.is_current)
+    ?? seasonList[0]
+
+  let matchQuery = supabase.from('matches').select(MATCH_SELECT)
+    .or(`home_team_id.eq.${id},away_team_id.eq.${id}`)
+    .order('scheduled_at', { ascending: true })
+  if (season) matchQuery = matchQuery.eq('season_id', season.id)
+  const { data: matchData } = season ? await matchQuery : { data: [] }
+  const matches = (matchData as unknown as MatchRow[]) ?? []
+  const allCompletedMatches = matches.filter((match) => match.status === 'termine'
+    && match.home_score !== null && match.away_score !== null && match.home_score !== match.away_score)
+  const cutoff = filters.period === '30d' ? Date.now() - 30 * 86400000
+    : filters.period === '90d' ? Date.now() - 90 * 86400000 : null
+  const roundMatches = (match: MatchRow) => filters.round === undefined || match.round_number === filters.round
+  const inPeriod = (match: MatchRow) => cutoff === null || new Date(match.scheduled_at).getTime() >= cutoff
+  const completedMatches = allCompletedMatches.filter((match) => roundMatches(match) && inPeriod(match))
+  const completedIds = completedMatches.map((match) => match.id)
+
+  const [{ data: teamStats }, { data: players }] = await Promise.all([
+    completedIds.length
+      ? supabase.from('match_team_stats')
+        .select('match_id,team_id,points,rebounds,assists,steals,blocks,turnovers,personal_fouls,fg_made,fg_attempted,three_made,three_attempted,ft_made,ft_attempted,published_at')
+        .eq('team_id', id).in('match_id', completedIds).not('published_at', 'is', null)
+      : Promise.resolve({ data: [] }),
+    team.is_esi
+      ? supabase.from('players').select('id,first_name,last_name,jersey_number,position,photo_url,status').eq('team_id', id).order('jersey_number')
+      : Promise.resolve({ data: [] }),
+  ])
+
+  const playerIds = (players ?? []).map((player) => player.id)
+  const { data: rawPlayerStats } = completedIds.length && playerIds.length
+    ? await supabase.from('match_player_stats')
+      .select('id,match_id,player_id,minutes_played,points,rebounds,rebounds_defensive,rebounds_offensive,assists,steals,blocks,turnovers,personal_fouls,fg_made,fg_attempted,three_made,three_attempted,ft_made,ft_attempted,published_at')
+      .in('match_id', completedIds).in('player_id', playerIds).not('published_at', 'is', null)
+    : { data: [] }
+
+  const playersById = new Map((players ?? []).map((player) => [player.id, player]))
+  const playerStats = (rawPlayerStats ?? []).flatMap((stat) => {
+    const player = playersById.get(stat.player_id)
+    return player ? [{ ...stat, player }] : []
+  }) as PlayerSeasonStat[]
+
+  return {
+    team: team as Team,
+    season: season ? { id: season.id, name: season.name } : null,
+    seasons: seasonList.map(({ id: seasonKey, name }) => ({ id: seasonKey, name })),
+    matches,
+    seasonCompletedMatches: allCompletedMatches.sort((a, b) => b.scheduled_at.localeCompare(a.scheduled_at)),
+    completedMatches: completedMatches.sort((a, b) => b.scheduled_at.localeCompare(a.scheduled_at)),
+    upcomingMatches: matches.filter((match) => match.status !== 'termine' && roundMatches(match)).sort((a, b) => a.scheduled_at.localeCompare(b.scheduled_at)),
+    teamStats: (teamStats ?? []) as TeamSeasonStat[],
+    players: players ?? [],
+    playerStats,
+  }
 }
 
 export async function getRoster(): Promise<Player[]> {
@@ -123,19 +327,36 @@ export async function getRoster(): Promise<Player[]> {
   return data ?? []
 }
 
-export async function getPlayerProfile(id: string) {
+export async function getPlayerProfile(id: string, filters: { seasonId?: string; round?: number; period?: 'all' | '30d' | '90d' } = {}) {
   const supabase = await createClient()
-  const { data: player } = await supabase
-    .from('players')
-    .select('id, first_name, last_name, jersey_number, position, photo_url, status')
-    .eq('id', id).maybeSingle()
+  const [{ data: player }, { data: seasonRows }] = await Promise.all([
+    supabase.from('players').select('id, first_name, last_name, jersey_number, position, photo_url, status').eq('id', id).maybeSingle(),
+    supabase.from('seasons').select('id,name,is_current').order('starts_on', { ascending: false }),
+  ])
   if (!player) return null
+  const seasons = seasonRows ?? []
+  const season = seasons.find((item) => item.id === filters.seasonId)
+    ?? seasons.find((item) => item.is_current)
+    ?? seasons[0]
 
-  const { data: stats } = await supabase
+  const { data: allStats } = await supabase
     .from('match_player_stats')
-    .select('*, match:matches(id,scheduled_at,status,home_team:teams!matches_home_team_id_fkey(name,is_esi),away_team:teams!matches_away_team_id_fkey(name,is_esi))')
+    .select('id,match_id,minutes_played,points,rebounds,rebounds_defensive,rebounds_offensive,assists,steals,blocks,turnovers,personal_fouls,fg_made,fg_attempted,three_made,three_attempted,ft_made,ft_attempted,published_at,match:matches(id,scheduled_at,status,home_score,away_score,round_number,season_id,home_team:teams!matches_home_team_id_fkey(id,name,is_esi),away_team:teams!matches_away_team_id_fkey(id,name,is_esi))')
     .eq('player_id', id).not('published_at', 'is', null)
     .order('created_at', { ascending: false })
 
-  return { player, stats: stats ?? [] }
+  const typedStats = (allStats ?? []) as unknown as PlayerProfileStat[]
+  const seasonStats = season ? typedStats
+    .filter((stat): stat is PlayerProfileStat & { match: NonNullable<PlayerProfileStat['match']> } => stat.match !== null)
+    .filter((stat) => stat.match?.season_id === season.id)
+    .sort((a, b) => (b.match?.scheduled_at ?? '').localeCompare(a.match?.scheduled_at ?? '')) : []
+  const cutoff = filters.period === '30d' ? Date.now() - 30 * 86400000
+    : filters.period === '90d' ? Date.now() - 90 * 86400000 : null
+  const stats = seasonStats.filter((stat) => (filters.round === undefined || stat.match?.round_number === filters.round)
+    && (cutoff === null || new Date(stat.match?.scheduled_at ?? 0).getTime() >= cutoff))
+  return {
+    player, season: season ? { id: season.id, name: season.name } : null,
+    seasons: seasons.map(({ id: seasonKey, name }) => ({ id: seasonKey, name })),
+    seasonStats, stats,
+  }
 }

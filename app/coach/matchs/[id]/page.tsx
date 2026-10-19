@@ -1,8 +1,10 @@
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { requireAnyRole } from '@/lib/auth/requireUser'
+import CompositionWizard from '@/components/CompositionWizard'
 import type { Team } from '@/lib/data/public'
-import { saveComposition, saveConvocations, updateMatchDetails, saveMatchPreparation, saveMatchResult, savePlayerStats, updateMatchStatus } from '../../actions'
+import { COURT_SLOTS, resolveStarterSlots, type CourtSlot, type LineupEntry } from '@/lib/lineup'
+import { updateMatchDetails, saveMatchPreparation, saveMatchResult, savePlayerStats, updateMatchStatus } from '../../actions'
 import styles from '../../coach.module.css'
 
 type PageProps = { params: Promise<{ id: string }>; searchParams: Promise<{ saved?: string }> }
@@ -12,7 +14,7 @@ const statusLabels: Record<string, string> = { programme: 'Programmé', a_venir:
 
 export default async function CoachMatchPage({ params, searchParams }: PageProps) {
   const [{ id }, query] = await Promise.all([params, searchParams])
-  const { supabase, profile } = await requireAnyRole(['coach', 'coach_adjoint', 'admin'])
+  const { supabase, profile } = await requireAnyRole(['coach', 'admin'])
 
   const { data: match, error: matchError } = await supabase.from('matches')
     .select('id,scheduled_at,location,round_number,kickoff_confirmed,public_note,status,home_score,away_score,home_team_id,away_team_id,home_team:teams!matches_home_team_id_fkey(id,name,city,logo_url,is_esi),away_team:teams!matches_away_team_id_fkey(id,name,city,logo_url,is_esi)')
@@ -22,23 +24,38 @@ export default async function CoachMatchPage({ params, searchParams }: PageProps
 
   const teamIds = profile.role === 'admin' ? [match.home_team_id, match.away_team_id] : [profile.team_id as string]
   const preparationTeamId = profile.role === 'admin' ? match.home_team_id : profile.team_id as string
-  const [playersResult, rosterResult, convocationResult, lineupResult, preparationResult, statsResult] = await Promise.all([
-    supabase.from('players').select('id,first_name,last_name,jersey_number,position,status,team_id').in('team_id', teamIds).order('jersey_number'),
-    supabase.from('match_rosters').select('id,player_id,is_called_up').eq('match_id', id),
-    supabase.from('convocations').select('id,player_id,status,sent_at').eq('match_id', id),
-    supabase.from('match_lineups').select('player_id,is_starter').eq('match_id', id),
-    supabase.from('match_preparations').select('game_plan,opponent_notes').eq('match_id', id).eq('team_id', preparationTeamId).maybeSingle(),
-    supabase.from('match_player_stats').select('player_id,minutes_played,points,rebounds,assists,steals,blocks,turnovers,plus_minus,evaluation').eq('match_id', id),
-  ])
-  const loadError = playersResult.error || rosterResult.error || convocationResult.error || lineupResult.error || preparationResult.error || statsResult.error
-  const players = (playersResult.data ?? []) as Player[]
-  const rosterIds = new Set((rosterResult.data ?? []).filter((row) => row.is_called_up).map((row) => row.player_id))
-  const convokedIds = new Set((convocationResult.data ?? []).map((row) => row.player_id))
-  const lineupByPlayer = new Map((lineupResult.data ?? []).map((row) => [row.player_id, row.is_starter]))
-  const statsByPlayer = new Map(((statsResult.data ?? []) as PlayerStat[]).map((row) => [row.player_id, row]))
-  const convokedPlayers = players.filter((player) => rosterIds.has(player.id))
   const homeTeam = match.home_team as unknown as Team
   const awayTeam = match.away_team as unknown as Team
+  const compositionTeam = profile.role === 'admin' ? (homeTeam.is_esi ? homeTeam : awayTeam) : (profile.team_id === homeTeam.id ? homeTeam : awayTeam)
+  const opponentTeam = compositionTeam.id === homeTeam.id ? awayTeam : homeTeam
+  const [playersResult, rosterResult, lineupResult, preparationResult, statsResult, workflowResult] = await Promise.all([
+    supabase.from('players').select('id,first_name,last_name,jersey_number,position,status,photo_url,team_id').eq('team_id', compositionTeam.id).order('jersey_number'),
+    supabase.from('match_rosters').select('id,player_id,is_called_up,availability_status').eq('match_id', id),
+    supabase.from('match_lineups').select('player_id,is_starter,court_slot').eq('match_id', id),
+    supabase.from('match_preparations').select('game_plan,opponent_notes').eq('match_id', id).eq('team_id', preparationTeamId).maybeSingle(),
+    supabase.from('match_player_stats').select('player_id,minutes_played,points,rebounds,assists,steals,blocks,turnovers,plus_minus,evaluation').eq('match_id', id),
+    supabase.from('match_composition_workflows').select('status,draft_availability,draft_selected_player_ids,draft_court_slots').eq('match_id', id).eq('team_id', compositionTeam.id).maybeSingle(),
+  ])
+  const loadError = playersResult.error || rosterResult.error || lineupResult.error || preparationResult.error || statsResult.error || workflowResult.error
+  if (loadError) console.error('Unable to load coach match data', {
+    players: playersResult.error?.message,
+    roster: rosterResult.error?.message,
+    lineups: lineupResult.error?.message,
+    preparation: preparationResult.error?.message,
+    playerStats: statsResult.error?.message,
+    workflow: workflowResult.error?.message,
+  })
+  const players = (playersResult.data ?? []) as Player[]
+  const rosterRows = rosterResult.data ?? []
+  const rosterIds = new Set(rosterRows.filter((row) => row.is_called_up).map((row) => row.player_id))
+  const statsByPlayer = new Map(((statsResult.data ?? []) as PlayerStat[]).map((row) => [row.player_id, row]))
+  const convokedPlayers = players.filter((player) => rosterIds.has(player.id))
+  const workflow = workflowResult.data as { status: 'brouillon' | 'publiee' | 'verrouillee'; draft_availability: { player_id: string; availability_status: 'disponible' | 'blesse' | 'indisponible' }[]; draft_selected_player_ids: string[]; draft_court_slots: Partial<Record<CourtSlot, string>> } | null
+  const savedStarters = (lineupResult.data ?? []).flatMap((row) => { const player = players.find((candidate) => candidate.id === row.player_id); return player && row.is_starter ? [{ player, is_starter: true, court_slot: row.court_slot as CourtSlot | null }] as LineupEntry[] : [] })
+  const initialSlots = resolveStarterSlots(savedStarters)
+  const initialSlotSelections: Partial<Record<CourtSlot, string>> = workflow ? workflow.draft_court_slots : Object.fromEntries(COURT_SLOTS.flatMap((slot) => { const playerId = initialSlots.get(slot.key)?.player.id; return playerId ? [[slot.key, playerId]] : [] }))
+  const initialAvailability = workflow ? workflow.draft_availability : rosterRows.flatMap((row) => row.availability_status ? [{ player_id: row.player_id, availability_status: row.availability_status as 'disponible' | 'blesse' | 'indisponible' }] : [])
+   const initialSelectedIds = workflow?.draft_selected_player_ids ?? []
   const scheduleValue = new Date(match.scheduled_at).toISOString().slice(0, 16)
   const savedMessages: Record<string, string> = {
     convocations: 'Les convocations ont été enregistrées.',
@@ -48,8 +65,6 @@ export default async function CoachMatchPage({ params, searchParams }: PageProps
     resultat: 'Le résultat final a été enregistré.',
     statistiques: 'Les statistiques et évaluations sont sauvegardées.',
   }
-  const calledCount = convokedPlayers.length
-  const starterCount = [...lineupByPlayer.values()].filter(Boolean).length
 
   return (
     <main className={styles.page}>
@@ -69,8 +84,9 @@ export default async function CoachMatchPage({ params, searchParams }: PageProps
       </header>
 
       {query.saved && savedMessages[query.saved] && <p role="status" className={styles.notice}>{savedMessages[query.saved]}</p>}
-      {loadError && <p role="alert" className={styles.error}>Certaines données n’ont pas pu être chargées. Vérifie la migration 009 et les règles RLS.</p>}
+       {loadError && <p role="alert" className={styles.error}>Certaines données n’ont pas pu être chargées. Vérifie les droits de lecture et applique la migration 027.</p>}
 
+      {profile.role === 'admin' && <>
       <section className={styles.card}>
         <div className={styles.sectionHead}><div><p className={styles.eyebrow}>Organisation</p><h2 className={styles.cardTitle}>Date, lieu et statut</h2></div></div>
         <form action={updateMatchDetails} className={styles.form}>
@@ -98,34 +114,13 @@ export default async function CoachMatchPage({ params, searchParams }: PageProps
         </form>
       </section>
 
-      <section className={styles.card}>
-        <div className={styles.sectionHead}><div><p className={styles.eyebrow}>Avant le match</p><h2 className={styles.cardTitle}>Convocations ciblées</h2></div><span className={styles.privateLabel}>{convokedIds.size} joueur{convokedIds.size === 1 ? '' : 's'} sélectionné{convokedIds.size === 1 ? '' : 's'}</span></div>
-        {players.length === 0 ? <p className={styles.subtitle}>Aucun joueur disponible dans l’effectif associé à ce match.</p> : <form action={saveConvocations} className={styles.form}>
-          <input type="hidden" name="match_id" value={match.id} />
-          <div className={styles.rosterList}>{players.map((player) => <label className={styles.checkRow} key={player.id}>
-            <input type="checkbox" name="player_ids" value={player.id} defaultChecked={convokedIds.has(player.id) || rosterIds.has(player.id)} />
-            <span className={styles.number}>{player.jersey_number ?? '·'}</span>
-            <span><strong className={styles.playerName}>{player.first_name} {player.last_name}</strong><small className={styles.playerMeta}>{player.position || 'Poste à préciser'} · {player.status === 'actif' ? 'Disponible' : player.status === 'blesse' ? 'Blessé' : 'Suspendu'}</small></span>
-          </label>)}</div>
-          <button className={styles.button + ' ' + styles.primaryButton} type="submit">Enregistrer les convocations</button>
-        </form>}
-      </section>
+      </>}
 
-      <section className={styles.card}>
-        <div className={styles.sectionHead}><div><p className={styles.eyebrow}>Cinq de départ</p><h2 className={styles.cardTitle}>Composition & remplaçants</h2></div><span className={styles.privateLabel}>{starterCount}/5 titulaires · {Math.max(0, calledCount - starterCount)} remplaçants</span></div>
-        <p className={styles.help}>La composition reste masquée au public jusqu’au jour du match, selon les règles RLS de Supabase.</p>
-        {convokedPlayers.length < 5 ? <p className={styles.notice}>Convoque au moins cinq joueurs pour préparer le cinq majeur.</p> : <form action={saveComposition} className={styles.form}>
-          <input type="hidden" name="match_id" value={match.id} />
-          <div className={styles.rosterList}>{convokedPlayers.map((player) => <label className={styles.checkRow} key={player.id}>
-            <input type="checkbox" name="starter_ids" value={player.id} defaultChecked={lineupByPlayer.get(player.id) === true} />
-            <span className={styles.number}>{player.jersey_number ?? '·'}</span>
-            <span><strong className={styles.playerName}>{player.first_name} {player.last_name}</strong><small className={styles.playerMeta}>{lineupByPlayer.get(player.id) ? 'Titulaire' : 'Remplaçant'} · {player.position || 'Poste à préciser'}</small></span>
-          </label>)}</div>
-          <p className={styles.help}>Sélectionne exactement cinq titulaires. Les autres joueurs convoqués seront enregistrés comme remplaçants.</p>
-          <button className={styles.button + ' ' + styles.primaryButton} type="submit">Enregistrer le cinq majeur</button>
-        </form>}
-      </section>
+      {profile.role === 'coach'
+        ? <CompositionWizard canOverrideLock={false} matchId={match.id} team={compositionTeam} opponent={opponentTeam} scheduledAt={match.scheduled_at} location={match.location} kickoffConfirmed={match.kickoff_confirmed} coachName={profile.first_name + ' ' + profile.last_name} players={players} initialAvailability={initialAvailability} initialSelectedIds={initialSelectedIds} initialSlots={initialSlotSelections} initialStatus={new Date(match.scheduled_at).getTime() <= Date.now() || ['en_cours','termine'].includes(match.status) ? 'verrouillee' : workflow?.status ?? 'brouillon'} />
+        : <section className={styles.card}><p className={styles.eyebrow}>Composition</p><h2 className={styles.cardTitle}>Gestion réservée au coach principal</h2><p className={styles.help}>Le compte administrateur gère le calendrier et les comptes. Le coach principal prépare et publie la composition avec son propre accès.</p></section>}
 
+      {profile.role === 'admin' && <>
       <section className={styles.card}>
         <div className={styles.sectionHead}><div><p className={styles.eyebrow}>Après-match</p><h2 className={styles.cardTitle}>Résultat final</h2></div></div>
         <form action={saveMatchResult} className={styles.form}>
@@ -166,6 +161,7 @@ export default async function CoachMatchPage({ params, searchParams }: PageProps
           <button className={styles.button + ' ' + styles.primaryButton} type="submit">Enregistrer le bilan</button>
         </form>}
       </section>}
+      </>}
     </main>
   )
 }

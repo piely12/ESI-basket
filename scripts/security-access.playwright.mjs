@@ -12,12 +12,10 @@ if (!rawAccounts) {
 const expectedPaths = {
   admin: '/admin',
   coach: '/coach',
-  coach_adjoint: '/coach',
   statisticienne: '/stats',
-  videaste: '/actus',
   joueur: '/joueurs',
 }
-const protectedPaths = ['/coach', '/stats', '/actus', '/joueurs', '/admin']
+const protectedPaths = ['/coach', '/stats', '/joueurs', '/admin']
 let accounts
 try {
   accounts = JSON.parse(rawAccounts)

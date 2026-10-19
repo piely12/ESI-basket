@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { requireAnyRole } from '@/lib/auth/requireUser'
 import type { Team } from '@/lib/data/public'
+import TeamLogo from '@/components/TeamLogo'
 import styles from './coach.module.css'
 
 type CoachMatch = {
@@ -28,7 +29,7 @@ function formatMatchDate(value: string, kickoffConfirmed: boolean) {
 }
 
 export default async function CoachHomePage() {
-  const { supabase, profile } = await requireAnyRole(['coach', 'coach_adjoint', 'admin'])
+  const { supabase, profile } = await requireAnyRole(['coach', 'admin'])
 
   let teamId = profile.team_id
   if (!teamId && profile.role === 'admin') {
@@ -53,6 +54,8 @@ export default async function CoachHomePage() {
   const matches = (matchesResult.data ?? []) as unknown as CoachMatch[]
   const roster = (rosterResult.data ?? []) as CoachPlayer[]
   const recentResults = (resultsResult.data ?? []) as unknown as CoachMatch[]
+  const { data: workflowRows } = matches.length ? await supabase.from('match_composition_workflows').select('match_id,status').eq('team_id', teamId).in('match_id', matches.map((match) => match.id)) : { data: [] }
+  const workflows = new Map((workflowRows ?? []).map((row) => [row.match_id, row.status]))
   const unavailable = roster.filter((player) => player.status !== 'actif').length
 
   return (
@@ -61,14 +64,14 @@ export default async function CoachHomePage() {
         <p className={styles.eyebrow}>Pilotage de l’équipe</p>
         <h1 className={styles.title}>Bonjour {profile.first_name}</h1>
         <p className={styles.subtitle}>Prépare les Lions, suis les disponibilités et garde le cap sur le prochain match.</p>
-        <div style={{ marginTop: 20 }}>
-          <Link className={styles.button + ' ' + styles.primaryButton} href="/coach/matchs/nouveau">Préparer un match</Link>
-        </div>
+        {profile.role === 'admin' && <div style={{ marginTop: 20 }}>
+          <Link className={styles.button + ' ' + styles.primaryButton} href="/coach/matchs/nouveau">Créer un match</Link>
+        </div>}
       </header>
 
       <section className={styles.metricGrid} aria-label="Résumé de l’équipe">
         <article className={styles.metric}><strong>{roster.length}</strong><span>Joueurs à l’effectif</span></article>
-        <article className={styles.metric}><strong>{unavailable}</strong><span>Indisponibilités déclarées</span></article>
+        {profile.role === 'admin' && <article className={styles.metric}><strong>{unavailable}</strong><span>Indisponibilités globales</span></article>}
         <article className={styles.metric}><strong>{matches.length}</strong><span>Matchs à venir</span></article>
         <article className={styles.metric}><strong>{recentResults.length}</strong><span>Résultats récents</span></article>
       </section>
@@ -76,13 +79,13 @@ export default async function CoachHomePage() {
       <section className={styles.page} aria-labelledby="upcoming-heading">
         <div className={styles.sectionHead}>
           <div><p className={styles.eyebrow}>Calendrier</p><h2 id="upcoming-heading" className={styles.cardTitle}>Prochains matchs</h2></div>
-          <Link className={styles.link} href="/coach/matchs/nouveau">+ Nouveau</Link>
+          {profile.role === 'admin' && <Link className={styles.link} href="/coach/matchs/nouveau">+ Nouveau</Link>}
         </div>
         {matches.length === 0 ? (
           <div className={styles.card}>
             <h3 className={styles.cardTitle}>Aucun match planifié</h3>
-            <p className={styles.subtitle}>Ajoute une rencontre pour préparer les convocations et le cinq de départ.</p>
-            <Link className={styles.button + ' ' + styles.primaryButton} href="/coach/matchs/nouveau">Créer le premier match</Link>
+            <p className={styles.subtitle}>Le calendrier officiel ne contient aucun prochain match.</p>
+            {profile.role === 'admin' && <Link className={styles.button + ' ' + styles.primaryButton} href="/coach/matchs/nouveau">Créer le premier match</Link>}
           </div>
         ) : (
           <div className={styles.matchList}>
@@ -90,7 +93,8 @@ export default async function CoachHomePage() {
               <div className={styles.matchMeta}><time dateTime={match.scheduled_at}>{formatMatchDate(match.scheduled_at, match.kickoff_confirmed)}</time><span>{match.location || 'Lieu à confirmer'}</span></div>
               {match.public_note && <p className={styles.help}>{match.public_note}</p>}
               <div className={styles.teams}><strong>{match.home_team.name}</strong><span className={styles.vs}>VS</span><strong>{match.away_team.name}</strong></div>
-              <Link className={styles.button} href={'/coach/matchs/' + match.id}>Ouvrir la fiche match</Link>
+              <div className="mt-3 flex items-center gap-3"><TeamLogo team={match.home_team.is_esi ? match.away_team : match.home_team} size={48} /><div><strong>{(['en_cours','termine'].includes(match.status) || new Date(match.scheduled_at).getTime() <= Date.now()) ? 'Verrouillée' : workflows.get(match.id)==='verrouillee'?'Verrouillée':workflows.get(match.id)==='publiee'?'Publiée':workflows.get(match.id)==='brouillon'?'Brouillon':'À faire'}</strong><p className={styles.help}>Statut de la composition</p></div></div>
+              <Link className={styles.button} href={'/coach/matchs/' + match.id}>{(['en_cours','termine'].includes(match.status) || new Date(match.scheduled_at).getTime() <= Date.now() || workflows.get(match.id)==='publiee' || workflows.get(match.id)==='verrouillee') ? 'Voir la composition' : 'Préparer la composition'}</Link>
             </article>)}
           </div>
         )}
@@ -99,7 +103,7 @@ export default async function CoachHomePage() {
       <section className={styles.card} aria-labelledby="roster-heading">
         <div className={styles.sectionHead}>
           <div><p className={styles.eyebrow}>Groupe</p><h2 id="roster-heading" className={styles.cardTitle}>Effectif et disponibilités</h2></div>
-          <Link className={styles.link} href="/coach/equipe">Gérer l’effectif</Link>
+          {profile.role === 'admin' && <Link className={styles.link} href="/coach/equipe">Gérer l’effectif</Link>}
         </div>
         <div className={styles.rosterList}>
           {roster.slice(0, 6).map((player) => <div className={styles.playerRow} key={player.id}>

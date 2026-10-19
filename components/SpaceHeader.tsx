@@ -4,9 +4,7 @@ import LogoutButton from './LogoutButton'
 
 const ROLE_LABEL: Record<AppRole, string> = {
   coach: 'Coach',
-  coach_adjoint: 'Coach adjoint',
   statisticienne: 'Statisticienne',
-  videaste: 'Vidéaste',
   admin: 'Administrateur',
   joueur: 'Joueur',
 }

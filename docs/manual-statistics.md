@@ -16,7 +16,7 @@ Les pourcentages de tirs sont dérivés de `réussis / tentés`. Les rebonds tot
 | --- | --- | --- | --- |
 | Statisticienne ESI active | Oui | Match terminé de son équipe | Oui, via l'API protégée et les fonctions SQL |
 | Joueur | Non | Non | Non |
-| Coach / coach adjoint | Non | Non | Non dans cet espace; leur gestion sportive reste sous `/coach` |
+| Coach | Non | Non | Non dans cet espace; sa gestion sportive reste sous `/coach` |
 | Vidéaste | Non | Non | Non |
 | Admin | Non | Non | Non dans cet espace; son administration reste sous `/admin` |
 | Visiteur non connecté | Non | Non | Non |

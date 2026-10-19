@@ -4,7 +4,7 @@ import { createInterface } from 'node:readline/promises'
 import { stdin, stdout } from 'node:process'
 import { z } from 'zod'
 
-const ROLES = ['coach', 'coach_adjoint', 'statisticienne', 'videaste', 'joueur']
+const ROLES = ['coach', 'statisticienne', 'joueur']
 const inputSchema = z.object({
   email: z.string().trim().toLowerCase().email().max(254),
   role: z.enum(ROLES),

@@ -4,7 +4,7 @@ import { updatePlayerAvailability } from '../actions'
 import styles from '../coach.module.css'
 
 export default async function CoachRosterPage() {
-  const { supabase, profile } = await requireAnyRole(['coach', 'coach_adjoint', 'admin'])
+  const { supabase, profile } = await requireAnyRole(['admin'])
   let teamId = profile.team_id
   if (!teamId && profile.role === 'admin') {
     const { data } = await supabase.from('teams').select('id').eq('is_esi', true).maybeSingle()

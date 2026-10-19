@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test:stats-manual": "node --experimental-strip-types --test scripts/manual-stats-validation.test.mjs"
+    "test:stats-manual": "node --experimental-strip-types --test scripts/manual-stats-validation.test.mjs",
+    "cleanup:news-storage": "node --env-file-if-exists=.env.local scripts/remove-news-storage.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",

@@ -1,11 +1,26 @@
-const baseUrl = process.env.SECURITY_TEST_BASE_URL || 'http://localhost:3000'
+const baseUrl = process.env.SECURITY_TEST_BASE_URL || 'http://127.0.0.1:3000'
 const failures = []
 
 async function request(path) {
   return fetch(new URL(path, baseUrl), { redirect: 'manual', cache: 'no-store' })
 }
 
-for (const path of ['/admin', '/coach', '/stats', '/actus', '/joueurs']) {
+// Include nested and parameterized pages so a newly added section page cannot
+// accidentally become reachable without passing the workspace guards.
+const privatePages = [
+  '/admin',
+  '/coach',
+  '/coach/equipe',
+  '/coach/matchs/nouveau',
+  '/coach/matchs/00000000-0000-4000-8000-000000000001',
+  '/stats',
+  '/stats/00000000-0000-4000-8000-000000000001',
+  '/actus',
+  '/joueurs',
+  '/premiere-connexion',
+]
+
+for (const path of privatePages) {
   try {
     const response = await request(path)
     const ok = [302, 307].includes(response.status)
@@ -13,6 +28,27 @@ for (const path of ['/admin', '/coach', '/stats', '/actus', '/joueurs']) {
     if (!ok) failures.push(path)
   } catch {
     console.log(`FAIL GET ${path} => request failed`)
+    failures.push(path)
+  }
+}
+
+for (const [path, body] of [
+  ['/api/stats/00000000-0000-4000-8000-000000000001', { action: 'publish' }],
+  ['/api/auth/first-login/complete', { otp: '123456', password: 'ValidPass1!', confirmation: 'ValidPass1!' }],
+]) {
+  try {
+    const response = await fetch(new URL(path, baseUrl), {
+      method: 'POST',
+      redirect: 'manual',
+      cache: 'no-store',
+      headers: { 'content-type': 'application/json', origin: baseUrl },
+      body: JSON.stringify(body),
+    })
+    const ok = [401, 403].includes(response.status)
+    console.log(`${ok ? 'PASS' : 'FAIL'} POST ${path} unauthenticated => HTTP ${response.status}`)
+    if (!ok) failures.push(path)
+  } catch {
+    console.log(`FAIL POST ${path} unauthenticated => request failed`)
     failures.push(path)
   }
 }

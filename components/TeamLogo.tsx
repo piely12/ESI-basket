@@ -15,5 +15,19 @@ export function teamLogoSrc(team: Team) {
 }
 
 export default function TeamLogo({ team, size = 48, className = '' }: { team: Team; size?: number; className?: string }) {
-  return <Image src={teamLogoSrc(team)} alt="" width={size} height={size} unoptimized className={`shrink-0 object-contain ${className}`} />
+  return (
+    <span
+      className={`relative inline-flex shrink-0 ${className}`}
+      style={className ? undefined : { width: size, height: size }}
+    >
+      <Image
+        src={teamLogoSrc(team)}
+        alt=""
+        width={size}
+        height={size}
+        unoptimized
+        className="h-full w-full object-contain"
+      />
+    </span>
+  )
 }

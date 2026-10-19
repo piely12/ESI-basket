@@ -1,27 +1,25 @@
 import type { Site } from '@/lib/sites'
 
 export type AppRole =
-  | 'coach' | 'coach_adjoint' | 'statisticienne' | 'videaste' | 'admin' | 'joueur'
+  | 'coach' | 'statisticienne' | 'admin' | 'joueur'
 
 // Route d'accueil de chaque rôle après connexion.
 export const HOME_SITE: Record<AppRole, Site> = {
   coach: 'coach',
-  coach_adjoint: 'coach',
   statisticienne: 'stats',
-  videaste: 'actus',
   admin: 'admin',
   joueur: 'joueurs',
 }
 
 // Routes auxquelles un rôle a accès. L'admin (coach principal) accède à tout.
 export function allowedSites(role: AppRole): Site[] {
-  if (role === 'admin') return ['admin', 'coach', 'stats', 'actus', 'joueurs']
+  if (role === 'admin') return ['admin', 'coach', 'stats', 'joueurs']
   return [HOME_SITE[role]]
 }
 
 // RB-AUTH-001 : une seule session active pour le staff de direction
 export function isSingleSessionRole(role: AppRole): boolean {
-  return role === 'coach' || role === 'coach_adjoint' || role === 'admin'
+  return role === 'coach' || role === 'admin'
 }
 
 export type CurrentUserProfile = {
@@ -36,7 +34,7 @@ type RpcLookup = {
   rpc: (name: string) => PromiseLike<{ data: unknown; error: { message: string } | null }>
 }
 
-const APP_ROLES: AppRole[] = ['coach', 'coach_adjoint', 'statisticienne', 'videaste', 'admin', 'joueur']
+const APP_ROLES: AppRole[] = ['coach', 'statisticienne', 'admin', 'joueur']
 
 export async function getCurrentUserProfile(client: unknown): Promise<CurrentUserProfile | null> {
   const db = client as RpcLookup

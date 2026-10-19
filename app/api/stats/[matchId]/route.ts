@@ -108,9 +108,12 @@ async function handle(request: Request, params: Promise<{ matchId: string }>, pa
   revalidatePath('/stats')
   revalidatePath(`/stats/${matchId}`)
   if (body.action === 'publish' || body.action === 'reopen') {
+    revalidatePath('/')
     revalidatePath(`/matchs/${matchId}`)
     revalidatePath('/matchs')
     revalidatePath('/classement')
+    revalidatePath(`/equipes/${match.home_team_id}`)
+    revalidatePath(`/equipes/${match.away_team_id}`)
   }
   return json(200, { ok: true, result: result.data })
 }

@@ -27,6 +27,16 @@ export async function POST(request: NextRequest) {
   if (!reset) return json({ error: 'Session expirée. Recommencez.' }, 400)
 
   const admin = createAdminClient()
+  const [{ data: account, error: accountError }, { data: linkedPlayer, error: playerError }, { data: linkedStaff, error: staffError }] = await Promise.all([
+    admin.from('users').select('is_active, must_change_password').eq('id', reset.userId).maybeSingle(),
+    admin.from('players').select('id, first_name, last_name').eq('user_id', reset.userId).maybeSingle(),
+    admin.from('staff').select('id, first_name, last_name').eq('user_id', reset.userId).maybeSingle(),
+  ])
+  if (accountError || playerError || staffError || !account
+    || (!account.is_active && !account.must_change_password)
+    || (!linkedPlayer && !linkedStaff)) {
+    return json({ error: 'Session expirée. Recommencez.' }, 400)
+  }
   const ip = clientIp(request)
   const ipLimit = await consumeRateLimit(admin, rlKey('otp-reset-ip', ip), 10, 15 * 60)
   const userLimit = await consumeRateLimit(admin, rlKey('otp-reset-user', reset.userId), 5, 15 * 60)
@@ -38,7 +48,9 @@ export async function POST(request: NextRequest) {
 
   const { data: authResult, error: authLookupError } = await admin.auth.admin.getUserById(reset.userId)
   if (authLookupError || !authResult.user) return json({ error: 'Session expirée. Recommencez.' }, 400)
-  const passwordError = validateNewPassword(parsedInput.data.password, authResult.user.email ?? undefined)
+  const name = linkedPlayer ? `${linkedPlayer.first_name} ${linkedPlayer.last_name}`
+    : linkedStaff ? `${linkedStaff.first_name} ${linkedStaff.last_name}` : undefined
+  const passwordError = validateNewPassword(parsedInput.data.password, authResult.user.email ?? undefined, name)
   if (passwordError) return json({ error: passwordError }, 400)
 
   const { data: consumed, error: consumeError } = await admin
@@ -53,6 +65,14 @@ export async function POST(request: NextRequest) {
     password: parsedInput.data.password,
   })
   if (passwordUpdateError) return json({ error: 'Impossible de changer le mot de passe.' }, 503)
+
+  const { error: activateError } = await admin.from('users').update({
+    is_active: true,
+    must_change_password: false,
+    password_changed_at: new Date().toISOString(),
+    suspension_reason: null,
+  }).eq('id', reset.userId)
+  if (activateError) return json({ error: 'Impossible d’activer le compte. Contactez le staff.' }, 503)
 
   await admin.from('active_sessions').delete().eq('user_id', reset.userId)
   await audit(admin, 'password_reset', reset.userId, { ip, userAgent: clientUserAgent(request) })
