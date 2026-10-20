@@ -1,11 +1,12 @@
 import type { Site } from '@/lib/sites'
 
 export type AppRole =
-  | 'coach' | 'statisticienne' | 'admin' | 'joueur'
+  | 'coach' | 'coach_adjoint' | 'statisticienne' | 'admin' | 'joueur'
 
 // Route d'accueil de chaque rôle après connexion.
 export const HOME_SITE: Record<AppRole, Site> = {
   coach: 'coach',
+  coach_adjoint: 'adjoint',
   statisticienne: 'stats',
   admin: 'admin',
   joueur: 'joueurs',
@@ -34,7 +35,7 @@ type RpcLookup = {
   rpc: (name: string) => PromiseLike<{ data: unknown; error: { message: string } | null }>
 }
 
-const APP_ROLES: AppRole[] = ['coach', 'statisticienne', 'admin', 'joueur']
+const APP_ROLES: AppRole[] = ['coach', 'coach_adjoint', 'statisticienne', 'admin', 'joueur']
 
 export async function getCurrentUserProfile(client: unknown): Promise<CurrentUserProfile | null> {
   const db = client as RpcLookup

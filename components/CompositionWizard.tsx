@@ -16,6 +16,7 @@ type AvailabilityDraft = { player_id: string; availability_status: Availability 
 export default function CompositionWizard({
   matchId, team, opponent, scheduledAt, location, kickoffConfirmed, coachName, players,
   initialAvailability, initialSelectedIds, initialSlots, initialStatus, canOverrideLock,
+  saveAction = saveMatchCompositionDraft, publishAction = publishMatchComposition,
 }: {
   matchId: string
   team: Team
@@ -30,6 +31,8 @@ export default function CompositionWizard({
   initialSlots: Partial<Record<CourtSlot, string>>
   initialStatus: WorkflowStatus
   canOverrideLock: boolean
+  saveAction?: typeof saveMatchCompositionDraft
+  publishAction?: typeof publishMatchComposition
 }) {
   const router = useRouter()
   const [availability, setAvailability] = useState<Record<string, Availability>>(() => Object.fromEntries([
@@ -65,7 +68,7 @@ export default function CompositionWizard({
   function persistDraft() {
     startTransition(async () => {
       setMessage('')
-      const result = await saveMatchCompositionDraft(payload())
+      const result = await saveAction(payload())
       setMessage(result.ok ? 'Brouillon enregistré.' : result.error ?? 'Impossible d’enregistrer le brouillon.')
       if (result.ok) setStatus((current) => current === 'publiee' ? current : 'brouillon')
     })
@@ -74,7 +77,7 @@ export default function CompositionWizard({
   function advance(next: 2 | 3) {
     startTransition(async () => {
       setMessage('')
-      const result = await saveMatchCompositionDraft(payload())
+      const result = await saveAction(payload())
       if (!result.ok) { setMessage(result.error ?? 'Impossible d’enregistrer le brouillon.'); return }
       setStatus((current) => current === 'publiee' ? current : 'brouillon')
       setStep(next)
@@ -84,9 +87,9 @@ export default function CompositionWizard({
   function publish() {
     startTransition(async () => {
       setMessage('')
-      const saved = await saveMatchCompositionDraft(payload())
+      const saved = await saveAction(payload())
       if (!saved.ok) { setMessage(saved.error ?? 'Impossible de vérifier le brouillon.'); return }
-      const result = await publishMatchComposition(matchId, team.id)
+      const result = await publishAction(matchId, team.id)
       if (!result.ok) { setMessage(result.error ?? 'La publication a échoué.'); return }
       setStatus('publiee')
        setMessage('Composition publiée. Les joueurs dont le compte est rattaché reçoivent une notification dans leur espace.')

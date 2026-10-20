@@ -42,7 +42,7 @@ export default async function AdminJournalPage() {
   if (error) throw new Error('Impossible de charger le journal administratif.')
   const emailByUserId = new Map((authUsers.users ?? []).map((user) => [user.id, user.email ?? null]))
   return <main className="mx-auto max-w-5xl space-y-6 px-4 pb-28 pt-8 sm:px-6">
-    <Link href="/admin" className="inline-flex min-h-10 items-center font-semibold text-[var(--maroon-900)]">← Administration</Link>
+    <Link href="/admin" className="inline-flex min-h-10 items-center font-semibold text-[var(--maroon-900)]">Administration</Link>
     <header className="rounded-2xl bg-[var(--maroon-900)] p-6 text-white sm:p-8">
       <p className="text-xs font-bold uppercase tracking-[0.2em] text-[var(--gold-500)]">Espace administrateur</p>
       <h1 className="mt-2 font-display text-4xl sm:text-5xl">Journal</h1>

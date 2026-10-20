@@ -24,6 +24,7 @@ const COACH_PROFILE_FORM = z.object({
   first_name: z.string().trim().min(1).max(80),
   last_name: z.string().trim().min(1).max(80),
 }).strict()
+const ASSISTANT_PROFILE_FORM = COACH_PROFILE_FORM
 
 async function checkAdminRateLimit(admin: ReturnType<typeof createAdminClient>, actorId: string, action: string) {
   const requestHeaders = await headers()
@@ -106,6 +107,32 @@ export async function createHeadCoachProfile(
   })
   revalidateAdmin()
   return result('', 'Fiche du coach créée. Tu peux maintenant lui créer un compte invité et envoyer son code.')
+}
+
+export async function createAssistantCoachProfile(
+  _previousState: AdminActionState,
+  formData: FormData,
+): Promise<AdminActionState> {
+  const context = await getAdminContext()
+  if (!context) return result('Session expirée ou accès administrateur requis.')
+  const parsed = ASSISTANT_PROFILE_FORM.safeParse({ first_name: formData.get('first_name'), last_name: formData.get('last_name') })
+  if (!parsed.success) return result('Indique le prénom et le nom du coach adjoint.')
+  const { admin, userId, teamId } = context
+  try {
+    if (!await checkAdminRateLimit(admin, userId, 'assistant-profile-create')) return result('Trop de modifications. Réessaie plus tard.')
+  } catch {
+    return result('Service de sécurité indisponible. Réessaie plus tard.')
+  }
+  const { data: created, error } = await admin.from('staff').insert({
+    team_id: teamId,
+    first_name: parsed.data.first_name,
+    last_name: parsed.data.last_name,
+    role: 'coach_adjoint',
+  }).select('id').maybeSingle()
+  if (error || !created) return result('Impossible de créer la fiche du coach adjoint. Vérifie que la migration 031 a été appliquée.')
+  await audit(admin, 'admin_created_assistant_coach_profile', userId, { metadata: { profile_id: created.id, team_id: teamId } })
+  revalidateAdmin()
+  return result('', 'Fiche créée. Tu peux maintenant lui rattacher ou lui envoyer un compte depuis cette page.')
 }
 
 export async function createOrLinkAccount(

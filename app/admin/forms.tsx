@@ -5,6 +5,7 @@ import {
   cancelAccountBinding,
   createOrLinkAccount,
   createHeadCoachProfile,
+  createAssistantCoachProfile,
   resendInvitation,
   updateAccountAccess,
 } from './actions'
@@ -78,6 +79,18 @@ export function HeadCoachProfileForm() {
       <p aria-live="polite" role={state.error ? 'alert' : 'status'} className={`mt-3 min-h-5 text-sm ${state.error ? 'text-red-700' : 'text-[var(--maroon-900)]'}`}>
         {state.error || state.success}
       </p>
+    </div>
+  </form>
+}
+
+export function AssistantCoachProfileForm() {
+  const [state, formAction, pending] = useActionState(createAssistantCoachProfile, INITIAL_ACTION_STATE)
+  return <form action={formAction} className="grid gap-4 sm:grid-cols-2">
+    <div><label htmlFor="assistant-first-name" className={labelClass}>Prénom</label><input id="assistant-first-name" name="first_name" autoComplete="given-name" maxLength={80} className={fieldClass} required /></div>
+    <div><label htmlFor="assistant-last-name" className={labelClass}>Nom</label><input id="assistant-last-name" name="last_name" autoComplete="family-name" maxLength={80} className={fieldClass} required /></div>
+    <div className="sm:col-span-2">
+      <button type="submit" className={buttonClass} disabled={pending}>{pending ? 'Création…' : 'Créer la fiche adjoint'}</button>
+      <p aria-live="polite" role={state.error ? 'alert' : 'status'} className={`mt-3 min-h-5 text-sm ${state.error ? 'text-red-700' : 'text-[var(--maroon-900)]'}`}>{state.error || state.success}</p>
     </div>
   </form>
 }

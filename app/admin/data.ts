@@ -7,6 +7,7 @@ import { rlKey } from '@/lib/security'
 
 export const STAFF_ROLE_LABELS: Record<string, string> = {
   coach: 'Coach principal',
+  coach_adjoint: 'Coach adjoint',
   statisticienne: 'Statisticienne',
   admin: 'Administrateur',
 }

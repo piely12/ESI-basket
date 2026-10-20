@@ -35,14 +35,14 @@ export default async function Home() {
           <div>
             <div className="mb-2 flex items-center justify-between">
               <h2 className="font-display text-2xl text-[var(--maroon-900)]">Prochain match</h2>
-              <Link href="/matchs" className="text-xs font-bold uppercase tracking-wide text-[var(--maroon-700)]">Calendrier →</Link>
+              <Link href="/matchs" className="text-xs font-bold uppercase tracking-wide text-[var(--maroon-700)]">Calendrier</Link>
             </div>
             {nextMatch ? <MatchCard match={nextMatch} large /> : <div className="rounded-xl border border-[var(--line)] bg-[var(--surface)] p-5 text-sm text-[var(--ink-soft)]">Le prochain rendez-vous des Lions sera annoncé ici.</div>}
           </div>
           <div>
             <div className="mb-2 flex items-center justify-between">
               <h2 className="font-display text-2xl text-[var(--maroon-900)]">Dernier résultat</h2>
-              <Link href="/matchs" className="text-xs font-bold uppercase tracking-wide text-[var(--maroon-700)]">Tous les matchs →</Link>
+              <Link href="/matchs" className="text-xs font-bold uppercase tracking-wide text-[var(--maroon-700)]">Tous les matchs</Link>
             </div>
             {lastResult ? <MatchCard match={lastResult} large /> : <div className="rounded-xl border border-[var(--line)] bg-[var(--surface)] p-5 text-sm text-[var(--ink-soft)]">Les résultats des Lions apparaîtront après le premier match.</div>}
           </div>
@@ -51,7 +51,7 @@ export default async function Home() {
         {news.length > 0 && <section aria-labelledby="news-title" className="pt-1">
           <div className="mb-3 flex items-center justify-between gap-3">
             <h2 id="news-title" className="font-display text-2xl uppercase tracking-wide text-[var(--maroon-900)]">Actualités</h2>
-            <Link href="/actualites" className="shrink-0 text-sm font-semibold text-[var(--maroon-700)]">Tout voir →</Link>
+            <Link href="/actualites" className="shrink-0 text-sm font-semibold text-[var(--maroon-700)]">Tout voir</Link>
           </div>
           <div className="grid gap-3 md:grid-cols-3">
             {news.map((item) => <article key={item.id} className="min-h-48 rounded-xl border border-[var(--line)] bg-[var(--surface)] p-5">

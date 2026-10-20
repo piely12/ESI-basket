@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { getAdminAccountData } from './data'
 
 const cards = [
-  { href: '/admin/staff', title: 'Staff', description: 'Gérer les comptes du coach principal et de la statisticienne.' },
+  { href: '/admin/staff', title: 'Staff', description: 'Gérer les comptes du coach principal, du coach adjoint et de la statisticienne.' },
   { href: '/admin/joueurs', title: 'Joueurs', description: 'Rattacher chaque compte au bon profil sportif.' },
   { href: '/admin/journal', title: 'Journal', description: 'Consulter les rattachements et les événements de sécurité.' },
 ]
@@ -25,7 +25,7 @@ export default async function AdminPage() {
       {cards.map((card) => <Link key={card.href} href={card.href} className="group min-h-48 rounded-2xl border border-[var(--line)] bg-[var(--surface)] p-6 shadow-sm transition hover:-translate-y-1 hover:border-[var(--gold-deep)] hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--gold-deep)]">
         <h2 className="font-display text-3xl text-[var(--maroon-900)]">{card.title}</h2>
         <p className="mt-3 text-sm text-[var(--ink-soft)]">{card.description}</p>
-        <span className="mt-6 inline-block font-semibold text-[var(--maroon-900)]">Ouvrir <span aria-hidden="true">→</span></span>
+        <span className="mt-6 inline-block font-semibold text-[var(--maroon-900)]">Ouvrir</span>
       </Link>)}
     </section>
   </main>

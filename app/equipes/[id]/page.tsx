@@ -3,7 +3,6 @@ import { notFound } from 'next/navigation'
 import PublicNav from '@/components/PublicNav'
 import TeamLogo from '@/components/TeamLogo'
 import MatchCard from '@/components/MatchCard'
-import PlayerCardVisual from '@/components/PlayerCardVisual'
 import EmptyState from '@/components/ui/EmptyState'
 import { getStandings, getTeamPageData } from '@/lib/data/public'
 
@@ -119,7 +118,7 @@ export default async function TeamPage({ params, searchParams }: {
       <PublicNav />
       <main className="mx-auto max-w-screen-xl space-y-7 px-4 pb-28 pt-7 sm:px-6 lg:px-10">
         <Link href="/classement" className="inline-flex min-h-10 items-center gap-2 rounded font-semibold text-[var(--maroon-700)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--gold-deep)]">
-          <span aria-hidden="true">←</span> Retour au classement
+          Retour au classement
         </Link>
 
         <header className="rounded-2xl bg-[var(--maroon-900)] p-5 text-white shadow-md sm:p-7 lg:p-9">
@@ -208,15 +207,6 @@ export default async function TeamPage({ params, searchParams }: {
         </section>
 
         {team.is_esi && <>
-          <section>
-            <div className="mb-3 flex items-end justify-between gap-3">
-              <div><h2 className="font-display text-3xl text-[var(--maroon-900)]">Effectif ESI</h2><p className="text-sm text-[var(--ink-soft)]">{players.length} joueurs</p></div>
-              <Link href="/equipe" className="text-sm font-semibold text-[var(--maroon-700)]">Toutes les fiches →</Link>
-            </div>
-            {players.length ? <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">{players.map((player) => <Link key={player.id} href={`/equipe/${player.id}`}><PlayerCardVisual player={player} variant="compact" /></Link>)}</div>
-              : <EmptyState title="Effectif indisponible" description="Les fiches des joueurs ESI apparaîtront ici dès leur ajout." />}
-          </section>
-
           {players.length > 0 && <section>
             <h2 className="mb-3 font-display text-3xl text-[var(--maroon-900)]">Statistiques individuelles</h2>
             <div className="overflow-x-auto rounded-xl border border-[var(--line)] bg-[var(--surface)]">

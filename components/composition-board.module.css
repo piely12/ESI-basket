@@ -1,91 +1,249 @@
 .board {
-  --board-paper: oklch(0.17 0.03 18);
-  --board-surface: oklch(0.22 0.04 18);
-  --board-ink: oklch(0.95 0.02 80);
-  --board-ink-dark: oklch(0.22 0.04 20);
-  --board-soft: oklch(0.72 0.03 60);
-  --board-line: oklch(1 0 0 / 12%);
-  --board-gold: oklch(0.8 0.14 82);
-  box-sizing: border-box;
   width: 100%;
-  padding: clamp(18px, 2.4vw, 30px);
-  border-radius: 22px;
-  background: var(--board-paper);
-  color: var(--board-ink);
-  font-family: var(--font-barlow), Barlow, Arial, sans-serif;
+  overflow: hidden;
+  background: #190909;
+  color: #f6ede0;
+  font-family: Barlow, "Segoe UI", Arial, sans-serif;
 }
 
-.header { display: flex; align-items: center; justify-content: space-between; gap: 24px; min-height: 120px; margin-bottom: 24px; }
-.teamHeading, .opponentHeading { display: flex; min-width: 0; align-items: center; gap: 20px; }
-.opponentHeading { justify-content: flex-end; }
-.homeLogo, .opponentLogo { display: grid; flex: none; place-items: center; overflow: hidden; background: var(--board-ink); }
-.homeLogo { width: 104px; height: 104px; border-radius: 16px; }
-.opponentLogo { width: 92px; height: 92px; border-radius: 50%; }
-.homeLogo > span, .opponentLogo > span { width: 100% !important; height: 100% !important; }
-.homeCopy { min-width: 0; }
-.eyebrow { margin: 0 0 6px; color: var(--board-gold); font-size: 14px; font-weight: 700; letter-spacing: .24em; text-transform: uppercase; }
-.homeCopy h2 { margin: 0; font-family: var(--font-bebas-neue), 'Bebas Neue', Impact, sans-serif; font-size: clamp(34px, 3.3vw, 56px); font-weight: 400; line-height: .95; letter-spacing: .02em; }
-.opponentCopy { text-align: right; }
-.opponentName { margin: 0; font-family: var(--font-bebas-neue), 'Bebas Neue', Impact, sans-serif; font-size: clamp(30px, 2.8vw, 46px); line-height: 1; white-space: nowrap; }
-.matchMeta { margin: 7px 0 0; color: var(--board-soft); font-size: 13px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
-.content { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(320px, .9fr); gap: clamp(24px, 2.4vw, 36px); align-items: stretch; }
-.court { position: relative; width: 100%; min-width: 0; aspect-ratio: 4 / 3; overflow: hidden; border: 1px solid oklch(0.8 0.14 82 / 28%); border-radius: 18px; background: var(--board-surface); }
-.courtLines { position: absolute; inset: 0; width: 100%; height: 100%; color: var(--board-ink); }
-.keyArea { fill: oklch(0.42 0.14 18 / 28%); }
-.hoop { stroke: var(--board-gold); stroke-opacity: 1; }
-.token { position: absolute; display: flex; max-width: 24%; align-items: center; transform: translate(-50%, -50%); flex-direction: column; gap: clamp(2px, .45vw, 6px); text-align: center; }
-.number { display: grid; width: clamp(36px, 4.2vw, 44px); aspect-ratio: 1; place-items: center; border: 2px solid oklch(1 0 0 / 32%); border-radius: 50%; background: var(--board-gold); color: var(--board-ink-dark); font-family: var(--font-bebas-neue), 'Bebas Neue', Impact, sans-serif; font-size: clamp(20px, 2.4vw, 28px); line-height: 1; }
-.emptyNumber { background: transparent; color: var(--board-soft); }
-.playerName, .emptyName { max-width: 100%; border-radius: 5px; background: var(--board-ink); color: var(--board-ink-dark); padding: 3px 6px; font-size: clamp(8px, 1.18vw, 15px); font-weight: 700; line-height: 1.15; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.emptyName { background: transparent; color: var(--board-soft); }
-.position { color: var(--board-gold); font-size: clamp(7px, .95vw, 12px); font-weight: 700; letter-spacing: .16em; line-height: 1.1; text-transform: uppercase; }
-.benchPanel { display: flex; min-width: 0; flex-direction: column; }
-.benchPanel h3 { margin: 0 0 8px; color: var(--board-gold); font-family: var(--font-bebas-neue), 'Bebas Neue', Impact, sans-serif; font-size: 32px; font-weight: 400; letter-spacing: .06em; text-transform: uppercase; }
-.benchList { margin: 0; padding: 0; list-style: none; }
-.benchList li { display: grid; grid-template-columns: 48px minmax(0, 1fr) auto; align-items: center; gap: 12px; min-height: 56px; border-bottom: 1px solid var(--board-line); padding: 8px 0; }
-.benchNumber { color: var(--board-gold); font-family: var(--font-bebas-neue), 'Bebas Neue', Impact, sans-serif; font-size: 30px; line-height: 1; }
-.benchName { min-width: 0; font-size: 18px; font-weight: 700; overflow-wrap: anywhere; }
-.benchPosition { color: var(--board-soft); font-size: 12px; font-weight: 700; letter-spacing: .12em; text-align: right; text-transform: uppercase; }
-.emptyBench { color: var(--board-soft); }
-.coach { display: flex; min-height: 70px; align-items: center; justify-content: space-between; gap: 12px; margin-top: auto; border-radius: 12px; background: var(--board-surface); padding: 12px 18px; }
-.coach span { color: var(--board-soft); font-size: 12px; font-weight: 700; letter-spacing: .2em; text-transform: uppercase; }
-.coach strong { font-family: var(--font-bebas-neue), 'Bebas Neue', Impact, sans-serif; font-size: 27px; font-weight: 400; letter-spacing: .04em; text-align: right; text-transform: uppercase; }
-
-@media (max-width: 900px) {
-  .header { align-items: flex-start; flex-direction: column; gap: 14px; min-height: 0; margin-bottom: 18px; }
-  .teamHeading { gap: 10px; }
-  .homeLogo { width: 48px; height: 48px; border-radius: 9px; }
-  .homeCopy h2 { font-size: clamp(16px, 2.4vw, 22px); white-space: nowrap; }
-  .eyebrow { font-size: 10px; letter-spacing: .16em; }
-  .opponentHeading { width: 100%; justify-content: flex-end; }
-  .opponentLogo { width: 42px; height: 42px; }
-  .opponentName { font-size: 23px; }
-  .matchMeta { font-size: 9px; letter-spacing: .06em; }
-  .content { grid-template-columns: minmax(0, 1fr); gap: 20px; }
-  .court { width: min(100%, 600px); margin-inline: auto; }
-  .token { max-width: 29%; }
-  .number { width: clamp(36px, 10vw, 44px); font-size: clamp(20px, 5vw, 26px); }
-  .playerName, .emptyName { font-size: clamp(9px, 2.2vw, 13px); }
-  .position { font-size: clamp(7px, 1.8vw, 10px); }
-  .benchPanel h3 { font-size: 28px; }
-  .benchList li { min-height: 48px; grid-template-columns: 38px minmax(0, 1fr) auto; gap: 10px; }
-  .benchNumber { font-size: 27px; }
-  .benchName { font-size: 16px; }
-  .benchPosition { font-size: 10px; }
+.viewport {
+  position: relative;
+  width: min(100%, 1202px);
+  aspect-ratio: 1202 / 770;
+  margin-inline: auto;
+  overflow: hidden;
+  container-type: inline-size;
 }
 
-@media (max-width: 420px) {
-  .board { padding: 10px; border-radius: 14px; }
-  .header { gap: 10px; margin-bottom: 14px; }
-  .teamHeading { gap: 8px; }
-  .homeLogo { width: 42px; height: 42px; }
-  .homeCopy h2 { font-size: clamp(15px, 4.2vw, 17px); }
-  .eyebrow { margin-bottom: 3px; font-size: 8px; letter-spacing: .12em; }
-  .opponentLogo { width: 36px; height: 36px; }
-  .opponentName { font-size: 20px; }
-  .matchMeta { margin-top: 4px; font-size: 8px; }
-  .content { gap: 14px; }
-  .benchPanel h3 { font-size: 24px; }
-  .benchList li { grid-template-columns: 30px minmax(0, 1fr); gap: 8px; }
-  .benchPosition { grid-column: 2; text-align: left; }
+.scene {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 1202px;
+  height: 770px;
+  transform: scale(var(--scene-scale, 1));
+  transform-origin: top left;
+  background: #190909;
 }
+
+.homeLogo {
+  position: absolute;
+  top: 37px;
+  left: 37px;
+  display: flex;
+  width: 105px;
+  height: 105px;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: 20px;
+  background: #f6ede0;
+}
+
+.homeLogo > span { width: 92px !important; height: 92px !important; }
+.homeLogo img { object-fit: contain !important; }
+
+.kicker {
+  position: absolute;
+  top: 44px;
+  left: 163px;
+  color: #e8b448;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: .34em;
+  text-transform: uppercase;
+}
+
+.title {
+  position: absolute;
+  top: 58px;
+  left: 160px;
+  color: #f6ede0;
+  font-family: "Bebas Neue", Impact, "Arial Narrow", sans-serif;
+  font-size: 94px;
+  font-weight: 400;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.vs {
+  position: absolute;
+  top: 50px;
+  right: 155px;
+  text-align: right;
+}
+
+.vs h3 {
+  color: #f6ede0;
+  font-family: "Bebas Neue", Impact, "Arial Narrow", sans-serif;
+  font-size: 58px;
+  font-weight: 400;
+  line-height: 1;
+}
+
+.vs p {
+  margin-top: 8px;
+  color: #cdb9a8;
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: .22em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.opponentLogo {
+  position: absolute;
+  top: 41px;
+  left: 1066px;
+  width: 98px;
+  height: 98px;
+  overflow: hidden;
+  border-radius: 50%;
+  background: #fff;
+}
+
+.opponentLogo > span { width: 100% !important; height: 100% !important; }
+.opponentLogo img { object-fit: cover !important; }
+
+.panel {
+  position: absolute;
+  top: 169px;
+  left: 37px;
+  width: 601px;
+  height: 563px;
+  border-radius: 20px;
+  background: #2b1214;
+}
+
+.court {
+  position: absolute;
+  top: 18px;
+  left: 18px;
+  width: 566px;
+  height: 510px;
+}
+
+.court svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+
+.player {
+  position: absolute;
+  display: flex;
+  width: 0;
+  flex-direction: column;
+  align-items: center;
+  overflow: visible;
+  text-align: center;
+}
+
+.number {
+  display: flex;
+  width: 60px;
+  height: 60px;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  border: 3px solid #f6ede0;
+  border-radius: 50%;
+  background: #e8b448;
+  color: #2a0f0f;
+  font-family: "Bebas Neue", Impact, "Arial Narrow", sans-serif;
+  font-size: 42px;
+  line-height: 1;
+  padding-top: 2px;
+}
+
+.playerName {
+  margin-top: 11px;
+  border-radius: 4px;
+  background: #f6ede0;
+  color: #2a0f0f;
+  padding: 6px 10px;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.position {
+  margin-top: 11px;
+  color: #cdb9a8;
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: .22em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.subsTitle {
+  position: absolute;
+  top: 168px;
+  left: 676px;
+  color: #e8b448;
+  font-family: "Bebas Neue", Impact, "Arial Narrow", sans-serif;
+  font-size: 40px;
+  font-weight: 400;
+  line-height: 40px;
+}
+
+.subs {
+  position: absolute;
+  top: 212px;
+  left: 676px;
+  width: 488px;
+  list-style: none;
+}
+
+.subs li {
+  display: flex;
+  height: 66.5px;
+  align-items: center;
+  border-bottom: 1px solid #3a2224;
+}
+
+.benchNumber {
+  width: 58px;
+  flex: none;
+  padding-top: 3px;
+  color: #e8b448;
+  font-family: "Bebas Neue", Impact, "Arial Narrow", sans-serif;
+  font-size: 44px;
+  line-height: 1;
+}
+
+.benchName { color: #f6ede0; font-size: 24px; font-weight: 600; white-space: nowrap; }
+
+.benchPosition {
+  margin-left: auto;
+  color: #cdb9a8;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: .2em;
+  text-align: right;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.emptyBench {
+  position: absolute;
+  top: 212px;
+  left: 676px;
+  color: #cdb9a8;
+  font-size: 20px;
+}
+
+.coach {
+  position: absolute;
+  top: 697px;
+  left: 676px;
+  display: flex;
+  width: 488px;
+  height: 61px;
+  align-items: center;
+  justify-content: space-between;
+  border-radius: 10px;
+  background: #2b1214;
+  padding: 0 18px 0 17px;
+}
+
+.coach span { color: #cdb9a8; font-size: 13px; font-weight: 600; letter-spacing: .3em; }
+.coach strong { color: #f6ede0; font-family: "Bebas Neue", Impact, "Arial Narrow", sans-serif; font-size: 30px; font-weight: 400; letter-spacing: .01em; }

@@ -33,6 +33,11 @@ function NavIcon({ name }: { name: string }) {
 
 export default function PublicNav() {
   const pathname = usePathname()
+  const isActive = (href: string) => {
+    if (href === '/') return pathname === '/'
+    if (href === '/equipe') return pathname.startsWith('/equipe') || pathname.startsWith('/equipes/')
+    return pathname === href || pathname.startsWith(`${href}/`)
+  }
   return (
     <>
       <header className="sticky top-0 z-30 border-b border-white/10 bg-[var(--maroon-900)] text-white shadow-md">
@@ -59,9 +64,9 @@ export default function PublicNav() {
       </header>
       <nav aria-label="Navigation principale" className="fixed inset-x-0 bottom-0 z-30 grid h-[calc(65px+env(safe-area-inset-bottom))] grid-cols-6 border-t border-[var(--line)] bg-[var(--surface)] pb-[env(safe-area-inset-bottom)] shadow-[0_-2px_8px_rgba(35,23,18,0.08)]">
         {LINKS.map((link) => (
-          <Link key={link.href} href={link.href} aria-current={pathname === link.href ? 'page' : undefined} className={`flex flex-col items-center justify-center gap-0.5 px-0.5 text-center text-[10px] leading-tight transition-colors sm:text-xs [&_svg]:h-5 [&_svg]:w-5 sm:[&_svg]:h-6 sm:[&_svg]:w-6 ${pathname === link.href ? 'text-[var(--maroon-700)]' : 'text-[#806c66]'}`}>
+          <Link key={link.href} href={link.href} aria-current={isActive(link.href) ? 'page' : undefined} className={`group relative flex flex-col items-center justify-center gap-0.5 px-0.5 text-center text-[10px] leading-tight transition-all duration-200 ease-out hover:-translate-y-0.5 hover:text-[var(--maroon-700)] focus-visible:outline-2 focus-visible:outline-[var(--gold-deep)] sm:text-xs [&_svg]:h-5 [&_svg]:w-5 [&_svg]:transition-transform [&_svg]:duration-200 group-hover:[&_svg]:scale-110 sm:[&_svg]:h-6 sm:[&_svg]:w-6 ${isActive(link.href) ? 'bg-[var(--gold-500)]/15 font-semibold text-[var(--maroon-900)]' : 'text-[#806c66]'}`}>
             <NavIcon name={link.label} />
-            <span>{link.label}</span>
+            <span className={`relative after:absolute after:-bottom-1 after:left-1/2 after:h-0.5 after:-translate-x-1/2 after:rounded-full after:bg-[var(--maroon-700)] after:transition-all after:duration-200 ${isActive(link.href) ? 'after:w-full' : 'after:w-0 group-hover:after:w-full'}`}>{link.label}</span>
           </Link>
         ))}
       </nav>

@@ -47,7 +47,7 @@ export default function FirstLoginForm() {
       }
       setOtp(''); setPassword(''); setConfirmation('')
       const redirectPath = result.redirect
-      if (typeof redirectPath !== 'string' || !/^\/(coach|stats|joueurs|admin)$/.test(redirectPath)) {
+      if (typeof redirectPath !== 'string' || !/^\/(coach|adjoint|stats|joueurs|admin)$/.test(redirectPath)) {
         router.replace('/login')
         return
       }

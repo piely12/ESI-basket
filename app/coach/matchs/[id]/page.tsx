@@ -68,7 +68,7 @@ export default async function CoachMatchPage({ params, searchParams }: PageProps
 
   return (
     <main className={styles.page}>
-      <Link className={styles.link} href="/coach">← Retour au tableau de bord</Link>
+      <Link className={styles.link} href="/coach">Retour au tableau de bord</Link>
       <header className={styles.hero}>
         <div className={styles.pageHeader}>
           <div><p className={styles.eyebrow}>Gestion du match</p><h1 className={styles.title}>{homeTeam.name} · {awayTeam.name}</h1>

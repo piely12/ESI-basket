@@ -35,22 +35,19 @@ export default async function PlayerPage({ params, searchParams }: {
   const twoMade = made === null || threesMade === null ? null : made - threesMade
   const twoAttempted = attempted === null || threesAttempted === null ? null : attempted - threesAttempted
   const percentage = (makes: number | null, attempts: number | null) => makes === null || !attempts ? '—' : `${(makes / attempts * 100).toFixed(1)}%`
-  const best = played.reduce<number | null>((maximum, stat) => stat.points === null ? maximum : Math.max(maximum ?? stat.points, stat.points), null)
-  const minutes = total('minutes_played')
   const summary = [
-    ['Matchs jou&eacute;s', played.length], ['PTS / match', average('points')], ['REB / match', average('rebounds')],
+    ['Matchs joués', played.length], ['PTS / match', average('points')], ['REB / match', average('rebounds')],
     ['AST / match', average('assists')], ['Interceptions / match', average('steals')], ['Contres / match', average('blocks')],
     ['Balles perdues / match', average('turnovers')], ['Fautes / match', average('personal_fouls')],
     ['Tirs', percentage(made, attempted)], ['2 points', percentage(twoMade, twoAttempted)],
     ['3 points', percentage(threesMade, threesAttempted)], ['Lancers francs', percentage(freeThrowsMade, freeThrowsAttempted)],
-    ['Minutes / match', minutes === null || !played.length ? '—' : (minutes / played.length).toFixed(1)], ['Meilleure marque', best ?? '—'],
   ]
 
   return (
     <>
       <PublicNav />
       <main className="mx-auto max-w-screen-xl space-y-5 px-4 pb-28 pt-7 sm:px-6 lg:space-y-7 lg:px-10">
-        <Link href="/equipe" className="inline-flex min-h-10 items-center gap-2 rounded text-sm font-semibold text-[var(--maroon-700)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--gold-deep)]"><span aria-hidden="true">&#8592;</span> Effectif</Link>
+        <Link href="/equipe" className="inline-flex min-h-10 items-center gap-2 rounded text-sm font-semibold text-[var(--maroon-700)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--gold-deep)]">Effectif</Link>
         <PlayerCardVisual player={player} />
         <form method="get" className="grid gap-3 rounded-xl border border-[var(--line)] bg-[var(--surface)] p-4 sm:grid-cols-2 lg:grid-cols-4 lg:items-end">
           <label className="grid gap-1 text-xs font-bold uppercase tracking-wide text-[var(--ink-soft)]">Saison
@@ -77,7 +74,7 @@ export default async function PlayerPage({ params, searchParams }: {
                 <p className="text-sm tabular-nums text-[var(--ink-soft)]">{stat.points ?? '—'} pts · {stat.rebounds ?? '—'} reb · {stat.assists ?? '—'} passes</p>
               </Link>
             })}
-          </div> : <p className="mt-2 text-sm text-[var(--ink-soft)]">Aucun match jou&eacute; pour le moment.</p>}
+          </div> : <p className="mt-2 text-sm text-[var(--ink-soft)]">Aucun match joué pour le moment.</p>}
         </section>
       </main>
     </>

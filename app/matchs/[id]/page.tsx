@@ -31,7 +31,7 @@ export default async function MatchDetailPage({ params }: { params: Promise<{ id
       <PublicNav />
       <main className="mx-auto max-w-6xl space-y-5 px-3 pb-28 pt-3 sm:px-5 sm:pt-4">
         <Link href="/matchs" className="inline-flex min-h-9 items-center gap-2 rounded text-sm font-semibold text-[var(--maroon-700)] hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--gold-deep)]">
-          <span aria-hidden="true">←</span> Retour au calendrier
+          Retour au calendrier
         </Link>
         <MatchCard match={match} large />
 

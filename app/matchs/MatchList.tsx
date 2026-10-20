@@ -153,8 +153,8 @@ export default function MatchList({
               <div className="flex items-center justify-between gap-2">
                 <h2 className="font-display text-2xl capitalize text-[var(--maroon-900)]">{monthLabel}</h2>
                 <div className="flex gap-1">
-                  <button type="button" aria-label="Mois précédent" onClick={() => setViewMonth((month) => changeMonth(month, -1))} className="grid size-9 place-items-center rounded-full border border-[var(--line)] text-lg text-[var(--maroon-900)] hover:bg-[var(--paper)]">‹</button>
-                  <button type="button" aria-label="Mois suivant" onClick={() => setViewMonth((month) => changeMonth(month, 1))} className="grid size-9 place-items-center rounded-full border border-[var(--line)] text-lg text-[var(--maroon-900)] hover:bg-[var(--paper)]">›</button>
+                  <button type="button" aria-label="Mois précédent" onClick={() => setViewMonth((month) => changeMonth(month, -1))} className="min-h-9 rounded-full border border-[var(--line)] px-2 text-xs font-semibold text-[var(--maroon-900)] hover:bg-[var(--paper)]">Précédent</button>
+                  <button type="button" aria-label="Mois suivant" onClick={() => setViewMonth((month) => changeMonth(month, 1))} className="min-h-9 rounded-full border border-[var(--line)] px-2 text-xs font-semibold text-[var(--maroon-900)] hover:bg-[var(--paper)]">Suivant</button>
                 </div>
               </div>
 

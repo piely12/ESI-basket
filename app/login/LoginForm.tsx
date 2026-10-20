@@ -45,7 +45,7 @@ export default function LoginForm() {
         return
       }
       const redirectPath = result.redirect
-      if (typeof redirectPath !== 'string' || !/^\/(coach|stats|joueurs|admin|premiere-connexion)$/.test(redirectPath)) {
+      if (typeof redirectPath !== 'string' || !/^\/(coach|adjoint|stats|joueurs|admin|premiere-connexion)$/.test(redirectPath)) {
         setPassword('')
         setError('Connexion impossible. Réessayez.')
         submitted.current = false
