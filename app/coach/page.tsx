@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import { requireAnyRole } from '@/lib/auth/requireUser'
 import type { Team } from '@/lib/data/public'
 import TeamLogo from '@/components/TeamLogo'
+import { isMatchLockedByTime } from '@/lib/match-time'
 import styles from './coach.module.css'
 
 type CoachMatch = {
@@ -93,8 +94,8 @@ export default async function CoachHomePage() {
               <div className={styles.matchMeta}><time dateTime={match.scheduled_at}>{formatMatchDate(match.scheduled_at, match.kickoff_confirmed)}</time><span>{match.location || 'Lieu à confirmer'}</span></div>
               {match.public_note && <p className={styles.help}>{match.public_note}</p>}
               <div className={styles.teams}><strong>{match.home_team.name}</strong><span className={styles.vs}>VS</span><strong>{match.away_team.name}</strong></div>
-              <div className="mt-3 flex items-center gap-3"><TeamLogo team={match.home_team.is_esi ? match.away_team : match.home_team} size={48} /><div><strong>{(['en_cours','termine'].includes(match.status) || new Date(match.scheduled_at).getTime() <= Date.now()) ? 'Verrouillée' : workflows.get(match.id)==='verrouillee'?'Verrouillée':workflows.get(match.id)==='publiee'?'Publiée':workflows.get(match.id)==='brouillon'?'Brouillon':'À faire'}</strong><p className={styles.help}>Statut de la composition</p></div></div>
-              <Link className={styles.button} href={'/coach/matchs/' + match.id}>{(['en_cours','termine'].includes(match.status) || new Date(match.scheduled_at).getTime() <= Date.now() || workflows.get(match.id)==='publiee' || workflows.get(match.id)==='verrouillee') ? 'Voir la composition' : 'Préparer la composition'}</Link>
+              <div className="mt-3 flex items-center gap-3"><TeamLogo team={match.home_team.is_esi ? match.away_team : match.home_team} size={48} /><div><strong>{(isMatchLockedByTime(match.scheduled_at, match.status)) ? 'Verrouillée' : workflows.get(match.id)==='verrouillee'?'Verrouillée':workflows.get(match.id)==='publiee'?'Publiée':workflows.get(match.id)==='brouillon'?'Brouillon':'À faire'}</strong><p className={styles.help}>Statut de la composition</p></div></div>
+              <Link className={styles.button} href={'/coach/matchs/' + match.id}>{(isMatchLockedByTime(match.scheduled_at, match.status) || workflows.get(match.id)==='publiee' || workflows.get(match.id)==='verrouillee') ? 'Voir la composition' : 'Préparer la composition'}</Link>
             </article>)}
           </div>
         )}

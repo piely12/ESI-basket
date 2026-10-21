@@ -165,7 +165,7 @@ export default function CompositionWizard({
 
     {step === 3 && <div className={styles.previewContent}>
       <div className={styles.sectionTitle}><div><p className={styles.kicker}>Étape 3</p><h3>Aperçu de la composition</h3></div><span className={styles.pill}>{statusText}</span></div>
-      <CompositionBoard team={team} opponent={opponent} scheduledAt={scheduledAt} location={location} coachName={coachName} starters={slotEntries} bench={benchEntries} />
+      <CompositionBoard matchId={matchId} team={team} opponent={opponent} scheduledAt={scheduledAt} location={location} coachName={coachName} starters={slotEntries} bench={benchEntries} />
     </div>}
 
     {message && <p role="status" className={message.includes('échoué')||message.includes('Impossible')||message.includes('exactement')||message.includes('verrouillée') ? styles.error : styles.success}>{message}</p>}

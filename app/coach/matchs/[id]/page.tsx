@@ -4,6 +4,7 @@ import { requireAnyRole } from '@/lib/auth/requireUser'
 import CompositionWizard from '@/components/CompositionWizard'
 import type { Team } from '@/lib/data/public'
 import { COURT_SLOTS, resolveStarterSlots, type CourtSlot, type LineupEntry } from '@/lib/lineup'
+import { isMatchLockedByTime } from '@/lib/match-time'
 import { updateMatchDetails, saveMatchPreparation, saveMatchResult, savePlayerStats, updateMatchStatus } from '../../actions'
 import styles from '../../coach.module.css'
 
@@ -117,7 +118,7 @@ export default async function CoachMatchPage({ params, searchParams }: PageProps
       </>}
 
       {profile.role === 'coach'
-        ? <CompositionWizard canOverrideLock={false} matchId={match.id} team={compositionTeam} opponent={opponentTeam} scheduledAt={match.scheduled_at} location={match.location} kickoffConfirmed={match.kickoff_confirmed} coachName={profile.first_name + ' ' + profile.last_name} players={players} initialAvailability={initialAvailability} initialSelectedIds={initialSelectedIds} initialSlots={initialSlotSelections} initialStatus={new Date(match.scheduled_at).getTime() <= Date.now() || ['en_cours','termine'].includes(match.status) ? 'verrouillee' : workflow?.status ?? 'brouillon'} />
+        ? <CompositionWizard canOverrideLock={false} matchId={match.id} team={compositionTeam} opponent={opponentTeam} scheduledAt={match.scheduled_at} location={match.location} kickoffConfirmed={match.kickoff_confirmed} coachName={profile.first_name + ' ' + profile.last_name} players={players} initialAvailability={initialAvailability} initialSelectedIds={initialSelectedIds} initialSlots={initialSlotSelections} initialStatus={isMatchLockedByTime(match.scheduled_at, match.status) ? 'verrouillee' : workflow?.status ?? 'brouillon'} />
         : <section className={styles.card}><p className={styles.eyebrow}>Composition</p><h2 className={styles.cardTitle}>Gestion réservée au coach principal</h2><p className={styles.help}>Le compte administrateur gère le calendrier et les comptes. Le coach principal prépare et publie la composition avec son propre accès.</p></section>}
 
       {profile.role === 'admin' && <>

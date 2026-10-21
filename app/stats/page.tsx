@@ -40,19 +40,19 @@ export default async function StatsPage() {
   const workflowByMatch = new Map((workflows ?? []).map((row) => [row.match_id, row.status]))
 
   return <main className="mx-auto max-w-5xl space-y-6 px-4 pb-20 pt-8 sm:px-5">
-    <header className="rounded-2xl bg-[var(--maroon-900)] p-6 text-white sm:p-8">
+    <header className="rounded-2xl bg-maroon-panel p-6 text-on-brand sm:p-8">
       <p className="text-xs font-bold uppercase tracking-[0.2em] text-[var(--gold-500)]">Espace statisticienne</p>
       <h1 className="mt-2 font-display text-5xl leading-none sm:text-6xl">Feuilles de match</h1>
-      <p className="mt-3 max-w-2xl text-sm text-white/80">Saisis les résultats après le match. La sauvegarde est automatique; la publication attend ta relecture.</p>
+      <p className="mt-3 max-w-2xl text-sm text-on-brand/80">Saisis les résultats après le match. La sauvegarde est automatique; la publication attend ta relecture.</p>
     </header>
     {failed || workflowError ? <section role="alert" className="rounded-xl border border-[var(--line)] bg-[var(--surface)] p-5 text-sm text-[var(--ink-soft)]">Impossible de charger les matchs terminés. Actualise la page puis réessaie.</section>
-      : matches.length === 0 ? <section className="rounded-xl border border-dashed border-[var(--line)] bg-[var(--surface)] p-8 text-center"><h2 className="font-display text-2xl text-[var(--maroon-900)]">Aucun match terminé</h2><p className="mt-2 text-sm text-[var(--ink-soft)]">Les rencontres terminées apparaîtront ici pour la saisie des statistiques.</p></section>
+      : matches.length === 0 ? <section className="rounded-xl border border-dashed border-[var(--line)] bg-[var(--surface)] p-8 text-center"><h2 className="font-display text-2xl text-brand">Aucun match terminé</h2><p className="mt-2 text-sm text-[var(--ink-soft)]">Les rencontres terminées apparaîtront ici pour la saisie des statistiques.</p></section>
         : <section className="space-y-3" aria-label="Rencontres terminées de l’équipe">
           {matches.map((match) => {
             const status = workflowByMatch.get(match.id) ?? 'brouillon'
             return <article key={match.id} className="flex flex-col gap-4 rounded-xl border border-[var(--line)] bg-[var(--surface)] p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
-              <div className="min-w-0"><p className="text-xs font-bold uppercase tracking-wide text-[var(--ink-soft)]">{new Date(match.scheduled_at).toLocaleDateString('fr-FR', { dateStyle: 'full', timeZone: 'Africa/Abidjan' })}</p><h2 className="mt-1 font-display text-2xl text-[var(--maroon-900)]">{match.home_team?.name ?? 'Équipe'} <span className="text-[var(--gold-deep)]">{match.home_score ?? '–'} : {match.away_score ?? '–'}</span> {match.away_team?.name ?? 'Équipe'}</h2>{match.location && <p className="text-sm text-[var(--ink-soft)]">{match.location}</p>}</div>
-              <div className="flex shrink-0 flex-wrap items-center gap-3"><span className="rounded-full bg-[var(--paper)] px-3 py-1 text-xs font-bold text-[var(--maroon-900)]">{workflowLabel[status] ?? 'À saisir'}</span><Link href={`/stats/${match.id}`} className="inline-flex min-h-11 items-center justify-center rounded-lg bg-[var(--maroon-900)] px-4 py-2 text-sm font-semibold text-white hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--gold-500)]">{status === 'publie' ? 'Consulter' : 'Ouvrir la feuille'}</Link></div>
+              <div className="min-w-0"><p className="text-xs font-bold uppercase tracking-wide text-[var(--ink-soft)]">{new Date(match.scheduled_at).toLocaleDateString('fr-FR', { dateStyle: 'full', timeZone: 'Africa/Abidjan' })}</p><h2 className="mt-1 font-display text-2xl text-brand">{match.home_team?.name ?? 'Équipe'} <span className="text-[var(--gold-deep)]">{match.home_score ?? '–'} : {match.away_score ?? '–'}</span> {match.away_team?.name ?? 'Équipe'}</h2>{match.location && <p className="text-sm text-[var(--ink-soft)]">{match.location}</p>}</div>
+              <div className="flex shrink-0 flex-wrap items-center gap-3"><span className="rounded-full bg-[var(--paper)] px-3 py-1 text-xs font-bold text-brand">{workflowLabel[status] ?? 'À saisir'}</span><Link href={`/stats/${match.id}`} className="inline-flex min-h-11 items-center justify-center rounded-lg bg-maroon-panel px-4 py-2 text-sm font-semibold text-on-brand hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--gold-500)]">{status === 'publie' ? 'Consulter' : 'Ouvrir la feuille'}</Link></div>
             </article>
           })}
         </section>}

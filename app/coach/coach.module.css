@@ -93,7 +93,7 @@
 .subtitle { margin: 10px 0 0; color: var(--coach-muted); font-size: 16px; }
 .card { border: 1px solid var(--coach-line); border-radius: 20px; background: var(--coach-surface); padding: 18px; box-shadow: 0 5px 22px oklch(0.33 0.12 18 / 4%); }
 .cardTitle { margin: 0; color: var(--coach-maroon); font-family: var(--font-bebas-neue), "Bebas Neue", Impact, sans-serif; font-size: 27px; font-weight: 400; letter-spacing: .035em; }
-.hero { border: 0; border-radius: 24px; background: var(--coach-hero); color: #fffaf4; padding: 22px; }
+.hero { border: 0; border-radius: 24px; background: var(--coach-hero); color: var(--on-brand); padding: 22px; }
 .hero .eyebrow { color: var(--coach-gold); }
 .hero .title { color: var(--coach-gold); }
 .hero .subtitle { color: oklch(0.95 0.02 80 / 82%); }

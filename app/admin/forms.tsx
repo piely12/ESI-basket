@@ -16,7 +16,7 @@ const INITIAL_ACTION_STATE = { error: '', success: '' }
 
 const fieldClass = 'mt-1 min-h-12 w-full rounded-xl border border-[var(--line)] bg-[var(--surface)] px-3 text-base text-[var(--ink)] outline-none focus:border-[var(--gold-deep)] focus:ring-2 focus:ring-[var(--gold-500)]/30'
 const labelClass = 'text-sm font-semibold text-[var(--ink)]'
-const buttonClass = 'min-h-12 rounded-xl bg-[var(--maroon-900)] px-5 font-semibold text-white transition hover:bg-[var(--maroon-700)] disabled:cursor-wait disabled:bg-[var(--ink-soft)]'
+const buttonClass = 'min-h-12 rounded-xl bg-maroon-panel px-5 font-semibold text-on-brand transition hover:bg-[var(--maroon-700)] disabled:cursor-wait disabled:bg-[var(--ink-soft)]'
 
 export function AdminAccountForm({ targets }: { targets: AccountTarget[] }) {
   const [state, formAction, pending] = useActionState(createOrLinkAccount, INITIAL_ACTION_STATE)
@@ -53,7 +53,7 @@ export function AdminAccountForm({ targets }: { targets: AccountTarget[] }) {
         <button type="submit" className={buttonClass} disabled={pending}>
           {pending ? 'Enregistrement…' : 'Enregistrer le compte'}
         </button>
-        <p aria-live="polite" role={state.error ? 'alert' : 'status'} className={`mt-3 min-h-5 text-sm ${state.error ? 'text-red-700' : 'text-[var(--maroon-900)]'}`}>
+        <p aria-live="polite" role={state.error ? 'alert' : 'status'} className={`mt-3 min-h-5 text-sm ${state.error ? 'text-danger' : 'text-brand'}`}>
           {state.error || state.success}
         </p>
       </div>
@@ -76,7 +76,7 @@ export function HeadCoachProfileForm() {
       <button type="submit" className={buttonClass} disabled={pending}>
         {pending ? 'Création…' : 'Créer la fiche du coach'}
       </button>
-      <p aria-live="polite" role={state.error ? 'alert' : 'status'} className={`mt-3 min-h-5 text-sm ${state.error ? 'text-red-700' : 'text-[var(--maroon-900)]'}`}>
+      <p aria-live="polite" role={state.error ? 'alert' : 'status'} className={`mt-3 min-h-5 text-sm ${state.error ? 'text-danger' : 'text-brand'}`}>
         {state.error || state.success}
       </p>
     </div>
@@ -90,7 +90,7 @@ export function AssistantCoachProfileForm() {
     <div><label htmlFor="assistant-last-name" className={labelClass}>Nom</label><input id="assistant-last-name" name="last_name" autoComplete="family-name" maxLength={80} className={fieldClass} required /></div>
     <div className="sm:col-span-2">
       <button type="submit" className={buttonClass} disabled={pending}>{pending ? 'Création…' : 'Créer la fiche adjoint'}</button>
-      <p aria-live="polite" role={state.error ? 'alert' : 'status'} className={`mt-3 min-h-5 text-sm ${state.error ? 'text-red-700' : 'text-[var(--maroon-900)]'}`}>{state.error || state.success}</p>
+      <p aria-live="polite" role={state.error ? 'alert' : 'status'} className={`mt-3 min-h-5 text-sm ${state.error ? 'text-danger' : 'text-brand'}`}>{state.error || state.success}</p>
     </div>
   </form>
 }
@@ -99,8 +99,8 @@ export function ProfileAccountRow({ profile }: { profile: AccountProfile }) {
   const [resendState, resendAction, resendPending] = useActionState(resendInvitation, INITIAL_ACTION_STATE)
   const [cancelState, cancelAction, cancelPending] = useActionState(cancelAccountBinding, INITIAL_ACTION_STATE)
   const [accessState, accessAction, accessPending] = useActionState(updateAccountAccess, INITIAL_ACTION_STATE)
-  const badge = profile.status === 'actif' ? 'bg-green-100 text-green-900'
-    : profile.status === 'invité' ? 'bg-amber-100 text-amber-900' : 'bg-stone-200 text-stone-800'
+  const badge = profile.status === 'actif' ? 'bg-success-bg text-success'
+    : profile.status === 'invité' ? 'bg-warning-bg text-warning' : 'bg-neutral-bg text-neutral-ink'
 
   return (
     <article className="grid gap-3 border-b border-[var(--line)] py-4 sm:grid-cols-[minmax(0,1fr)_minmax(17rem,auto)] sm:items-center">
@@ -122,7 +122,7 @@ export function ProfileAccountRow({ profile }: { profile: AccountProfile }) {
         <form action={cancelAction} className="flex flex-wrap items-center gap-2">
           <input type="hidden" name="profile_ref" value={profile.ref} />
           <label className="flex items-center gap-2 text-xs"><input name="confirm" type="checkbox" value="yes" required />Confirmer l’annulation du rattachement</label>
-          <button className="min-h-10 rounded-lg border border-red-300 px-3 text-sm font-semibold text-red-800" disabled={cancelPending}>{cancelPending ? 'Annulation…' : 'Annuler le rattachement'}</button>
+          <button className="min-h-10 rounded-lg border border-danger-border px-3 text-sm font-semibold text-danger" disabled={cancelPending}>{cancelPending ? 'Annulation…' : 'Annuler le rattachement'}</button>
           <span aria-live="polite" role={cancelState.error ? 'alert' : 'status'} className="w-full text-xs">{cancelState.error || cancelState.success}</span>
         </form>
         {profile.status === 'actif' && <form action={accessAction} className="flex flex-col gap-2 sm:items-end">
@@ -131,7 +131,7 @@ export function ProfileAccountRow({ profile }: { profile: AccountProfile }) {
           <label className="w-full text-left text-xs font-medium">Motif obligatoire
             <input name="reason" minLength={5} maxLength={500} required className="mt-1 min-h-10 w-full rounded-lg border border-[var(--line)] px-3 text-sm" placeholder="Indique le motif" />
           </label>
-          <button className="min-h-10 rounded-lg border border-red-300 px-3 text-sm font-semibold text-red-800" disabled={accessPending}>{accessPending ? 'Mise à jour…' : 'Suspendre le compte'}</button>
+          <button className="min-h-10 rounded-lg border border-danger-border px-3 text-sm font-semibold text-danger" disabled={accessPending}>{accessPending ? 'Mise à jour…' : 'Suspendre le compte'}</button>
           <span aria-live="polite" role={accessState.error ? 'alert' : 'status'} className="text-xs">{accessState.error || accessState.success}</span>
         </form>}
         {profile.status === 'suspendu' && <form action={accessAction} className="flex flex-wrap items-center gap-2">

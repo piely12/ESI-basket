@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import PublicNav from '@/components/PublicNav'
-import TeamLogo from '@/components/TeamLogo'
+import TeamBanner from '@/components/TeamBanner'
 import MatchCard from '@/components/MatchCard'
 import EmptyState from '@/components/ui/EmptyState'
 import { getStandings, getTeamPageData } from '@/lib/data/public'
@@ -27,6 +27,7 @@ export default async function TeamPage({ params, searchParams }: {
 
   const row = standings.find((item) => item.team_id === id)
   const { team, season, seasons, matches, seasonCompletedMatches, completedMatches, upcomingMatches, players, playerStats, teamStats } = data
+  const teamBannerId = team.is_esi ? 'esi' : team.name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z]/g, '')
   const rounds = [...new Set(matches.map((match) => match.round_number).filter((value): value is number => value !== null))].sort((a, b) => a - b)
   const played = completedMatches.length
   const wins = completedMatches.filter((match) => team.id === match.home_team.id
@@ -117,19 +118,11 @@ export default async function TeamPage({ params, searchParams }: {
     <>
       <PublicNav />
       <main className="mx-auto max-w-screen-xl space-y-7 px-4 pb-28 pt-7 sm:px-6 lg:px-10">
-        <Link href="/classement" className="inline-flex min-h-10 items-center gap-2 rounded font-semibold text-[var(--maroon-700)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--gold-deep)]">
+        <Link href="/classement" className="inline-flex min-h-10 items-center gap-2 rounded font-semibold text-brand focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--gold-deep)]">
           Retour au classement
         </Link>
 
-        <header className="rounded-2xl bg-[var(--maroon-900)] p-5 text-white shadow-md sm:p-7 lg:p-9">
-          <div className="flex items-center gap-4 sm:gap-6">
-            <TeamLogo team={team} size={112} className="h-20 w-20 sm:h-24 sm:w-24 lg:h-28 lg:w-28" />
-            <div className="min-w-0">
-              <p className="text-xs font-bold uppercase tracking-[0.22em] text-[var(--gold-500)]">{season?.name ?? 'Saison en cours'}</p>
-              <h1 className="mt-1 font-display text-4xl leading-none sm:text-5xl lg:text-6xl">{team.is_esi ? 'ESI Basketball' : team.name}</h1>
-            </div>
-          </div>
-        </header>
+        <TeamBanner team={teamBannerId} season={season?.name ?? '2026-2027'} />
 
         <form method="get" className="grid gap-3 rounded-xl border border-[var(--line)] bg-[var(--surface)] p-4 sm:grid-cols-2 lg:grid-cols-4 lg:items-end">
           <label className="grid gap-1 text-xs font-bold uppercase tracking-wide text-[var(--ink-soft)]">Saison
@@ -157,13 +150,13 @@ export default async function TeamPage({ params, searchParams }: {
             </label>
           </>}
           <div className="flex gap-2">
-            <button type="submit" className="min-h-11 flex-1 rounded-lg bg-[var(--maroon-900)] px-4 text-sm font-bold text-white">Appliquer</button>
-            <Link href={`/equipes/${id}`} className="inline-flex min-h-11 items-center justify-center rounded-lg border border-[var(--line)] px-4 text-sm font-semibold text-[var(--maroon-900)]">Réinitialiser</Link>
+            <button type="submit" className="min-h-11 flex-1 rounded-lg bg-maroon-panel px-4 text-sm font-bold text-on-brand">Appliquer</button>
+            <Link href={`/equipes/${id}`} className="inline-flex min-h-11 items-center justify-center rounded-lg border border-[var(--line)] px-4 text-sm font-semibold text-brand">Réinitialiser</Link>
           </div>
         </form>
 
         <section aria-label={round !== undefined || period !== 'all' ? 'Bilan de la sélection' : 'Bilan de la saison'} className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7">
-          <h2 className="col-span-full font-display text-2xl text-[var(--maroon-900)]">{round !== undefined || period !== 'all' ? 'Bilan de la sélection' : 'Bilan de la saison'}</h2>
+          <h2 className="col-span-full font-display text-2xl text-brand">{round !== undefined || period !== 'all' ? 'Bilan de la sélection' : 'Bilan de la saison'}</h2>
           {[
             ['Classement', row ? `${row.rank}${row.rank === 1 ? 'er' : 'e'}` : '—'],
             ['Matchs joués', played], ['Victoires · défaites', `${wins} · ${losses}`],
@@ -173,25 +166,25 @@ export default async function TeamPage({ params, searchParams }: {
             ['Points / match', average(pointsFor)], ['Encaissés / match', average(pointsAgainst)],
             [latestWon === null ? 'Série' : latestWon ? 'Série de victoires' : 'Série de défaites', latestWon === null ? '—' : currentStreak],
           ].map(([label, value]) => <div key={label} className="rounded-xl border border-[var(--line)] bg-[var(--surface)] p-3 sm:p-4">
-            <p className="font-display text-2xl leading-none text-[var(--maroon-900)] sm:text-3xl">{value}</p>
+            <p className="font-display text-2xl leading-none text-brand sm:text-3xl">{value}</p>
             <p className="mt-2 text-[10px] font-bold uppercase tracking-wide text-[var(--ink-soft)] sm:text-xs">{label}</p>
           </div>)}
         </section>
 
         <section className="grid gap-7 lg:grid-cols-2">
           <div>
-            <h2 className="mb-3 font-display text-3xl text-[var(--maroon-900)]">Dernier match</h2>
+            <h2 className="mb-3 font-display text-3xl text-brand">Dernier match</h2>
             {completedMatches[0] ? <MatchCard match={completedMatches[0]} large /> : <EmptyState title="Aucun match joué" description="Les résultats officiels de cette équipe apparaîtront ici." />}
           </div>
           <div>
-            <h2 className="mb-3 font-display text-3xl text-[var(--maroon-900)]">Prochaines rencontres</h2>
+            <h2 className="mb-3 font-display text-3xl text-brand">Prochaines rencontres</h2>
             {upcomingMatches.length ? <div className="space-y-3">{upcomingMatches.slice(0, 3).map((match) => <MatchCard key={match.id} match={match} />)}</div>
               : <EmptyState title="Aucun match programmé" description="Les prochaines rencontres apparaîtront ici dès leur ajout au calendrier." />}
           </div>
         </section>
 
         <section>
-          <h2 className="mb-3 font-display text-3xl text-[var(--maroon-900)]">Statistiques collectives</h2>
+          <h2 className="mb-3 font-display text-3xl text-brand">Statistiques collectives</h2>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
             {[
               ['Rebonds totaux', teamStat('rebounds')], ['Passes totales', teamStat('assists')], ['Interceptions', teamStat('steals')],
@@ -199,7 +192,7 @@ export default async function TeamPage({ params, searchParams }: {
               ['Tirs réussis', teamPct(teamFgMade, teamFgAttempted)], ['Tirs à 2 points', teamPct(teamTwoMade, teamTwoAttempted)],
               ['Tirs à 3 points', teamPct(teamThreeMade, teamThreeAttempted)], ['Lancers francs', teamPct(teamFtMade, teamFtAttempted)],
             ].map(([label, value]) => <div key={label} className="rounded-xl border border-[var(--line)] bg-[var(--surface)] p-4">
-              <p className="font-display text-2xl text-[var(--maroon-900)]">{typeof value === 'number' ? <StatValue value={value} /> : value}</p>
+              <p className="font-display text-2xl text-brand">{typeof value === 'number' ? <StatValue value={value} /> : value}</p>
               <p className="mt-1 text-[10px] font-bold uppercase tracking-wide text-[var(--ink-soft)] sm:text-xs">{label}</p>
             </div>)}
           </div>
@@ -208,14 +201,14 @@ export default async function TeamPage({ params, searchParams }: {
 
         {team.is_esi && <>
           {players.length > 0 && <section>
-            <h2 className="mb-3 font-display text-3xl text-[var(--maroon-900)]">Statistiques individuelles</h2>
+            <h2 className="mb-3 font-display text-3xl text-brand">Statistiques individuelles</h2>
             <div className="overflow-x-auto rounded-xl border border-[var(--line)] bg-[var(--surface)]">
               <table className="w-full min-w-[760px] text-sm">
                 <thead className="bg-[var(--line)]/35 text-left text-xs uppercase text-[var(--ink-soft)]"><tr>
                   {['Joueur', 'MJ', mode === 'total' ? 'PTS' : 'PTS / MJ', mode === 'total' ? 'REB' : 'REB / MJ', mode === 'total' ? 'AST' : 'AST / MJ', mode === 'total' ? 'INT' : 'INT / MJ', mode === 'total' ? 'CTR' : 'CTR / MJ', mode === 'total' ? 'BP' : 'BP / MJ', mode === 'total' ? 'Fautes' : 'Fautes / MJ', 'Tirs', '2PT', '3PT', 'LF'].map((heading) => <th key={heading} className="px-3 py-3">{heading}</th>)}
                 </tr></thead>
                 <tbody>{playerRows.map((row) => <tr key={row.player.id} className="border-t border-[var(--line)]">
-                  <td className="px-3 py-3"><Link href={`/equipe/${row.player.id}`} className="font-semibold text-[var(--maroon-700)] hover:underline">{row.player.first_name} {row.player.last_name}</Link></td>
+                  <td className="px-3 py-3"><Link href={`/equipe/${row.player.id}`} className="font-semibold text-brand hover:underline">{row.player.first_name} {row.player.last_name}</Link></td>
                   <td className="px-3 py-3 tabular-nums">{row.appearances}</td>
                   {[
                     mode === 'total' ? row.pointsTotal : row.pointsPerGame,
@@ -236,7 +229,7 @@ export default async function TeamPage({ params, searchParams }: {
         </>}
 
         <section>
-          <h2 className="mb-3 font-display text-3xl text-[var(--maroon-900)]">Historique des matchs</h2>
+          <h2 className="mb-3 font-display text-3xl text-brand">Historique des matchs</h2>
           {completedMatches.length ? <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">{completedMatches.map((match) => <MatchCard key={match.id} match={match} />)}</div>
             : <EmptyState title="Aucun résultat pour cette saison" description="L’historique sera alimenté par les rencontres terminées et leurs scores officiels." />}
         </section>

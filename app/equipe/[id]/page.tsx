@@ -47,7 +47,7 @@ export default async function PlayerPage({ params, searchParams }: {
     <>
       <PublicNav />
       <main className="mx-auto max-w-screen-xl space-y-5 px-4 pb-28 pt-7 sm:px-6 lg:space-y-7 lg:px-10">
-        <Link href="/equipe" className="inline-flex min-h-10 items-center gap-2 rounded text-sm font-semibold text-[var(--maroon-700)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--gold-deep)]">Effectif</Link>
+        <Link href="/equipe" className="inline-flex min-h-10 items-center gap-2 rounded text-sm font-semibold text-brand focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--gold-deep)]">Effectif</Link>
         <PlayerCardVisual player={player} />
         <form method="get" className="grid gap-3 rounded-xl border border-[var(--line)] bg-[var(--surface)] p-4 sm:grid-cols-2 lg:grid-cols-4 lg:items-end">
           <label className="grid gap-1 text-xs font-bold uppercase tracking-wide text-[var(--ink-soft)]">Saison
@@ -56,13 +56,13 @@ export default async function PlayerPage({ params, searchParams }: {
           <label className="grid gap-1 text-xs font-bold uppercase tracking-wide text-[var(--ink-soft)]">Journée
             <select name="round" defaultValue={query.round ?? ''} className="min-h-11 rounded-lg border border-[var(--line)] bg-[var(--paper)] px-3 text-sm font-semibold normal-case tracking-normal text-[var(--ink)]"><option value="">Toutes les journées</option>{rounds.map((value) => <option key={value} value={value}>Journée {value}</option>)}</select>
           </label>
-          <div className="flex gap-2"><button type="submit" className="min-h-11 flex-1 rounded-lg bg-[var(--maroon-900)] px-4 text-sm font-bold text-white">Appliquer</button><Link href={`/equipe/${id}`} className="inline-flex min-h-11 items-center justify-center rounded-lg border border-[var(--line)] px-4 text-sm font-semibold text-[var(--maroon-900)]">Réinitialiser</Link></div>
+          <div className="flex gap-2"><button type="submit" className="min-h-11 flex-1 rounded-lg bg-maroon-panel px-4 text-sm font-bold text-on-brand">Appliquer</button><Link href={`/equipe/${id}`} className="inline-flex min-h-11 items-center justify-center rounded-lg border border-[var(--line)] px-4 text-sm font-semibold text-brand">Réinitialiser</Link></div>
         </form>
         <section className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 sm:gap-3" aria-label={`Statistiques de la saison ${season?.name ?? ''}`}>
-          {summary.map(([label, value]) => <div key={label} className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-3 text-center sm:p-4"><div className="font-display text-3xl text-[var(--maroon-900)] sm:text-4xl">{value}</div><div className="text-[10px] font-bold uppercase tracking-wide text-[var(--ink-soft)] sm:text-xs">{label}</div></div>)}
+          {summary.map(([label, value]) => <div key={label} className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-3 text-center sm:p-4"><div className="font-display text-3xl text-brand sm:text-4xl">{value}</div><div className="text-[10px] font-bold uppercase tracking-wide text-[var(--ink-soft)] sm:text-xs">{label}</div></div>)}
         </section>
         <section className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-4 sm:p-5">
-          <h1 className="font-display text-3xl text-[var(--maroon-900)]">Historique des matchs {season ? `· ${season.name}` : ''}</h1>
+          <h1 className="font-display text-3xl text-brand">Historique des matchs {season ? `· ${season.name}` : ''}</h1>
           {stats.length ? <div className="mt-2 divide-y divide-[var(--line)]">
             {stats.map((stat) => {
               const esiIsHome = stat.match.home_team.is_esi

@@ -40,11 +40,11 @@ export default function PublicNav() {
   }
   return (
     <>
-      <header className="sticky top-0 z-30 border-b border-white/10 bg-[var(--maroon-900)] text-white shadow-md">
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-2 px-3 py-1.5 sm:gap-4 sm:px-5 sm:py-2">
+      <header className="sticky top-0 z-30 border-b border-primary-foreground/10 bg-primary text-primary-foreground shadow-md">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-2 px-3 py-1.5 sm:gap-4 sm:px-5 sm:py-3">
           <Link href="/" className="flex min-w-0 items-center gap-1.5 sm:gap-3" aria-label="The Lions of ESI — accueil">
-            <Image src="/logos/esi.png" alt="" width={56} height={56} priority className="h-8 w-8 shrink-0 object-contain sm:h-10 sm:w-10" />
-            <span className="min-w-0 truncate font-display text-[14px] leading-none tracking-wide text-[var(--gold-500)] sm:text-xl">THE LIONS OF ESI</span>
+            <Image src="/logos/esi.png" alt="" width={56} height={56} priority className="h-10 w-10 shrink-0 object-contain sm:h-14 sm:w-14" />
+            <span className="min-w-0 truncate font-display text-[15px] leading-none tracking-wide text-[var(--gold-500)] sm:text-2xl">THE LIONS OF ESI</span>
           </Link>
           <div className="flex shrink-0 items-center gap-2 sm:gap-3">
             <Image
@@ -53,18 +53,18 @@ export default function PublicNav() {
               width={55}
               height={120}
               priority
-              className="h-9 w-auto shrink-0 object-contain sm:h-12"
+              className="h-11 w-auto shrink-0 rounded-xl border border-border bg-[var(--logo-pill)] p-1 object-contain sm:h-16"
             />
             <span className="flex flex-col font-display leading-none text-[var(--gold-500)]">
-              <span className="text-[8px] tracking-wide sm:text-xs">INTER-ÉCOLES</span>
-              <span className="mt-0.5 text-xs sm:mt-1 sm:text-xl">Basketball</span>
+              <span className="text-[9px] tracking-wide sm:text-sm">INTER-ÉCOLES</span>
+              <span className="mt-0.5 text-sm sm:mt-1 sm:text-2xl">Basketball</span>
             </span>
           </div>
         </div>
       </header>
-      <nav aria-label="Navigation principale" className="fixed inset-x-0 bottom-0 z-30 grid h-[calc(65px+env(safe-area-inset-bottom))] grid-cols-6 border-t border-[var(--line)] bg-[var(--surface)] pb-[env(safe-area-inset-bottom)] shadow-[0_-2px_8px_rgba(35,23,18,0.08)]">
+      <nav aria-label="Navigation principale" className="fixed inset-x-0 bottom-0 z-30 grid h-[calc(65px+env(safe-area-inset-bottom))] grid-cols-6 border-t border-border bg-card pb-[env(safe-area-inset-bottom)] shadow-[0_-2px_8px_var(--match-card-shadow)]">
         {LINKS.map((link) => (
-          <Link key={link.href} href={link.href} aria-current={isActive(link.href) ? 'page' : undefined} className={`group relative flex flex-col items-center justify-center gap-0.5 px-0.5 text-center text-[10px] leading-tight transition-all duration-200 ease-out hover:-translate-y-0.5 hover:text-[var(--maroon-700)] focus-visible:outline-2 focus-visible:outline-[var(--gold-deep)] sm:text-xs [&_svg]:h-5 [&_svg]:w-5 [&_svg]:transition-transform [&_svg]:duration-200 group-hover:[&_svg]:scale-110 sm:[&_svg]:h-6 sm:[&_svg]:w-6 ${isActive(link.href) ? 'bg-[var(--gold-500)]/15 font-semibold text-[var(--maroon-900)]' : 'text-[#806c66]'}`}>
+          <Link key={link.href} href={link.href} aria-current={isActive(link.href) ? 'page' : undefined} className={`group relative mx-1 my-1 flex flex-col items-center justify-center gap-0.5 rounded-2xl px-0.5 text-center text-[10px] leading-tight transition-all duration-200 ease-out hover:-translate-y-0.5 hover:text-brand focus-visible:outline-2 focus-visible:outline-ring sm:text-xs [&_svg]:h-5 [&_svg]:w-5 [&_svg]:transition-transform [&_svg]:duration-200 group-hover:[&_svg]:scale-110 sm:[&_svg]:h-6 sm:[&_svg]:w-6 ${isActive(link.href) ? 'bg-muted font-semibold text-brand dark:bg-gold/14 dark:text-gold' : 'text-muted-foreground'}`}>
             <NavIcon name={link.label} />
             <span className={`relative after:absolute after:-bottom-1 after:left-1/2 after:h-0.5 after:-translate-x-1/2 after:rounded-full after:bg-[var(--maroon-700)] after:transition-all after:duration-200 ${isActive(link.href) ? 'after:w-full' : 'after:w-0 group-hover:after:w-full'}`}>{link.label}</span>
           </Link>

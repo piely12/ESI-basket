@@ -61,8 +61,8 @@ export default function FirstLoginForm() {
 
   return <main className="mx-auto mt-12 w-full max-w-md px-4 pb-12 sm:mt-20">
     <section className="rounded-2xl border border-[var(--line)] bg-[var(--surface)] p-6 shadow-sm sm:p-8">
-      <p className="text-xs font-bold uppercase tracking-[0.2em] text-[var(--gold-deep)]">The Lions of ESI</p>
-      <h1 className="mt-2 font-display text-4xl text-[var(--maroon-900)]">Première connexion</h1>
+      <p className="text-xs font-bold uppercase tracking-[0.2em] text-brand">The Lions of ESI</p>
+      <h1 className="mt-2 font-display text-4xl text-brand">Première connexion</h1>
       <p className="mb-6 mt-2 text-sm text-[var(--ink-soft)]">Saisissez le code reçu par e-mail et choisissez votre mot de passe personnel.</p>
 
       <form method="post" onSubmit={handleSubmit} noValidate className="flex flex-col gap-4">
@@ -76,14 +76,14 @@ export default function FirstLoginForm() {
         </div>
         <PasswordField id="new-password" label="Nouveau mot de passe" value={password} onChange={setPassword} autoComplete="new-password" maxLength={72} />
         <ul className="-mt-2 grid grid-cols-2 gap-1 text-xs text-[var(--ink-soft)]" aria-label="Règles du mot de passe">
-          {RULES.map((rule) => <li key={rule.label} aria-live="polite" className={rule.test(password) ? 'font-semibold text-green-700' : ''}>{rule.test(password) ? '✓ ' : '• '}{rule.label}</li>)}
+          {RULES.map((rule) => <li key={rule.label} aria-live="polite" className={rule.test(password) ? 'font-semibold text-success' : ''}>{rule.test(password) ? '✓ ' : '• '}{rule.label}</li>)}
         </ul>
         <div className="h-1.5 overflow-hidden rounded-full bg-[var(--line)]" role="progressbar" aria-label="Robustesse du mot de passe" aria-valuemin={0} aria-valuemax={RULES.length} aria-valuenow={strength}>
           <div className="h-full bg-[var(--gold-deep)] transition-[width]" style={{ width: `${(strength / RULES.length) * 100}%` }} />
         </div>
         <PasswordField id="confirmation" label="Confirmer le mot de passe" value={confirmation} onChange={setConfirmation} autoComplete="new-password" maxLength={72} />
-        <p id="first-login-error" role="alert" aria-live="polite" className="min-h-5 text-sm text-red-700">{error}</p>
-        <button type="submit" disabled={loading} className="min-h-12 rounded-xl bg-[var(--maroon-900)] px-4 font-semibold text-white hover:bg-[var(--maroon-700)] disabled:cursor-wait disabled:bg-[var(--ink-soft)]">
+        <p id="first-login-error" role="alert" aria-live="polite" className="min-h-5 text-sm text-danger">{error}</p>
+        <button type="submit" disabled={loading} className="min-h-12 rounded-xl bg-maroon-panel px-4 font-semibold text-on-brand hover:bg-[var(--maroon-700)] disabled:cursor-wait disabled:bg-[var(--ink-soft)]">
           {loading ? 'Enregistrement…' : 'Valider'}
         </button>
       </form>

@@ -43,7 +43,7 @@ export default function PasswordField({ id, label, value, onChange, autoComplete
           type="button"
           onClick={() => setVisible((v) => !v)}
           aria-pressed={visible}
-          className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-[#7a1f2b] underline"
+          className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-brand underline"
         >
           {visible ? 'Masquer' : 'Afficher'}
         </button>

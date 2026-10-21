@@ -29,7 +29,7 @@ export default async function MatchsPage() {
       <PublicNav />
       <main className="mx-auto max-w-5xl px-4 pb-28 pt-8 sm:px-5">
         <header className="mb-5">
-          <h1 className="font-display text-5xl leading-none text-[var(--maroon-900)] sm:text-6xl">Matchs</h1>
+          <h1 className="font-display text-5xl leading-none text-brand sm:text-6xl">Matchs</h1>
         </header>
         <MatchList matches={matches} today={today} initialMonth={initialMonth} />
       </main>

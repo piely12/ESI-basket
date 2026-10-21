@@ -184,22 +184,11 @@ export async function getMatchById(id: string) {
     if (matchRow.season_id) query = query.eq('season_id', matchRow.season_id)
     return query
   }
-  const confrontationQuery = supabase.from('matches').select(MATCH_SELECT)
-    .or(`home_team_id.eq.${matchRow.home_team.id},away_team_id.eq.${matchRow.home_team.id}`)
-    .eq('status', 'termine').neq('id', id)
-    .not('home_score', 'is', null).not('away_score', 'is', null)
-    .order('scheduled_at', { ascending: false })
-  if (matchRow.season_id) confrontationQuery.eq('season_id', matchRow.season_id)
-  const [homeHistory, awayHistory, confrontationRows, standings] = await Promise.all([
+  const [homeHistory, awayHistory, standings] = await Promise.all([
     optionalData(historyFor(matchRow.home_team.id)),
     optionalData(historyFor(matchRow.away_team.id)),
-    optionalData(confrontationQuery),
     getStandings(matchRow.season_id ?? undefined).catch(() => []),
   ])
-  const confrontations = ((confrontationRows ?? []) as unknown as MatchRow[])
-    .filter((game) => (game.home_team.id === matchRow.home_team.id && game.away_team.id === matchRow.away_team.id)
-      || (game.home_team.id === matchRow.away_team.id && game.away_team.id === matchRow.home_team.id))
-    .slice(0, 5)
 
 
   return {
@@ -212,7 +201,6 @@ export async function getMatchById(id: string) {
       { team: matchRow.home_team, matches: (homeHistory ?? []) as unknown as MatchRow[] },
       { team: matchRow.away_team, matches: (awayHistory ?? []) as unknown as MatchRow[] },
     ],
-    confrontations: (confrontations ?? []) as unknown as MatchRow[],
     compositionPublished: Boolean(workflow && ['publiee', 'verrouillee'].includes(workflow.status)),
     coachName: coach ? `${coach.first_name} ${coach.last_name}`.trim() : null,
   }
@@ -242,15 +230,18 @@ export async function getStandings(seasonId?: string): Promise<StandingRow[]> {
     difference: 0,
   } satisfies StandingRow]))
 
+  let results: { home_team_id: string; away_team_id: string; home_score: number; away_score: number }[] = []
   if (season) {
-    const { data: results } = await supabase.from('matches')
+    const response = await supabase.from('matches')
       .select('home_team_id,away_team_id,home_score,away_score')
       .eq('season_id', season.id)
       .eq('status', 'termine')
       .not('home_score', 'is', null)
       .not('away_score', 'is', null)
 
-    for (const result of results ?? []) {
+    results = (response.data ?? []) as typeof results
+
+    for (const result of results) {
       const home = standings.get(result.home_team_id)
       const away = standings.get(result.away_team_id)
       if (!home || !away || result.home_score === result.away_score) continue
@@ -271,17 +262,61 @@ export async function getStandings(seasonId?: string): Promise<StandingRow[]> {
     }
   }
 
-  const ordered = [...standings.values()].map((row) => ({
+  const rows = [...standings.values()].map((row) => ({
     ...row,
     ranking_points: row.won * 2 + row.lost,
     difference: row.points_for - row.points_against,
-  })).sort((a, b) => b.ranking_points - a.ranking_points || b.difference - a.difference || a.team.name.localeCompare(b.team.name, 'fr'))
+  }))
+
+  // The head-to-head mini-table is only a tiebreak after league points and
+  // overall point difference, as specified by the competition rules.
+  const tieGroups = new Map<string, typeof rows>()
+  for (const row of rows) {
+    const key = `${row.ranking_points}:${row.difference}`
+    const group = tieGroups.get(key) ?? []
+    group.push(row)
+    tieGroups.set(key, group)
+  }
+
+  const headToHead = new Map<string, { wins: number; difference: number }>()
+  for (const group of tieGroups.values()) {
+    if (group.length < 2) continue
+    const ids = new Set(group.map((row) => row.team_id))
+    const stats = new Map(group.map((row) => [row.team_id, { wins: 0, difference: 0 }]))
+    for (const result of results) {
+      if (!ids.has(result.home_team_id) || !ids.has(result.away_team_id)) continue
+      const home = stats.get(result.home_team_id)!
+      const away = stats.get(result.away_team_id)!
+      home.difference += result.home_score - result.away_score
+      away.difference += result.away_score - result.home_score
+      if (result.home_score > result.away_score) home.wins += 1
+      else if (result.away_score > result.home_score) away.wins += 1
+    }
+    for (const [id, value] of stats) headToHead.set(id, value)
+  }
+
+  const ordered = rows.map((row) => ({
+    ...row,
+    directWins: headToHead.get(row.team_id)?.wins ?? 0,
+    directDifference: headToHead.get(row.team_id)?.difference ?? 0,
+  })).sort((a, b) => b.ranking_points - a.ranking_points
+    || b.difference - a.difference
+    || b.directWins - a.directWins
+    || b.directDifference - a.directDifference
+    || a.team.name.localeCompare(b.team.name, 'fr'))
 
   let previous: StandingRow | undefined
+  let previousDirectWins: number | undefined
+  let previousDirectDifference: number | undefined
   return ordered.map((row, index) => {
-    const sameRank = previous?.ranking_points === row.ranking_points && previous.difference === row.difference
+    const sameRank = previous?.ranking_points === row.ranking_points
+      && previous.difference === row.difference
+      && previousDirectWins === row.directWins
+      && previousDirectDifference === row.directDifference
     const ranked = { ...row, rank: sameRank ? previous!.rank : index + 1 }
     previous = ranked
+    previousDirectWins = row.directWins
+    previousDirectDifference = row.directDifference
     return ranked
   })
 }
@@ -366,6 +401,25 @@ export async function getRoster(): Promise<Player[]> {
     .eq('team_id', esi.id)
     .order('jersey_number', { ascending: true })
   return data ?? []
+}
+
+export type PublishedNews = {
+  id: string
+  title: string
+  excerpt: string | null
+  body: string
+  category: string | null
+  cover_url: string | null
+  published_at: string | null
+}
+
+export async function getPublishedNews(limit = 9): Promise<PublishedNews[]> {
+  const supabase = await createClient()
+  const { data } = await supabase.from('news')
+    .select('id,title,excerpt,body,category,cover_url,published_at')
+    .eq('is_published', true).not('published_at', 'is', null)
+    .order('published_at', { ascending: false }).limit(Math.min(Math.max(limit, 1), 30))
+  return (data ?? []) as PublishedNews[]
 }
 
 export async function getPlayerProfile(id: string, filters: { seasonId?: string; round?: number; period?: 'all' | '30d' | '90d' } = {}) {

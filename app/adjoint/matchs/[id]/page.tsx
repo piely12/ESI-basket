@@ -4,6 +4,7 @@ import CompositionWizard from '@/components/CompositionWizard'
 import { requireRole } from '@/lib/auth/requireUser'
 import type { Team } from '@/lib/data/public'
 import type { CourtSlot, LineupPlayer } from '@/lib/lineup'
+import { isMatchLockedByTime } from '@/lib/match-time'
 import { publishAssistantComposition, saveAssistantCompositionDraft } from '../../actions'
 import styles from '../../../coach/coach.module.css'
 
@@ -35,7 +36,7 @@ export default async function AssistantMatchPage({ params }: PageProps) {
   if (playersResult.error || workflowResult.error) throw new Error('Impossible de charger les éléments publics de la composition.')
   const players = (playersResult.data ?? []) as LineupPlayer[]
   const workflow = workflowResult.data as Workflow | null
-  const locked = new Date(match.scheduled_at).getTime() <= Date.now() || ['en_cours', 'termine'].includes(match.status)
+  const locked = isMatchLockedByTime(match.scheduled_at, match.status)
 
   return <main className={styles.page}>
     <Link className={styles.link} href="/adjoint">← Retour aux matchs</Link>

@@ -7,6 +7,7 @@ import styles from './coach.module.css'
 const navigation = [
   { href: '/coach', label: 'Accueil' },
   { href: '/coach/equipe', label: 'Effectif' },
+  { href: '/coach/invitations', label: 'Inviter un membre' },
   { href: '/coach/matchs/nouveau', label: 'Préparer un match' },
 ]
 

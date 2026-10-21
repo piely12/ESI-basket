@@ -7,7 +7,7 @@ export default function AccesRefuse() {
       <p className="mt-2 text-neutral-600">
         Votre compte n&apos;a pas accès à cet espace. Déconnectez-vous et reconnectez-vous avec le bon compte.
       </p>
-      <div className="mt-6 inline-block rounded bg-[#7a1f2b]">
+      <div className="mt-6 inline-block rounded bg-maroon-panel">
         <LogoutButton />
       </div>
     </main>

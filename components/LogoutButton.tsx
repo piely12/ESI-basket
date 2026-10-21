@@ -20,7 +20,7 @@ export default function LogoutButton() {
       type="button"
       onClick={logout}
       disabled={loading}
-      className="rounded border border-white/60 px-3 py-1 text-sm hover:bg-white/10 disabled:opacity-60"
+      className="rounded border border-on-brand/60 px-3 py-1 text-sm hover:bg-on-brand/10 disabled:opacity-60"
     >
       {loading ? 'Déconnexion…' : 'Se déconnecter'}
     </button>

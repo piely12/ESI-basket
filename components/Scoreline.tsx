@@ -11,10 +11,10 @@ export default function Scoreline({
   const big = size === 'lg' ? 'text-6xl' : 'text-3xl'
   const row = (t: Team, s: number | null, won: boolean) => (
     <div className="flex items-center justify-between gap-4">
-      <span className={`font-display uppercase tracking-wide ${t.is_esi ? 'text-[var(--maroon-700)]' : 'text-[var(--ink)]'} ${won ? 'font-semibold' : ''}`}>
+      <span className={`font-display uppercase tracking-wide ${t.is_esi ? 'text-brand' : 'text-[var(--ink)]'} ${won ? 'font-semibold' : ''}`}>
         {t.name}
       </span>
-      {played && <span className={`font-display ${big} tnum ${won ? 'text-[var(--maroon-700)]' : 'text-[var(--ink-soft)]'}`}>{s}</span>}
+      {played && <span className={`font-display ${big} tnum ${won ? 'text-brand' : 'text-[var(--ink-soft)]'}`}>{s}</span>}
     </div>
   )
   const homeWon = played && (homeScore as number) > (awayScore as number)

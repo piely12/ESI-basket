@@ -31,6 +31,8 @@ export default function MotDePasseOublie() {
     const params = new URLSearchParams(window.location.search)
     const invitedEmail = normalizeEmail(params.get('email') ?? '')
     if (params.get('invitation') === '1' && isValidEmail(invitedEmail)) {
+      // The invitation URL is external state; initialize this form from it on mount.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setEmail(invitedEmail)
       setInvitationMode(true)
       setStep('code')
@@ -72,13 +74,13 @@ export default function MotDePasseOublie() {
   }) }
 
   const errorBox = (
-    <p id="form-error" role="alert" aria-live="polite" className="min-h-5 text-sm text-red-600">{error}</p>
+    <p id="form-error" role="alert" aria-live="polite" className="min-h-5 text-sm text-danger">{error}</p>
   )
-  const btn = 'rounded bg-[#7a1f2b] p-2 text-white disabled:opacity-60'
+  const btn = 'rounded bg-maroon-panel p-2 text-on-brand disabled:opacity-60'
 
   return (
     <main className="mx-auto mt-16 max-w-sm p-6">
-      <h1 className="text-2xl font-bold text-[#7a1f2b]">Mot de passe oublié</h1>
+      <h1 className="text-2xl font-bold text-brand">Mot de passe oublié</h1>
 
       {step === 'email' && (
         <form onSubmit={sendEmail} noValidate className="mt-6 flex flex-col gap-4">
@@ -137,7 +139,7 @@ export default function MotDePasseOublie() {
 
       {step === 'done' && (
         <div className="mt-6" role="status">
-          <p className="text-green-700">Mot de passe modifié.</p>
+          <p className="text-success">Mot de passe modifié.</p>
           <Link href="/login" className="mt-4 inline-block underline">Se connecter</Link>
         </div>
       )}

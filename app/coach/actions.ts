@@ -1,11 +1,104 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import { headers } from 'next/headers'
+import { randomBytes } from 'node:crypto'
 import { redirect } from 'next/navigation'
-import { requireAnyRole } from '@/lib/auth/requireUser'
-import { COURT_SLOTS, type CourtSlot } from '@/lib/lineup'
+import { z } from 'zod'
+import { requireAnyRole, requireRole } from '@/lib/auth/requireUser'
+import { createAdminClient } from '@/lib/supabase/admin'
+import { sendAccountReadyEmail } from '@/lib/auth/brevo'
+import { generateOtp, hashOtp, OTP_TTL_MINUTES } from '@/lib/auth/otp'
+import { audit, consumeRateLimit, rlKey } from '@/lib/security'
+import { isValidEmail } from '@/lib/validation'
+import { type CourtSlot } from '@/lib/lineup'
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+
+export type CoachInviteState = { error: string; success: string }
+const COACH_INVITE_FORM = z.object({
+  profile_ref: z.string().regex(/^(joueur|staff):[0-9a-f-]{36}$/i),
+  email: z.string().trim().toLowerCase().email().max(254),
+}).strict()
+
+export async function inviteTeamAccount(_state: CoachInviteState, formData: FormData): Promise<CoachInviteState> {
+  const { profile, user } = await requireRole('coach')
+  const input = COACH_INVITE_FORM.safeParse({ profile_ref: formData.get('profile_ref'), email: formData.get('email') })
+  if (!input.success || !isValidEmail(input.data.email)) return { error: 'Vérifie la fiche sélectionnée et l’adresse e-mail.', success: '' }
+  if (!profile.team_id) return { error: 'Le compte coach n’est associé à aucune équipe.', success: '' }
+
+  const admin = createAdminClient()
+  const { data: team } = await admin.from('teams').select('id').eq('id', profile.team_id).eq('is_esi', true).maybeSingle()
+  if (!team) return { error: 'Cette action est réservée au coach principal de l’ESI.', success: '' }
+
+  const headersList = await headers()
+  const actorKey = rlKey('coach-invite', user.id)
+  const ipKey = rlKey('coach-invite-ip', headersList.get('x-real-ip') ?? 'unknown')
+  try {
+    const [actorLimit, ipLimit] = await Promise.all([
+      consumeRateLimit(admin, actorKey, 10, 60 * 60),
+      consumeRateLimit(admin, ipKey, 30, 60 * 60),
+    ])
+    if (!actorLimit.allowed || !ipLimit.allowed) return { error: 'Trop d’invitations ont été demandées. Réessaie plus tard.', success: '' }
+  } catch {
+    return { error: 'Le service de sécurité est indisponible. Réessaie plus tard.', success: '' }
+  }
+
+  const [kind, id] = input.data.profile_ref.split(':')
+  let targetName = ''
+  let table: 'players' | 'staff'
+  if (kind === 'joueur') {
+    table = 'players'
+    const { data } = await admin.from('players').select('id,user_id,first_name,last_name').eq('id', id).eq('team_id', team.id).maybeSingle()
+    if (!data) return { error: 'Cette fiche joueur ESI est introuvable.', success: '' }
+    if (data.user_id) return { error: 'Cette fiche est déjà rattachée à un compte.', success: '' }
+    targetName = `${data.first_name} ${data.last_name}`
+  } else {
+    table = 'staff'
+    const { data } = await admin.from('staff').select('id,user_id,first_name,last_name,role').eq('id', id).eq('team_id', team.id).eq('role', 'coach_adjoint').maybeSingle()
+    if (!data) return { error: 'Seule une fiche coach adjoint existante peut être invitée ici.', success: '' }
+    if (data.user_id) return { error: 'Cette fiche est déjà rattachée à un compte.', success: '' }
+    targetName = `${data.first_name} ${data.last_name}`
+  }
+
+  let authUserId: string | null = null
+  try {
+    const created = await admin.auth.admin.createUser({
+      email: input.data.email,
+      password: randomBytes(32).toString('base64url'),
+      email_confirm: true,
+      user_metadata: { first_name: targetName.split(' ')[0], account_created_by_coach: true },
+    })
+    if (created.error || !created.data.user) return { error: 'Impossible de créer ce compte. Vérifie que l’adresse n’est pas déjà utilisée; un compte existant doit être rattaché par l’administration.', success: '' }
+    authUserId = created.data.user.id
+
+    const { data: linked, error: linkError } = await admin.from(table).update({ user_id: authUserId }).eq('id', id).eq('team_id', team.id).is('user_id', null).select('id').maybeSingle()
+    if (linkError || !linked) throw new Error('binding_failed')
+    const { error: stateError } = await admin.from('users').update({ is_active: false, must_change_password: true, password_changed_at: null, suspension_reason: null }).eq('id', authUserId)
+    if (stateError) throw new Error('security_state_failed')
+
+    const code = generateOtp()
+    const { error: otpError } = await admin.rpc('issue_recovery_otp', {
+      p_user_id: authUserId,
+      p_code_hash: hashOtp(authUserId, code),
+      p_expires_at: new Date(Date.now() + OTP_TTL_MINUTES * 60_000).toISOString(),
+      p_max_attempts: 5,
+    })
+    if (otpError) throw new Error('otp_failed')
+    await sendAccountReadyEmail(input.data.email, targetName.split(' ')[0] || 'membre', code)
+    await audit(admin, 'coach_invited_esi_account', user.id, { metadata: { profile_type: kind, profile_id: id, role: kind === 'joueur' ? 'joueur' : 'coach_adjoint' } })
+    revalidatePath('/coach/invitations')
+    revalidatePath('/admin/staff')
+    return { error: '', success: `Invitation envoyée à ${input.data.email} pour ${targetName}.` }
+  } catch {
+    if (authUserId) {
+      await admin.from(table).update({ user_id: null }).eq('id', id).eq('team_id', team.id).eq('user_id', authUserId)
+      await admin.auth.admin.deleteUser(authUserId)
+    }
+    await audit(admin, 'coach_account_invitation_failed', user.id, { metadata: { profile_type: kind, profile_id: id } })
+    return { error: 'Le compte n’a pas pu être invité. Vérifie la configuration e-mail et réessaie.', success: '' }
+  }
+}
 
 async function getAuthorizedMatch(matchId: string) {
   if (!UUID.test(matchId)) throw new Error('Match invalide.')

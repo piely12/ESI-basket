@@ -13,7 +13,7 @@ export default function PageSkeleton({ kind }: { kind: Kind }) {
   return <><PublicNav /><main className={`mx-auto max-w-5xl px-4 sm:px-5 ${kind === 'home' ? 'space-y-8 pb-28 pt-6' : 'pb-28 pt-8'}`}>
     {kind === 'home' ? <>
       <SkeletonRegion className="space-y-8">
-        <section className="relative min-h-[270px] overflow-hidden rounded-xl bg-[var(--maroon-900)] p-6 sm:min-h-[320px] sm:p-8"><Skeleton className="h-4 w-44" /><Skeleton className="mt-5 h-28 w-64 max-w-full" /><div className="mt-8 flex gap-8"><Skeleton className="h-12 w-16" /><Skeleton className="h-12 w-16" /><Skeleton className="h-12 w-16" /></div></section>
+        <section className="relative min-h-[270px] overflow-hidden rounded-xl bg-maroon-panel p-6 sm:min-h-[320px] sm:p-8"><Skeleton className="h-4 w-44" /><Skeleton className="mt-5 h-28 w-64 max-w-full" /><div className="mt-8 flex gap-8"><Skeleton className="h-12 w-16" /><Skeleton className="h-12 w-16" /><Skeleton className="h-12 w-16" /></div></section>
         <section className="grid gap-5 md:grid-cols-2"><MatchCardSkeleton large /><MatchCardSkeleton large /></section>
         <section><Skeleton className="mb-3 h-8 w-44" /><Skeleton className="h-24 rounded-lg" /></section>
         <section><Skeleton className="mb-3 h-8 w-48" /><div className="grid grid-cols-4 gap-3 sm:grid-cols-6 md:grid-cols-8">{Array.from({ length: 8 }, (_, i) => <div key={i} className="grid justify-items-center gap-2 rounded-lg border border-[var(--line)] bg-[var(--surface)] p-3"><Skeleton circle className="size-12" /><Skeleton className="h-3 w-12" /></div>)}</div></section>

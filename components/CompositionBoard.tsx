@@ -3,6 +3,7 @@
 
 import { useEffect, useRef } from 'react'
 import TeamLogo from '@/components/TeamLogo'
+import MatchShareIcon from '@/components/MatchShare'
 import type { Team } from '@/lib/data/public'
 import { COURT_SLOTS, resolveStarterSlots, type LineupEntry } from '@/lib/lineup'
 import styles from './composition-board.module.css'
@@ -18,6 +19,7 @@ const PLAYER_POSITIONS: Record<string, { left: number; top: number }> = {
 }
 
 export default function CompositionBoard({
+  matchId,
   team,
   opponent,
   scheduledAt,
@@ -26,6 +28,7 @@ export default function CompositionBoard({
   starters,
   bench,
 }: {
+  matchId: string
   team: Team
   opponent: Team
   scheduledAt: string
@@ -72,11 +75,12 @@ export default function CompositionBoard({
     >
       <div className={styles.viewport} ref={viewportRef}>
         <div className={styles.scene} ref={sceneRef}>
+          <MatchShareIcon matchId={matchId} home={{ name: team.is_esi ? 'ESI' : team.name, isEsi: team.is_esi }} away={{ name: opponent.is_esi ? 'ESI' : opponent.name, isEsi: opponent.is_esi }} date={date} venue={location || 'Lieu à confirmer'} round={null} homeScore={null} awayScore={null} composition={starters.concat(bench).map((entry) => ({ number: entry.player.jersey_number, firstName: entry.player.first_name, lastName: entry.player.last_name, role: entry.player.position }))} kind="lineup" className={styles.shareButton} />
           <div className={styles.homeLogo}>
             <TeamLogo team={team} size={92} />
           </div>
 
-          <p className={styles.kicker}>Composition d'équipe</p>
+          <p className={styles.kicker}>Composition d&apos;équipe</p>
 
           <h2 className={styles.title}>
             {team.is_esi ? 'THE LIONS OF ESI' : team.name}
@@ -98,7 +102,7 @@ export default function CompositionBoard({
               <svg
                 viewBox="0 0 566 510"
                 fill="none"
-                stroke="#8d7774"
+                stroke="var(--composition-line)"
                 strokeWidth="2.5"
               >
                 <rect
@@ -112,8 +116,8 @@ export default function CompositionBoard({
                   y="1"
                   width="188"
                   height="226"
-                  fill="#621a27"
-                  stroke="#9a807c"
+                  fill="var(--composition-paint)"
+                  stroke="var(--composition-line)"
                 />
                 <circle cx="283" cy="226" r="66" />
                 <path d="M38 1 V120 A245 265 0 0 0 528 120 V1" />
@@ -129,7 +133,7 @@ export default function CompositionBoard({
                   cx="283"
                   cy="54"
                   r="15"
-                  stroke="#e8b448"
+                  stroke="var(--composition-gold)"
                   strokeWidth="3.5"
                 />
               </svg>

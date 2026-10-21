@@ -42,11 +42,11 @@ export default async function AdminJournalPage() {
   if (error) throw new Error('Impossible de charger le journal administratif.')
   const emailByUserId = new Map((authUsers.users ?? []).map((user) => [user.id, user.email ?? null]))
   return <main className="mx-auto max-w-5xl space-y-6 px-4 pb-28 pt-8 sm:px-6">
-    <Link href="/admin" className="inline-flex min-h-10 items-center font-semibold text-[var(--maroon-900)]">Administration</Link>
-    <header className="rounded-2xl bg-[var(--maroon-900)] p-6 text-white sm:p-8">
+    <Link href="/admin" className="inline-flex min-h-10 items-center font-semibold text-brand">Administration</Link>
+    <header className="rounded-2xl bg-maroon-panel p-6 text-on-brand sm:p-8">
       <p className="text-xs font-bold uppercase tracking-[0.2em] text-[var(--gold-500)]">Espace administrateur</p>
       <h1 className="mt-2 font-display text-4xl sm:text-5xl">Journal</h1>
-      <p className="mt-3 text-sm text-white/80">100 événements récents, en lecture seule.</p>
+      <p className="mt-3 text-sm text-on-brand/80">100 événements récents, en lecture seule.</p>
     </header>
     <section className="rounded-2xl border border-[var(--line)] bg-[var(--surface)] px-5 sm:px-6" aria-label="Événements récents">
       {(events ?? []).map((event) => <article key={event.id} className="grid gap-1 border-b border-[var(--line)] py-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
