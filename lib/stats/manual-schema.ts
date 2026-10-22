@@ -56,6 +56,9 @@ const saveSchema = z.object({
 
 export const manualStatsActionSchema = z.discriminatedUnion('action', [
   saveSchema,
+  z.object({ action: z.literal('save-collective'), home_score: z.number().int().min(0).max(200).nullable(), away_score: z.number().int().min(0).max(200).nullable(), home_team: teamStats, away_team: teamStats }).strict().superRefine((value, context) => {
+    if ((value.home_score === null) !== (value.away_score === null)) context.addIssue({ code: 'custom', path: ['home_score'], message: 'both_scores_required' })
+  }),
   z.object({ action: z.literal('prepare-review') }).strict(),
   z.object({ action: z.literal('validate-review'), result: z.boolean(), team: z.boolean(), players: z.boolean(), anomalies: z.boolean() }).strict(),
   z.object({ action: z.literal('publish') }).strict(),

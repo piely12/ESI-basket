@@ -115,7 +115,6 @@ export async function sendAccountReadyEmail(to: string, firstName: string, code:
   }
   await reserveDailyEmail()
   const inviteUrl = new URL('/mot-de-passe-oublie', parsedBaseUrl.origin)
-  inviteUrl.searchParams.set('email', to)
   inviteUrl.searchParams.set('invitation', '1')
 
   const res = await fetch('https://api.brevo.com/v3/smtp/email', {

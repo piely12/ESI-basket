@@ -17,7 +17,7 @@ export default async function AssistantCoachHomePage() {
   const { data } = await supabase.from('matches')
     .select('id,scheduled_at,location,kickoff_confirmed,home_team:teams!matches_home_team_id_fkey(id,name,city,logo_url,is_esi),away_team:teams!matches_away_team_id_fkey(id,name,city,logo_url,is_esi)')
     .or('home_team_id.eq.' + team.id + ',away_team_id.eq.' + team.id)
-    .order('scheduled_at', { ascending: false }).limit(100)
+    .order('scheduled_at', { ascending: true })
   const matches = (data ?? []) as unknown as AdjointMatch[]
   const workflowResult = matches.length ? await supabase.from('match_composition_workflows').select('match_id,status').eq('team_id', team.id).in('match_id', matches.map((match) => match.id)) : { data: [] }
   const workflows = new Map((workflowResult.data ?? []).map((row) => [row.match_id, row.status]))

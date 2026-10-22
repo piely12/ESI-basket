@@ -4,6 +4,7 @@ import { useState, useSyncExternalStore } from 'react'
 import PublicNav from '@/components/PublicNav'
 import PageTitle from '@/components/PageTitle'
 import MatchNotificationsSetting from '@/components/MatchNotificationsSetting'
+import PwaSettings from '@/components/PwaSettings'
 
 type ThemeMode = 'light' | 'dark'
 
@@ -11,8 +12,8 @@ function readThemeMode(): ThemeMode {
   try {
     const saved = localStorage.getItem('theme')
     if (saved === 'light' || saved === 'dark') return saved
-  } catch { /* Use the system preference if storage is unavailable. */ }
-  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+  } catch { /* Use the light theme if storage is unavailable. */ }
+  return 'light'
 }
 
 function applyTheme(mode: ThemeMode) {
@@ -21,16 +22,10 @@ function applyTheme(mode: ThemeMode) {
 }
 
 function subscribeToTheme(onChange: () => void) {
-  const media = window.matchMedia('(prefers-color-scheme: dark)')
-  const onSystemChange = () => {
-    try { if (!localStorage.getItem('theme')) onChange() } catch { onChange() }
-  }
   const onStorage = (event: StorageEvent) => { if (event.key === 'theme') onChange() }
-  media.addEventListener('change', onSystemChange)
   window.addEventListener('storage', onStorage)
   window.addEventListener('lions-theme-change', onChange)
   return () => {
-    media.removeEventListener('change', onSystemChange)
     window.removeEventListener('storage', onStorage)
     window.removeEventListener('lions-theme-change', onChange)
   }
@@ -92,6 +87,7 @@ export default function ReglagesPage() {
       </section>
 
       <MatchNotificationsSetting />
+      <PwaSettings />
 
       <details className="settings-card theme-card group rounded-lg border border-[var(--line)] bg-[var(--surface)] p-4">
         <summary className="cursor-pointer list-none focus-visible:outline-2 focus-visible:outline-ring [&::-webkit-details-marker]:hidden">

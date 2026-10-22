@@ -17,13 +17,14 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-
 
 export type CoachInviteState = { error: string; success: string }
 const COACH_INVITE_FORM = z.object({
-  profile_ref: z.string().regex(/^(joueur|staff):[0-9a-f-]{36}$/i),
+  profile_ref: z.string().regex(/^(joueur|staff):[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i),
   email: z.string().trim().toLowerCase().email().max(254),
+  mode: z.enum(['creer', 'lier']).default('creer'),
 }).strict()
 
 export async function inviteTeamAccount(_state: CoachInviteState, formData: FormData): Promise<CoachInviteState> {
   const { profile, user } = await requireRole('coach')
-  const input = COACH_INVITE_FORM.safeParse({ profile_ref: formData.get('profile_ref'), email: formData.get('email') })
+  const input = COACH_INVITE_FORM.safeParse({ profile_ref: formData.get('profile_ref'), email: formData.get('email'), mode: formData.get('mode') ?? 'creer' })
   if (!input.success || !isValidEmail(input.data.email)) return { error: 'Vérifie la fiche sélectionnée et l’adresse e-mail.', success: '' }
   if (!profile.team_id) return { error: 'Le compte coach n’est associé à aucune équipe.', success: '' }
 
@@ -46,6 +47,7 @@ export async function inviteTeamAccount(_state: CoachInviteState, formData: Form
 
   const [kind, id] = input.data.profile_ref.split(':')
   let targetName = ''
+  let targetRole = ''
   let table: 'players' | 'staff'
   if (kind === 'joueur') {
     table = 'players'
@@ -53,29 +55,63 @@ export async function inviteTeamAccount(_state: CoachInviteState, formData: Form
     if (!data) return { error: 'Cette fiche joueur ESI est introuvable.', success: '' }
     if (data.user_id) return { error: 'Cette fiche est déjà rattachée à un compte.', success: '' }
     targetName = `${data.first_name} ${data.last_name}`
+    targetRole = 'joueur'
   } else {
     table = 'staff'
-    const { data } = await admin.from('staff').select('id,user_id,first_name,last_name,role').eq('id', id).eq('team_id', team.id).eq('role', 'coach_adjoint').maybeSingle()
-    if (!data) return { error: 'Seule une fiche coach adjoint existante peut être invitée ici.', success: '' }
+    const { data } = await admin.from('staff').select('id,user_id,first_name,last_name,role').eq('id', id).eq('team_id', team.id).in('role', ['coach_adjoint', 'statisticienne']).maybeSingle()
+    if (!data) return { error: 'Seule une fiche coach adjoint ou statisticienne ESI peut être associée ici.', success: '' }
     if (data.user_id) return { error: 'Cette fiche est déjà rattachée à un compte.', success: '' }
     targetName = `${data.first_name} ${data.last_name}`
+    if (data.role !== 'coach_adjoint' && data.role !== 'statisticienne') {
+      return { error: 'Ce rôle ne peut pas être associé depuis l’espace du coach.', success: '' }
+    }
+    targetRole = data.role === 'statisticienne' ? 'statisticienne' : 'coach_adjoint'
+  }
+
+  if (targetRole === 'statisticienne') {
+    const { data: sameRoleProfiles, error: roleLookupError } = await admin.from('staff')
+      .select('id, user_id').eq('team_id', team.id).eq('role', 'statisticienne').neq('id', id)
+    if (roleLookupError) return { error: 'Impossible de vérifier les comptes de la statisticienne.', success: '' }
+    const otherUserIds = (sameRoleProfiles ?? []).map((entry) => entry.user_id).filter((accountId): accountId is string => !!accountId)
+    if (otherUserIds.length) {
+      const { data: activeAccounts, error: accessError } = await admin.from('users')
+        .select('id').in('id', otherUserIds).eq('is_active', true)
+      if (accessError) return { error: 'Impossible de vérifier les comptes de la statisticienne.', success: '' }
+      if (activeAccounts?.length) return { error: 'Un compte actif est déjà associé au rôle de statisticienne.', success: '' }
+    }
   }
 
   let authUserId: string | null = null
+  let createdNewUser = false
   try {
-    const created = await admin.auth.admin.createUser({
-      email: input.data.email,
-      password: randomBytes(32).toString('base64url'),
-      email_confirm: true,
-      user_metadata: { first_name: targetName.split(' ')[0], account_created_by_coach: true },
-    })
-    if (created.error || !created.data.user) return { error: 'Impossible de créer ce compte. Vérifie que l’adresse n’est pas déjà utilisée; un compte existant doit être rattaché par l’administration.', success: '' }
-    authUserId = created.data.user.id
+    if (input.data.mode === 'lier') {
+      const { data: authUsers, error: usersError } = await admin.auth.admin.listUsers({ page: 1, perPage: 1000 })
+      if (usersError) return { error: 'Impossible de rechercher les comptes existants.', success: '' }
+      const matchingUsers = authUsers.users.filter((authUser) => authUser.email?.toLowerCase() === input.data.email)
+      if (matchingUsers.length !== 1) return { error: 'Aucun compte unique ne correspond à cette adresse e-mail.', success: '' }
+      authUserId = matchingUsers[0].id
+      const [{ data: linkedPlayer, error: playerLinkError }, { data: linkedStaff, error: staffLinkError }] = await Promise.all([
+        admin.from('players').select('id').eq('user_id', authUserId).maybeSingle(),
+        admin.from('staff').select('id').eq('user_id', authUserId).maybeSingle(),
+      ])
+      if (playerLinkError || staffLinkError) return { error: 'Impossible de vérifier les rattachements existants.', success: '' }
+      if (linkedPlayer || linkedStaff) return { error: 'Ce compte est déjà associé à une autre fiche.', success: '' }
+    } else {
+      const created = await admin.auth.admin.createUser({
+        email: input.data.email,
+        password: randomBytes(32).toString('base64url'),
+        email_confirm: true,
+        user_metadata: { first_name: targetName.split(' ')[0], account_created_by_coach: true },
+      })
+      if (created.error || !created.data.user) return { error: 'Impossible de créer ce compte. Vérifie que cette adresse n’est pas déjà utilisée.', success: '' }
+      authUserId = created.data.user.id
+      createdNewUser = true
+    }
 
     const { data: linked, error: linkError } = await admin.from(table).update({ user_id: authUserId }).eq('id', id).eq('team_id', team.id).is('user_id', null).select('id').maybeSingle()
     if (linkError || !linked) throw new Error('binding_failed')
-    const { error: stateError } = await admin.from('users').update({ is_active: false, must_change_password: true, password_changed_at: null, suspension_reason: null }).eq('id', authUserId)
-    if (stateError) throw new Error('security_state_failed')
+    const { data: securityRow, error: stateError } = await admin.from('users').update({ is_active: false, must_change_password: true, password_changed_at: null, suspension_reason: null }).eq('id', authUserId).select('id').maybeSingle()
+    if (stateError || !securityRow) throw new Error('security_state_failed')
 
     const code = generateOtp()
     const { error: otpError } = await admin.rpc('issue_recovery_otp', {
@@ -85,15 +121,22 @@ export async function inviteTeamAccount(_state: CoachInviteState, formData: Form
       p_max_attempts: 5,
     })
     if (otpError) throw new Error('otp_failed')
-    await sendAccountReadyEmail(input.data.email, targetName.split(' ')[0] || 'membre', code)
-    await audit(admin, 'coach_invited_esi_account', user.id, { metadata: { profile_type: kind, profile_id: id, role: kind === 'joueur' ? 'joueur' : 'coach_adjoint' } })
+    try {
+      await sendAccountReadyEmail(input.data.email, targetName.split(' ')[0] || 'membre', code)
+    } catch {
+      await audit(admin, 'coach_account_notification_failed', user.id, { metadata: { profile_type: kind, profile_id: id } })
+      revalidatePath('/coach/invitations')
+      revalidatePath('/admin/staff')
+      return { error: `Le compte est associé, mais l’invitation n’a pas été envoyée à ${input.data.email}. L’administrateur peut la renvoyer.`, success: '' }
+    }
+    await audit(admin, input.data.mode === 'lier' ? 'coach_linked_esi_account' : 'coach_invited_esi_account', user.id, { metadata: { profile_type: kind, profile_id: id, role: targetRole, method: input.data.mode } })
     revalidatePath('/coach/invitations')
     revalidatePath('/admin/staff')
     return { error: '', success: `Invitation envoyée à ${input.data.email} pour ${targetName}.` }
   } catch {
     if (authUserId) {
       await admin.from(table).update({ user_id: null }).eq('id', id).eq('team_id', team.id).eq('user_id', authUserId)
-      await admin.auth.admin.deleteUser(authUserId)
+      if (createdNewUser) await admin.auth.admin.deleteUser(authUserId)
     }
     await audit(admin, 'coach_account_invitation_failed', user.id, { metadata: { profile_type: kind, profile_id: id } })
     return { error: 'Le compte n’a pas pu être invité. Vérifie la configuration e-mail et réessaie.', success: '' }

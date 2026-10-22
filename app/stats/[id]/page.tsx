@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import StatsEditor, { type Draft, type PlayerDraft, type TeamDraft } from './StatsEditor'
+import CollectiveStatsEditor from './CollectiveStatsEditor'
 import { requireRole } from '@/lib/auth/requireUser'
 
 type PageProps = { params: Promise<{ id: string }> }
@@ -23,7 +24,27 @@ export default async function StatsMatchPage({ params }: PageProps) {
   const { data: match, error: matchError } = await supabase.from('matches')
     .select('id,scheduled_at,status,location,home_team_id,away_team_id,home_score,away_score,home_team:teams!matches_home_team_id_fkey(name),away_team:teams!matches_away_team_id_fkey(name)')
     .eq('id', id).maybeSingle()
-  if (matchError || !match || ![match.home_team_id, match.away_team_id].includes(profile.team_id) || match.status !== 'termine') notFound()
+  if (matchError || !match) notFound()
+
+  const homeTeam = match.home_team as unknown as { name: string } | null
+  const awayTeam = match.away_team as unknown as { name: string } | null
+  const isEsiMatch = [match.home_team_id,match.away_team_id].includes(profile.team_id)
+  if (!isEsiMatch || match.status !== 'termine') {
+    const [{ data: collectiveRows, error: collectiveError }, { data: draftWorkflow, error: draftError }] = await Promise.all([
+      supabase.from('match_team_stats').select(`${teamKeys.join(',')},team_id`).eq('match_id',id).in('team_id',[match.home_team_id,match.away_team_id]),
+      supabase.from('match_stats_workflow').select('status,home_score_draft,away_score_draft').eq('match_id',id).maybeSingle(),
+    ])
+    if (collectiveError || draftError) return <main className="mx-auto max-w-5xl px-4 py-8"><p role="alert" className="rounded-xl border border-[var(--line)] bg-[var(--surface)] p-5">Impossible de charger cette feuille. Actualise la page puis réessaie.</p></main>
+    const rows = new Map((collectiveRows ?? []).map(row => [row.team_id,row]))
+    const scoreHome = numberOrNull(draftWorkflow?.home_score_draft ?? match.home_score)
+    const scoreAway = numberOrNull(draftWorkflow?.away_score_draft ?? match.away_score)
+    const locked = draftWorkflow?.status === 'publie'
+    return <main className="mx-auto max-w-5xl space-y-6 px-4 pb-24 pt-8 sm:px-5"><Link href="/stats" className="inline-flex min-h-10 items-center text-sm font-semibold text-brand underline underline-offset-4">Retour aux feuilles</Link>
+      <header className="rounded-2xl bg-maroon-panel p-6 text-on-brand sm:p-8"><p className="text-xs font-bold uppercase tracking-[0.2em] text-[var(--gold-500)]">Saisie des statistiques collectives · {match.status==='termine'?'match terminé':match.status==='en_cours'?'match en cours':'match à venir'}</p><h1 className="mt-2 font-display text-4xl leading-none sm:text-5xl">{homeTeam?.name ?? 'Équipe'} <span className="text-[var(--gold-500)]">·</span> {awayTeam?.name ?? 'Équipe'}</h1><p className="mt-3 text-sm text-on-brand/80">{new Date(match.scheduled_at).toLocaleDateString('fr-FR',{dateStyle:'full',timeZone:'Africa/Abidjan'})}{match.location?` · ${match.location}`:''}</p></header>
+      <CollectiveStatsEditor matchId={id} homeName={homeTeam?.name??'Équipe domicile'} awayName={awayTeam?.name??'Équipe visiteuse'} scores={[scoreHome,scoreAway]} homeStats={rows.get(match.home_team_id) as Partial<TeamDraft>??{}} awayStats={rows.get(match.away_team_id) as Partial<TeamDraft>??{}} locked={locked}/>
+    </main>
+  }
+  if (!isEsiMatch) notFound()
 
   const { data: roster, error: rosterError } = await supabase.from('match_rosters').select('player_id')
     .eq('match_id', id).eq('is_called_up', true)
@@ -41,8 +62,6 @@ export default async function StatsMatchPage({ params }: PageProps) {
 
   const statByPlayer = new Map(((statRows ?? []) as unknown as PlayerStat[]).map((row) => [row.player_id, row]))
   const teamStats = (teamRow ?? {}) as TeamStat
-  const homeTeam = match.home_team as unknown as { name: string } | null
-  const awayTeam = match.away_team as unknown as { name: string } | null
   const esiIsHome = match.home_team_id === profile.team_id
   const workflow = workflowRow as { status: string; home_score_draft: number | null; away_score_draft: number | null; review_warnings: string[]; result_checked: boolean; team_stats_checked: boolean; player_stats_checked: boolean; anomalies_checked: boolean; correction_reason: string | null } | null
   const legacyPublished = players.every((player) => !!statByPlayer.get(player.id)?.published_at)

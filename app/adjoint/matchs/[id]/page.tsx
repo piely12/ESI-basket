@@ -43,12 +43,12 @@ export default async function AssistantMatchPage({ params }: PageProps) {
     <CompositionWizard
       matchId={match.id} team={compositionTeam} opponent={opponent} scheduledAt={match.scheduled_at}
       location={match.location} kickoffConfirmed={match.kickoff_confirmed}
-      coachName={`${profile.first_name} ${profile.last_name}`} players={players}
+      coachName="SAIH PIELY URIEL" players={players}
       initialAvailability={workflow?.draft_availability ?? []}
       initialSelectedIds={workflow?.draft_selected_player_ids ?? []}
       initialSlots={workflow?.draft_court_slots ?? {}}
       initialStatus={locked ? 'verrouillee' : workflow?.status ?? 'brouillon'}
-      canOverrideLock={false} saveAction={saveAssistantCompositionDraft} publishAction={publishAssistantComposition}
+      canOverrideLock={false} requireSeventeenPlayers saveAction={saveAssistantCompositionDraft} publishAction={publishAssistantComposition}
     />
   </main>
 }

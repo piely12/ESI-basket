@@ -20,14 +20,12 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     <html lang="fr" suppressHydrationWarning>
       <head>
         <Script id="lions-theme-session" strategy="beforeInteractive" nonce={nonce}>{`const root = document.documentElement;
-          const systemTheme = matchMedia('(prefers-color-scheme: dark)');
           const applySavedTheme = () => {
             let saved = null;
             try { saved = localStorage.getItem('theme'); } catch {}
-            root.classList.toggle('dark', saved === 'dark' || (!saved && systemTheme.matches));
+            root.classList.toggle('dark', saved === 'dark');
           };
           applySavedTheme();
-          systemTheme.addEventListener('change', applySavedTheme);
           window.addEventListener('storage', (event) => { if (event.key === 'theme' || event.key === null) applySavedTheme(); });`}</Script>
         <Script id="lions-splash-session" strategy="beforeInteractive" nonce={nonce}>{`try { if (sessionStorage.getItem('lions-splash-seen') === '1') document.documentElement.dataset.splashSeen = 'true'; else document.documentElement.dataset.splashEnabled = 'true'; } catch { document.documentElement.dataset.splashEnabled = 'true'; }`}</Script>
         <noscript><style nonce={nonce}>{`.lions-splash{display:none!important}`}</style></noscript>

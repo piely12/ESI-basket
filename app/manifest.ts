@@ -3,8 +3,8 @@ import type { MetadataRoute } from 'next'
 export default function manifest(): MetadataRoute.Manifest {
   return {
     id: '/',
-    name: 'Inter-Écoles Basketball · The Lions of ESI',
-    short_name: 'Lions ESI',
+    name: 'ESI BASKETBALL',
+    short_name: 'ESI BASKETBALL',
     description: 'Résultats, calendrier et actualités des Lions de l’ESI.',
     start_url: '/',
     scope: '/',

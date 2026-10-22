@@ -29,11 +29,9 @@ export default function MotDePasseOublie() {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
-    const invitedEmail = normalizeEmail(params.get('email') ?? '')
-    if (params.get('invitation') === '1' && isValidEmail(invitedEmail)) {
-      // The invitation URL is external state; initialize this form from it on mount.
+    if (params.get('invitation') === '1') {
+      // Keep the email out of the invitation URL; ask for it alongside the emailed code.
       // eslint-disable-next-line react-hooks/set-state-in-effect
-      setEmail(invitedEmail)
       setInvitationMode(true)
       setStep('code')
     }
@@ -57,7 +55,10 @@ export default function MotDePasseOublie() {
   }) }
 
   const checkCode = (e: React.FormEvent) => { e.preventDefault(); run(async () => {
-    const r = await post('/api/auth/verify-otp', { email, code })
+    const clean = normalizeEmail(email)
+    if (!isValidEmail(clean)) return setError('Entrez une adresse e-mail valide.')
+    setEmail(clean)
+    const r = await post('/api/auth/verify-otp', { email: clean, code })
     if (!r.ok) { setCode(''); return setError(r.data.error ?? 'Code invalide.') }
     setResetToken(r.data.resetToken)
     setStep('password')
@@ -104,6 +105,15 @@ export default function MotDePasseOublie() {
               ? <>Saisissez le code à 6 chiffres indiqué dans votre e-mail d’invitation pour choisir votre mot de passe. Il expire après 10 minutes.</>
               : <>Si un compte existe pour <b>{email}</b>, un code vient d&apos;être envoyé. Il est valable 10 minutes.</>}
           </p>
+          {invitationMode && (
+            <div className="flex flex-col gap-1">
+              <label htmlFor="invitation-email" className="text-sm font-medium">Adresse e-mail de l’invitation</label>
+              <input id="invitation-email" name="email" type="email" inputMode="email" autoComplete="username"
+                autoCapitalize="none" spellCheck={false} maxLength={EMAIL_MAX} required
+                value={email} onChange={(e) => setEmail(e.target.value)}
+                aria-describedby="form-error" className="rounded border p-2" />
+            </div>
+          )}
           <div className="flex flex-col gap-1">
             <label htmlFor="code" className="text-sm font-medium">Code à 6 chiffres</label>
             <input id="code" name="code" inputMode="numeric" pattern="[0-9]*" maxLength={6}

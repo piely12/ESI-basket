@@ -10,7 +10,7 @@ export default async function ClassementPage() {
     <>
       <PublicNav />
       <main className="reference-page-shell page-title-page mx-auto max-w-screen-xl px-4 pb-28 pt-8 sm:px-6 lg:px-10">
-        <PageTitle title="Classement" subtitle="Classement du championnat" />
+        <PageTitle title="Classement" />
         <StandingsView rows={standings} />
       </main>
     </>

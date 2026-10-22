@@ -15,7 +15,7 @@ type AvailabilityDraft = { player_id: string; availability_status: Availability 
 
 export default function CompositionWizard({
   matchId, team, opponent, scheduledAt, location, kickoffConfirmed, coachName, players,
-  initialAvailability, initialSelectedIds, initialSlots, initialStatus, canOverrideLock,
+  initialAvailability, initialSelectedIds, initialSlots, initialStatus, canOverrideLock, requireSeventeenPlayers = false,
   saveAction = saveMatchCompositionDraft, publishAction = publishMatchComposition,
 }: {
   matchId: string
@@ -31,6 +31,7 @@ export default function CompositionWizard({
   initialSlots: Partial<Record<CourtSlot, string>>
   initialStatus: WorkflowStatus
   canOverrideLock: boolean
+  requireSeventeenPlayers?: boolean
   saveAction?: typeof saveMatchCompositionDraft
   publishAction?: typeof publishMatchComposition
 }) {
@@ -47,6 +48,7 @@ export default function CompositionWizard({
   const [isPending, startTransition] = useTransition()
   const availablePlayers = players.filter((player) => availability[player.id] === 'disponible')
   const canSelectTwelve = availablePlayers.length >= 12 && selectedIds.length === 12
+  const validRosterSize = !requireSeventeenPlayers || players.length === 17
   const slotEntries = useMemo(() => COURT_SLOTS.flatMap((slot) => {
     const player = players.find((candidate) => candidate.id === slots[slot.key])
     return player ? [{ player, is_starter: true, court_slot: slot.key }] as LineupEntry[] : []
@@ -143,6 +145,7 @@ export default function CompositionWizard({
     {step === 1 && <div className={styles.content}>
       <div className={styles.sectionTitle}><div><p className={styles.kicker}>Étape 1</p><h3>Disponibilités & sélection</h3></div><span className={styles.pill}>{statusText}</span></div>
       <p className={styles.muted}>Tous les joueurs sont disponibles par défaut. Choisis les 12 joueurs retenus pour ce match.</p>
+      {!validRosterSize && <p role="alert" className={styles.warning}>L’effectif ESI doit contenir exactement 17 joueurs avant de préparer la composition.</p>}
       {availablePlayers.length < 12 && <p role="alert" className={styles.warning}>Seulement {availablePlayers.length} joueur{availablePlayers.length === 1 ? '' : 's'} disponible{availablePlayers.length === 1 ? '' : 's'} : il en faut 12 pour valider la composition.</p>}
       <div className={styles.playerGrid}>{sortedPlayers.map((player) => {
         const chosen = selectedIds.includes(player.id)
@@ -175,9 +178,9 @@ export default function CompositionWizard({
       <div className={styles.actions}>
         {step>1 && <button type="button" className={styles.secondaryButton} disabled={isPending} onClick={()=>setStep((step-1) as 1|2)}>Retour</button>}
         {step===1 && <button type="button" className={styles.secondaryButton} disabled={isPending||locked} onClick={persistDraft}>Enregistrer le brouillon</button>}
-        {step===1 && <button type="button" className={styles.primaryButton} disabled={locked||!canSelectTwelve||isPending} onClick={()=>advance(2)}>{isPending?'Enregistrement…':'Suivant'}</button>}
+        {step===1 && <button type="button" className={styles.primaryButton} disabled={locked||!validRosterSize||!canSelectTwelve||isPending} onClick={()=>advance(2)}>{isPending?'Enregistrement…':'Suivant'}</button>}
         {step===2 && <><button type="button" className={styles.secondaryButton} disabled={isPending||locked} onClick={persistDraft}>Brouillon</button><button type="button" className={styles.primaryButton} disabled={locked||Object.keys(slots).length!==5||isPending} onClick={()=>advance(3)}>{isPending?'Enregistrement…':'Aperçu'}</button></>}
-        {step===3 && <><button type="button" className={styles.secondaryButton} disabled={isPending} onClick={persistDraft}>Enregistrer le brouillon</button><button type="button" className={styles.primaryButton} disabled={locked||isPending||selectedIds.length!==12||Object.keys(slots).length!==5||availablePlayers.length<12} onClick={publish}>{isPending?'Publication…':status==='publiee'?'Confirmer la mise à jour':'Confirmer et publier'}</button></>}
+        {step===3 && <><button type="button" className={styles.secondaryButton} disabled={isPending} onClick={persistDraft}>Enregistrer le brouillon</button><button type="button" className={styles.primaryButton} disabled={locked||isPending||!validRosterSize||selectedIds.length!==12||Object.keys(slots).length!==5||availablePlayers.length<12} onClick={publish}>{isPending?'Publication…':status==='publiee'?'Confirmer la mise à jour':'Confirmer et publier'}</button></>}
       </div>
     </footer>
   </section>
