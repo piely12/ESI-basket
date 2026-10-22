@@ -30,18 +30,18 @@ export default async function StatsMatchPage({ params }: PageProps) {
   const awayTeam = match.away_team as unknown as { name: string } | null
   const isEsiMatch = [match.home_team_id,match.away_team_id].includes(profile.team_id)
   if (!isEsiMatch || match.status !== 'termine') {
-    const [{ data: collectiveRows, error: collectiveError }, { data: draftWorkflow, error: draftError }] = await Promise.all([
-      supabase.from('match_team_stats').select(`${teamKeys.join(',')},team_id`).eq('match_id',id).in('team_id',[match.home_team_id,match.away_team_id]),
+    const [{ data: homeCollective, error: homeCollectiveError }, { data: awayCollective, error: awayCollectiveError }, { data: draftWorkflow, error: draftError }] = await Promise.all([
+      supabase.from('match_team_stats').select(teamStatsSelect).eq('match_id',id).eq('team_id',match.home_team_id).maybeSingle(),
+      supabase.from('match_team_stats').select(teamStatsSelect).eq('match_id',id).eq('team_id',match.away_team_id).maybeSingle(),
       supabase.from('match_stats_workflow').select('status,home_score_draft,away_score_draft').eq('match_id',id).maybeSingle(),
     ])
-    if (collectiveError || draftError) return <main className="mx-auto max-w-5xl px-4 py-8"><p role="alert" className="rounded-xl border border-[var(--line)] bg-[var(--surface)] p-5">Impossible de charger cette feuille. Actualise la page puis réessaie.</p></main>
-    const rows = new Map((collectiveRows ?? []).map(row => [row.team_id,row]))
+    if (homeCollectiveError || awayCollectiveError || draftError) return <main className="mx-auto max-w-5xl px-4 py-8"><p role="alert" className="rounded-xl border border-[var(--line)] bg-[var(--surface)] p-5">Impossible de charger cette feuille. Actualise la page puis réessaie.</p></main>
     const scoreHome = numberOrNull(draftWorkflow?.home_score_draft ?? match.home_score)
     const scoreAway = numberOrNull(draftWorkflow?.away_score_draft ?? match.away_score)
     const locked = draftWorkflow?.status === 'publie'
     return <main className="mx-auto max-w-5xl space-y-6 px-4 pb-24 pt-8 sm:px-5"><Link href="/stats" className="inline-flex min-h-10 items-center text-sm font-semibold text-brand underline underline-offset-4">Retour aux feuilles</Link>
       <header className="rounded-2xl bg-maroon-panel p-6 text-on-brand sm:p-8"><p className="text-xs font-bold uppercase tracking-[0.2em] text-[var(--gold-500)]">Saisie des statistiques collectives · {match.status==='termine'?'match terminé':match.status==='en_cours'?'match en cours':'match à venir'}</p><h1 className="mt-2 font-display text-4xl leading-none sm:text-5xl">{homeTeam?.name ?? 'Équipe'} <span className="text-[var(--gold-500)]">·</span> {awayTeam?.name ?? 'Équipe'}</h1><p className="mt-3 text-sm text-on-brand/80">{new Date(match.scheduled_at).toLocaleDateString('fr-FR',{dateStyle:'full',timeZone:'Africa/Abidjan'})}{match.location?` · ${match.location}`:''}</p></header>
-      <CollectiveStatsEditor matchId={id} homeName={homeTeam?.name??'Équipe domicile'} awayName={awayTeam?.name??'Équipe visiteuse'} scores={[scoreHome,scoreAway]} homeStats={rows.get(match.home_team_id) as Partial<TeamDraft>??{}} awayStats={rows.get(match.away_team_id) as Partial<TeamDraft>??{}} locked={locked}/>
+      <CollectiveStatsEditor matchId={id} homeName={homeTeam?.name??'Équipe domicile'} awayName={awayTeam?.name??'Équipe visiteuse'} scores={[scoreHome,scoreAway]} homeStats={(homeCollective??{}) as unknown as Partial<TeamDraft>} awayStats={(awayCollective??{}) as unknown as Partial<TeamDraft>} locked={locked}/>
     </main>
   }
   if (!isEsiMatch) notFound()
