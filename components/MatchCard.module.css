@@ -19,25 +19,6 @@
 }
 
 .cardWrap { position: relative; min-width: 0; }
-.shareShortcut {
-  position: absolute;
-  z-index: 4;
-  right: 10px;
-  bottom: 10px;
-  display: grid;
-  width: 34px;
-  height: 34px;
-  place-items: center;
-  border: 1px solid var(--card-gold, var(--match-card-gold));
-  border-radius: 50%;
-  color: var(--card-gold, var(--match-card-gold));
-  background: var(--match-card-status-bg);
-  transition: color .18s ease, background-color .18s ease, transform .18s ease;
-}
-.shareShortcut svg { width: 18px; height: 18px; }
-.shareShortcut:hover { color: var(--gold-foreground); background: var(--match-card-gold); transform: scale(1.06); }
-.shareShortcut:focus-visible { outline: 3px solid var(--match-card-gold); outline-offset: 3px; }
-
 .card::before {
   position: absolute;
   z-index: -3;

@@ -1,6 +1,7 @@
 import PublicNav from '@/components/PublicNav'
 import RosterGrid from './RosterGrid'
 import { getRoster } from '@/lib/data/public'
+import PageTitle from '@/components/PageTitle'
 
 export default async function EquipePage() {
   const roster = await getRoster()
@@ -8,11 +9,8 @@ export default async function EquipePage() {
   return (
     <>
       <PublicNav />
-      <main className="mx-auto max-w-screen-2xl px-4 pb-28 pt-8 sm:px-6 lg:px-10 2xl:px-12">
-        <header className="mb-5">
-          <h1 className="font-display text-5xl leading-none text-brand sm:text-6xl">Les Lions de l’ESI</h1>
-          <p className="mt-2 text-sm text-[var(--ink-soft)]">{roster.length} joueur{roster.length === 1 ? '' : 's'}</p>
-        </header>
+      <main className="reference-page-shell page-title-page mx-auto max-w-screen-2xl px-4 pb-28 pt-8 sm:px-6 lg:px-10 2xl:px-12">
+        <PageTitle title="Les Lions de l’ESI" subtitle={`${roster.length} joueur${roster.length === 1 ? '' : 's'}`} />
         <RosterGrid players={roster} />
       </main>
     </>

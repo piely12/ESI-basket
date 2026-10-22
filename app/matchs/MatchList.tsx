@@ -240,7 +240,7 @@ export default function MatchList({
                 <span className="font-sans text-sm font-semibold text-muted-foreground">{matchdayLabel(group.day)}</span>
               </h2>
               <div className="grid gap-2">
-                {group.matches.map(({ match }) => <MatchCard key={match.id} match={match} compact showShare={false} />)}
+                {group.matches.map(({ match }) => <MatchCard key={match.id} match={match} compact />)}
               </div>
             </section>)}
           </div>

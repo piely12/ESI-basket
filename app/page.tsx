@@ -17,11 +17,11 @@ export default async function Home() {
   return (
     <>
       <PublicNav />
-      <main className="mx-auto max-w-screen-xl space-y-8 px-4 pb-28 pt-6 sm:px-6 lg:px-10">
-        <section className="hero-panel relative overflow-hidden rounded-xl bg-primary p-6 text-primary-foreground sm:p-8 md:p-10">
+      <main className="mx-auto w-full max-w-screen-xl space-y-8 px-4 pb-28 pt-6 sm:px-6 lg:px-10">
+        <section className="hero-panel relative min-w-0 overflow-hidden rounded-xl bg-primary p-5 text-primary-foreground sm:p-8 md:p-10">
           <Image src="/logos/esi.png" alt="" width={400} height={400} priority className="pointer-events-none absolute -right-10 -top-6 h-52 w-52 object-contain opacity-[0.14] sm:h-64 sm:w-64 md:h-72 md:w-72" />
-          <div className="relative">
-            <h1 className="mt-3 font-display text-6xl leading-[0.88] tracking-wide text-primary-foreground sm:text-7xl md:text-8xl">Rugir.<br /><span className="text-gold">Ensemble.</span></h1>
+          <div className="relative min-w-0">
+            <h1 className="mt-3 font-display text-[clamp(3rem,12vw,3.75rem)] leading-[0.88] tracking-wide text-primary-foreground sm:text-7xl md:text-8xl">Rugir.<br /><span className="text-gold">Ensemble.</span></h1>
             <div className="mt-7 flex flex-wrap gap-x-7 gap-y-4 sm:gap-x-10">
               <div><div className="font-display text-4xl text-gold">{rank ? <>{rank}<sup className="text-lg">e</sup></> : '—'}</div><div className="text-[10px] font-semibold uppercase tracking-wider text-primary-foreground/85">Classement</div></div>
               <div><div className="font-display text-4xl text-gold">{record}</div><div className="text-[10px] font-semibold uppercase tracking-wider text-primary-foreground/85">Victoires · défaites</div></div>
@@ -30,15 +30,15 @@ export default async function Home() {
           </div>
         </section>
 
-        <section className="grid gap-5 md:grid-cols-2">
-          <div>
+        <section className="grid min-w-0 gap-5 md:grid-cols-2">
+          <div className="min-w-0">
             <div className="mb-2 flex items-center justify-between">
               <h2 className="font-display text-2xl text-brand">Prochain match</h2>
               <Link href="/matchs" className="text-xs font-bold uppercase tracking-wide text-brand">Calendrier</Link>
             </div>
             {nextMatch ? <MatchCard match={nextMatch} large /> : <div className="theme-card rounded-xl border border-[var(--line)] bg-[var(--surface)] p-5 text-sm text-[var(--ink-soft)]">Le prochain rendez-vous des Lions sera annoncé ici.</div>}
           </div>
-          <div>
+          <div className="min-w-0">
             <div className="mb-2 flex items-center justify-between">
               <h2 className="font-display text-2xl text-brand">Dernier résultat</h2>
               <Link href="/matchs" className="text-xs font-bold uppercase tracking-wide text-brand">Tous les matchs</Link>
@@ -52,8 +52,8 @@ export default async function Home() {
             <h2 id="news-title" className="font-display text-2xl uppercase tracking-wide text-brand">Actualités</h2>
             <Link href="/actualites" className="shrink-0 text-sm font-semibold text-brand">Tout voir</Link>
           </div>
-          {news.length ? <div className="grid gap-3 md:grid-cols-3">
-            {news.map((item) => <article key={item.id} className="theme-card min-h-48 rounded-xl border border-[var(--line)] bg-[var(--surface)] p-5">
+          {news.length ? <div className="grid min-w-0 gap-3 md:grid-cols-3">
+            {news.map((item) => <article key={item.id} className="theme-card min-h-48 min-w-0 rounded-xl border border-[var(--line)] bg-[var(--surface)] p-5">
               <div className="flex items-center justify-between gap-2"><span className="inline-flex rounded-md bg-[var(--gold-500)] px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-[var(--maroon-panel)]">{item.category || 'Actualité'}</span>{item.published_at && <time className="text-xs text-[var(--ink-soft)]" dateTime={item.published_at}>{new Date(item.published_at).toLocaleDateString('fr-FR', { timeZone: 'Africa/Abidjan', day: 'numeric', month: 'short' })}</time>}</div>
               <h3 className="mt-4 font-display text-xl leading-snug text-brand">{item.title}</h3>
               <p className="mt-2 text-base leading-relaxed text-[var(--ink-soft)]">{item.excerpt || item.body}</p>

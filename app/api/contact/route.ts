@@ -4,7 +4,6 @@ import { assertSameOrigin, clientIp, consumeRateLimit, json, rlKey } from '@/lib
 import { createAdminClient } from '@/lib/supabase/admin'
 
 const ContactMessage = z.object({
-  pseudo: z.string().trim().min(2).max(40),
   message: z.string().trim().min(5).max(1000),
 }).strict()
 
@@ -36,7 +35,7 @@ export async function POST(request: NextRequest) {
     if (!ipLimit.allowed || !globalLimit.allowed) {
       return json({ error: 'rate_limited' }, 429, { 'Retry-After': String(Math.max(ipLimit.retryAfterSeconds, globalLimit.retryAfterSeconds)) })
     }
-    const { error } = await admin.from('contact_messages').insert(parsed.data)
+    const { error } = await admin.from('contact_messages').insert({ message: parsed.data.message })
     if (error) throw error
     return json({ ok: true })
   } catch (error) {

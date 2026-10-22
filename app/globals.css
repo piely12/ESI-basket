@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Bebas+Neue&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Bebas+Neue&family=Permanent+Marker&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap");
 @import "tailwindcss";
 
 /* Thème clair : valeurs visuelles existantes conservées. */
@@ -22,6 +22,28 @@
   --destructive: oklch(0.55 0.2 27);
   --hero: var(--primary);
   --logo-pill: var(--card);
+  --lion: oklch(0.33 0.12 18 / 40%);
+  --page-gradient: var(--background);
+  --settings-card: var(--card);
+  --settings-card-border: var(--border);
+  --settings-text: var(--foreground);
+  --settings-muted: var(--muted-foreground);
+  --settings-divider: var(--border);
+  --settings-toggle-on: var(--gold);
+  --settings-toggle-off: var(--muted);
+  --settings-toggle-thumb: var(--card);
+  --public-header-bg: var(--primary);
+  --public-header-border: var(--border);
+  --public-header-team: var(--gold);
+  --public-header-league: var(--primary-foreground);
+  --public-nav-bg: var(--card);
+  --public-nav-border: var(--border);
+  --public-nav-text: var(--muted-foreground);
+  --public-nav-active-bg: var(--muted);
+  --public-nav-active-icon: var(--brand);
+  --public-nav-active-label: var(--brand);
+  --public-nav-underline: var(--gold);
+  --public-header-stripe: oklch(0.42 0.14 8 / 40%);
 
   /* Compatibilité avec les variables historiques des pages et modules CSS. */
   --paper: var(--background);
@@ -88,6 +110,28 @@
   --primary: oklch(0.2 0 0);
   --primary-foreground: oklch(0.95 0.005 85);
   --logo-pill: oklch(0.95 0.005 85);
+  --lion: #3e0113;
+  --page-gradient: linear-gradient(180deg, #020204, #0b0a10);
+  --settings-card: #0c0d12;
+  --settings-card-border: #26252b;
+  --settings-text: #ffffff;
+  --settings-muted: #b3b3bd;
+  --settings-divider: #191a1f;
+  --settings-toggle-on: #f6b54d;
+  --settings-toggle-off: #33323a;
+  --settings-toggle-thumb: #fdfdfd;
+  --public-header-bg: linear-gradient(90deg, #200109, #3b0412 62%, #1e030a);
+  --public-header-border: #4a2930;
+  --public-header-team: #f4c75a;
+  --public-header-league: #f1eadf;
+  --public-nav-bg: #08090e;
+  --public-nav-border: #241f24;
+  --public-nav-text: #c8c8d0;
+  --public-nav-active-bg: #460211;
+  --public-nav-active-icon: #e0627f;
+  --public-nav-active-label: #f8dcd0;
+  --public-nav-underline: #f6c453;
+  --public-header-stripe: rgb(122 21 48 / 40%);
   --brand: oklch(0.85 0.15 85);
   --muted: oklch(0.24 0 0);
   --muted-foreground: oklch(0.72 0.01 85);
@@ -168,6 +212,14 @@
   --color-gold-deep: var(--gold-deep);
   --color-destructive: var(--destructive);
   --color-success: var(--success);
+  --color-settings-card: var(--settings-card);
+  --color-settings-card-border: var(--settings-card-border);
+  --color-settings-text: var(--settings-text);
+  --color-settings-muted: var(--settings-muted);
+  --color-settings-divider: var(--settings-divider);
+  --color-settings-toggle-on: var(--settings-toggle-on);
+  --color-settings-toggle-off: var(--settings-toggle-off);
+  --color-settings-toggle-thumb: var(--settings-toggle-thumb);
   --color-warning: var(--warning);
   --font-display: "Bebas Neue", Impact, "Arial Narrow", sans-serif;
   --font-sans: "Barlow", "Segoe UI", Arial, sans-serif;
@@ -209,6 +261,139 @@ body {
   font-family: var(--font-sans);
 }
 
+.dark body, html[data-theme="dark"] body { background: var(--page-gradient); }
+
+.page-title-block {
+  position: relative;
+  min-height: 0;
+  overflow: visible;
+  padding: 0 0 22px;
+}
+.page-title-lion {
+  position: absolute;
+  z-index: 0;
+  top: -23px;
+  right: -20px;
+  width: 130px;
+  height: 112px;
+  background-color: var(--lion);
+  -webkit-mask: url('/images/lion-couronne.png') no-repeat center / contain;
+  mask: url('/images/lion-couronne.png') no-repeat center / contain;
+  pointer-events: none;
+}
+.page-title-heading {
+  position: relative;
+  z-index: 1;
+  width: calc(100% - 130px);
+  margin: 0;
+  color: var(--settings-text);
+  font-family: 'Plus Jakarta Sans', var(--font-sans), Arial, sans-serif;
+  font-size: 31px;
+  font-weight: 800;
+  letter-spacing: -.015em;
+  line-height: 1.1;
+}
+.page-title-subtitle {
+  position: relative;
+  z-index: 1;
+  margin: 6px 0 0;
+  color: var(--settings-muted);
+  font-family: 'Plus Jakarta Sans', var(--font-sans), Arial, sans-serif;
+  font-size: 13.5px;
+  font-weight: 500;
+  line-height: 1.45;
+}
+.page-title-underline {
+  position: relative;
+  z-index: 1;
+  display: block;
+  width: 46px;
+  height: 3px;
+  margin-top: 9px;
+  border-radius: 3px;
+  background: var(--gold);
+}
+.page-title-page {
+  overflow-x: clip;
+}
+.settings-page {
+  width: min(100%, 430px);
+  min-height: calc(100dvh - 55px);
+  margin-inline: auto;
+  overflow-x: hidden;
+  padding: 28px 20px 90px;
+  background: var(--page-gradient);
+  color: var(--settings-text);
+}
+.settings-card-title { color: var(--brand); font-family: var(--font-sans); font-size: 1.125rem; font-weight: 700; line-height: 1.35; }
+.settings-card-description { color: var(--muted-foreground); font-family: var(--font-sans); font-size: .9375rem; font-weight: 500; line-height: 1.55; }
+.settings-toggle { position:relative; display:block; width:46px; height:26px; flex:none; border:0; border-radius:999px; background:var(--settings-toggle-off); transition:background-color .18s ease; cursor:pointer; }
+.settings-toggle[data-checked="true"] { background:var(--settings-toggle-on); }
+.settings-toggle::after { content:""; position:absolute; top:3px; left:3px; width:20px; height:20px; border-radius:50%; background:var(--settings-toggle-thumb); transition:transform .18s ease; }
+.settings-toggle[data-checked="true"]::after { transform:translateX(20px); }
+.settings-toggle:focus-visible { outline:3px solid var(--ring); outline-offset:3px; }
+.settings-faq-row { border-top: 1px solid var(--border); }
+.settings-faq-row summary { display:flex; min-height:0; align-items:center; gap:12px; padding-block:8px; color:var(--foreground); font-size:1rem; font-weight:600; }
+.settings-faq-answer { padding:0 0 8px; color:var(--muted-foreground); font-size:.875rem; line-height:1.45; }
+.dark .settings-card, html[data-theme="dark"] .settings-card {
+  border: 1px solid var(--settings-card-border);
+  border-radius: 18px;
+  background: var(--settings-card);
+  padding: 17px;
+}
+.dark .settings-card-title, html[data-theme="dark"] .settings-card-title { color:var(--settings-text); font-family:var(--font-sans); font-size:18px; font-weight:700; line-height:1.35; }
+.dark .settings-card-description, html[data-theme="dark"] .settings-card-description { color:var(--settings-muted); font-family:var(--font-sans); font-size:15px; font-weight:500; line-height:1.55; }
+.dark .settings-faq-row, html[data-theme="dark"] .settings-faq-row { border-top:1px solid var(--settings-divider); }
+.dark .settings-faq-row summary, html[data-theme="dark"] .settings-faq-row summary { display:flex; min-height:52px; align-items:center; gap:12px; padding-block:11px; color:var(--settings-text); font-size:12.5px; font-weight:600; }
+.dark .settings-faq-answer, html[data-theme="dark"] .settings-faq-answer { padding:0 0 12px 43px; color:var(--settings-muted); font-size:11.5px; line-height:1.45; }
+.dark .settings-toggle, html[data-theme="dark"] .settings-toggle { position:relative; display:block; width:46px; height:26px; flex:none; border:0; border-radius:999px; background:var(--settings-toggle-off); transition:background-color .18s ease; }
+.dark .settings-toggle[data-checked="true"], html[data-theme="dark"] .settings-toggle[data-checked="true"] { background:var(--settings-toggle-on); }
+.dark .settings-toggle::after, html[data-theme="dark"] .settings-toggle::after { content:""; position:absolute; top:3px; left:3px; width:20px; height:20px; border-radius:50%; background:var(--settings-toggle-thumb); transition:transform .18s ease; }
+.dark .settings-toggle[data-checked="true"]::after, html[data-theme="dark"] .settings-toggle[data-checked="true"]::after { transform:translateX(20px); }
+.public-header { position:sticky; top:0; z-index:30; overflow:hidden; border-bottom:1px solid var(--public-header-border); background:var(--public-header-bg); }
+.public-header-inner { position:relative; display:flex; width:100%; min-height:52px; align-items:center; justify-content:space-between; gap:8px; margin-inline:auto; padding:6px 12px; }
+.public-header-team { position:relative; display:flex; min-width:0; align-items:center; gap:6px; color:var(--public-header-team); font-family:'Bebas Neue',Impact,sans-serif; font-size:15px; }
+.public-header-team img { width:40px; height:40px; object-fit:contain; }
+.public-header-league { position:relative; display:flex; align-items:center; gap:7px; color:var(--public-header-league); font-family:'Bebas Neue',Impact,sans-serif; line-height:1; }
+.public-header-league img { width:auto; height:44px; border-radius:12px; border:1px solid var(--border); background:var(--logo-pill); padding:4px; object-fit:contain; }
+.public-header-league small { display:block; color:var(--public-header-team); font-size:9px; }
+.public-header-league strong { display:block; margin-top:3px; font-size:14px; font-weight:400; }
+.public-bottom-nav { position:fixed; inset:auto 0 0; z-index:30; display:grid; height:calc(65px + env(safe-area-inset-bottom)); grid-template-columns:repeat(6,minmax(0,1fr)); border-top:1px solid var(--public-nav-border); background:var(--public-nav-bg); padding-bottom:env(safe-area-inset-bottom); }
+.public-bottom-link { position:relative; display:flex; min-width:0; flex:1; flex-direction:column; align-items:center; justify-content:center; gap:2px; margin:4px; border-radius:16px; color:var(--public-nav-text); font-size:10px; line-height:1.15; text-decoration:none; }
+.public-bottom-link[aria-current="page"] { background:var(--public-nav-active-bg); color:var(--public-nav-active-label); }
+.public-bottom-link[aria-current="page"] svg { color:var(--public-nav-active-icon); }
+.public-bottom-link svg { width:20px; height:20px; color:inherit; }
+.public-bottom-link[aria-current="page"] span::after { position:absolute; right:50%; bottom:-5px; left:50%; height:2px; border-radius:2px; background:var(--public-nav-underline); content:""; transform:translateX(-50%); width:24px; }
+@media (min-width:640px) { .public-header-inner { min-height:80px; padding:12px 20px; } .public-header-team { gap:12px; font-size:24px; } .public-header-team img { width:56px; height:56px; } .public-header-league img { height:64px; } .public-header-league small { font-size:14px; } .public-header-league strong { font-size:24px; } }
+.dark .public-header, html[data-theme="dark"] .public-header { border-color:var(--public-header-border); }
+.dark .public-header-inner, html[data-theme="dark"] .public-header-inner { max-width:80rem; }
+.dark .public-header::before, .dark .public-header::after, html[data-theme="dark"] .public-header::before, html[data-theme="dark"] .public-header::after { content:""; position:absolute; top:-20%; height:140%; transform:skewX(-42deg); background:var(--public-header-stripe); pointer-events:none; }
+.dark .public-header::before, html[data-theme="dark"] .public-header::before { left:56%; width:26px; }
+.dark .public-header::after, html[data-theme="dark"] .public-header::after { left:73%; width:7px; opacity:.7; }
+/* Keep the home header and navigation at their existing compact size. */
+.dark body:not(:has(.reference-page-shell)) .public-header, html[data-theme="dark"] body:not(:has(.reference-page-shell)) .public-header { height:55px; }
+.dark body:not(:has(.reference-page-shell)) .public-header-inner, html[data-theme="dark"] body:not(:has(.reference-page-shell)) .public-header-inner { width:min(100%,430px); height:100%; min-height:0; padding:0 12px; }
+.dark body:not(:has(.reference-page-shell)) .public-header-team, html[data-theme="dark"] body:not(:has(.reference-page-shell)) .public-header-team { gap:8px; font-size:20px; }
+.dark body:not(:has(.reference-page-shell)) .public-header-team img, html[data-theme="dark"] body:not(:has(.reference-page-shell)) .public-header-team img { width:50px; height:48px; }
+.dark body:not(:has(.reference-page-shell)) .public-header-league img, html[data-theme="dark"] body:not(:has(.reference-page-shell)) .public-header-league img { width:21px; height:38px; border:0; border-radius:3px; background:transparent; padding:0; }
+.dark body:not(:has(.reference-page-shell)) .public-header-league small, html[data-theme="dark"] body:not(:has(.reference-page-shell)) .public-header-league small { font-size:10px; }
+.dark body:not(:has(.reference-page-shell)) .public-header-league strong, html[data-theme="dark"] body:not(:has(.reference-page-shell)) .public-header-league strong { font-size:17px; }
+.dark body:not(:has(.reference-page-shell)) .public-bottom-nav, html[data-theme="dark"] body:not(:has(.reference-page-shell)) .public-bottom-nav { display:flex; height:calc(58px + env(safe-area-inset-bottom)); align-items:stretch; border-color:var(--public-nav-border); padding:3px 4px env(safe-area-inset-bottom); }
+.dark body:not(:has(.reference-page-shell)) .public-bottom-link, html[data-theme="dark"] body:not(:has(.reference-page-shell)) .public-bottom-link { flex:1; gap:3px; margin:0; border-radius:14px; color:var(--public-nav-text); font-size:10.5px; }
+.dark body:not(:has(.reference-page-shell)) .public-bottom-link[aria-current="page"], html[data-theme="dark"] body:not(:has(.reference-page-shell)) .public-bottom-link[aria-current="page"] { flex:1.25; border-radius:18px; background:var(--public-nav-active-bg); color:var(--public-nav-active-label); }
+.dark body:not(:has(.reference-page-shell)) .public-bottom-link[aria-current="page"]:last-child, html[data-theme="dark"] body:not(:has(.reference-page-shell)) .public-bottom-link[aria-current="page"]:last-child { border-radius:18px 0 0 18px; }
+.dark body:not(:has(.reference-page-shell)) .public-bottom-link svg, html[data-theme="dark"] body:not(:has(.reference-page-shell)) .public-bottom-link svg { width:20px; height:20px; color:inherit; }
+@media (min-width:640px) {
+  .dark body:not(:has(.reference-page-shell)) .public-header, html[data-theme="dark"] body:not(:has(.reference-page-shell)) .public-header { height:auto; }
+  .dark body:not(:has(.reference-page-shell)) .public-header-inner, html[data-theme="dark"] body:not(:has(.reference-page-shell)) .public-header-inner { width:100%; max-width:80rem; height:auto; min-height:80px; padding:12px 20px; }
+  .dark body:not(:has(.reference-page-shell)) .public-header-team, html[data-theme="dark"] body:not(:has(.reference-page-shell)) .public-header-team { gap:12px; font-size:24px; }
+  .dark body:not(:has(.reference-page-shell)) .public-header-team img, html[data-theme="dark"] body:not(:has(.reference-page-shell)) .public-header-team img { width:56px; height:56px; }
+  .dark body:not(:has(.reference-page-shell)) .public-header-league img, html[data-theme="dark"] body:not(:has(.reference-page-shell)) .public-header-league img { width:auto; height:64px; border:1px solid var(--border); border-radius:12px; background:var(--logo-pill); padding:4px; }
+  .dark body:not(:has(.reference-page-shell)) .public-header-league small, html[data-theme="dark"] body:not(:has(.reference-page-shell)) .public-header-league small { font-size:14px; }
+  .dark body:not(:has(.reference-page-shell)) .public-header-league strong, html[data-theme="dark"] body:not(:has(.reference-page-shell)) .public-header-league strong { font-size:24px; }
+}
+@media (prefers-reduced-motion: reduce) { .settings-toggle, .settings-toggle::after { transition:none; } }
+
 .dark body::before {
   content: "";
   position: fixed;
@@ -248,6 +433,7 @@ body {
 }
 
 .font-display { font-family: var(--font-display); }
+.font-team-graffiti { font-family: "Permanent Marker", "Bebas Neue", Impact, sans-serif; }
 .tnum { font-variant-numeric: tabular-nums; }
 
 .skeleton-block {

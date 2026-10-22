@@ -1,12 +1,45 @@
+// Palette de chaque école pour les bannières horizontales.
 const teams = {
-  esa: { name: 'ESA', logo: '/logos/esa.png', bg: 'oklch(0.34 0.09 152)', accent: 'oklch(0.86 0.16 98)', paper: 'oklch(0.975 0.01 110)', shape: 'circle', watermark: 'color' },
-  eprojet: { name: 'E.PROJET', logo: '/logos/ep.png', bg: 'oklch(0.32 0.012 260)', accent: 'oklch(0.91 0.05 85)', paper: 'oklch(0.975 0.006 85)', shape: 'card', watermark: 'ghost' },
-  estp: { name: 'ESTP', logo: '/logos/estp.png', bg: 'oklch(0.30 0.10 295)', accent: 'oklch(0.70 0.19 25)', paper: 'oklch(0.975 0.008 300)', shape: 'card', watermark: 'ghost' },
-  esmg: { name: 'ESMG', logo: '/logos/esmg.png', bg: 'oklch(0.30 0.09 262)', accent: 'oklch(0.76 0.17 52)', paper: 'oklch(0.975 0.008 75)', shape: 'card', watermark: 'ghost' },
-  esi: { name: 'ESI', logo: '/logos/esi.png', bg: 'oklch(0.33 0.12 18)', accent: 'oklch(0.80 0.14 82)', paper: 'oklch(0.975 0.008 80)', shape: 'card', watermark: 'ghost' },
-  escpe: { name: 'ESCPE', logo: '/logos/escpe.png', bg: 'oklch(0.31 0.05 195)', accent: 'oklch(0.70 0.17 28)', paper: 'oklch(0.975 0.008 190)', shape: 'circle', watermark: 'color' },
-  escae: { name: 'ESCAE', logo: '/logos/escae.png', bg: 'oklch(0.29 0.09 265)', accent: 'oklch(0.74 0.13 240)', paper: 'oklch(0.975 0.008 250)', shape: 'circle', watermark: 'color' },
-  epge: { name: 'EPGE', logo: '/logos/epge.png', bg: 'oklch(0.20 0.006 260)', accent: 'oklch(0.74 0.16 58)', paper: 'oklch(0.975 0.004 260)', shape: 'card', watermark: 'ghost' },
+  esa: {
+    name: 'ESA', logo: '/logos/esa.png', shape: 'circle',
+    bg: 'oklch(0.29 0.105 151)', left: 'oklch(0.76 0.17 111)', accent: 'oklch(0.85 0.16 112)',
+    title: 'oklch(0.9 0.13 112)', ghost: 'oklch(0.92 0.1 112 / 27%)', disc: 'oklch(0.18 0.08 150)',
+  },
+  eprojet: {
+    name: 'E.PROJET', logo: '/logos/ep.png', shape: 'card',
+    bg: 'oklch(0.92 0.035 84)', left: 'oklch(0.63 0.012 260)', accent: 'oklch(0.25 0.012 260)',
+    title: 'oklch(0.23 0.012 260)', ghost: 'oklch(0.2 0.01 260 / 25%)', disc: 'oklch(0.88 0.035 84)',
+  },
+  estp: {
+    name: 'ESTP', logo: '/logos/estp.png', shape: 'card',
+    bg: 'oklch(0.28 0.12 305)', left: 'oklch(0.16 0.035 300)', accent: 'oklch(0.82 0.11 305)',
+    title: 'oklch(0.86 0.09 305)', ghost: 'oklch(0.82 0.12 305 / 28%)', disc: 'oklch(0.13 0.035 300)',
+  },
+  esmg: {
+    name: 'ESMG', logo: '/logos/esmg.png', shape: 'card',
+    bg: 'oklch(0.42 0.17 34)', left: 'oklch(0.23 0.075 263)', accent: 'oklch(0.96 0.018 75)',
+    title: 'oklch(0.99 0.008 80)', ghost: 'oklch(0.98 0.02 75 / 30%)', disc: 'oklch(0.2 0.055 263)',
+  },
+  esi: {
+    name: 'ESI', logo: '/logos/esi.png', shape: 'card',
+    bg: 'oklch(0.32 0.13 18)', left: 'oklch(0.77 0.17 69)', accent: 'oklch(0.89 0.17 88)',
+    title: 'oklch(0.91 0.17 88)', ghost: 'oklch(0.88 0.12 80 / 28%)', disc: 'oklch(0.24 0.1 18)',
+  },
+  escpe: {
+    name: 'ESCPE', logo: '/logos/escpe.png', shape: 'circle',
+    bg: 'oklch(0.29 0.075 192)', left: 'oklch(0.77 0.16 66)', accent: 'oklch(0.88 0.12 61)',
+    title: 'oklch(0.91 0.1 69)', ghost: 'oklch(0.88 0.09 65 / 28%)', disc: 'oklch(0.2 0.06 192)',
+  },
+  escae: {
+    name: 'ESCAE', logo: '/logos/escae.png', shape: 'circle',
+    bg: 'oklch(0.25 0.105 269)', left: 'oklch(0.33 0.115 270)', accent: 'oklch(0.81 0.1 279)',
+    title: 'oklch(0.84 0.08 281)', ghost: 'oklch(0.8 0.1 279 / 28%)', disc: 'oklch(0.17 0.065 269)',
+  },
+  epge: {
+    name: 'EPGE', logo: '/logos/epge.png', shape: 'card',
+    bg: 'oklch(0.15 0.008 260)', left: 'oklch(0.79 0.008 260)', accent: 'oklch(0.95 0.008 260)',
+    title: 'oklch(0.95 0.008 260)', ghost: 'oklch(0.95 0.008 260 / 27%)', disc: 'oklch(0.12 0.008 260)',
+  },
 }
 
 export default teams

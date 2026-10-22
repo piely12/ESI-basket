@@ -3,7 +3,6 @@ import type { CSSProperties, ReactNode } from 'react'
 import type { MatchRow, Team } from '@/lib/data/public'
 import { formatMatchDate } from '@/lib/format'
 import TeamLogo, { teamLogoSrc } from '@/components/TeamLogo'
-import MatchShareIcon from '@/components/MatchShare'
 import styles from './MatchCard.module.css'
 
 function teamLabel(team: Team) {
@@ -38,12 +37,7 @@ function MatchLink({ match, children, className }: { match: MatchRow; children: 
   )
 }
 
-function ShareShortcut({ match }: { match: MatchRow }) {
-  const finished = match.status === 'termine' && match.home_score !== null && match.away_score !== null
-  return <MatchShareIcon matchId={match.id} home={{ name: teamLabel(match.home_team), isEsi: match.home_team.is_esi }} away={{ name: teamLabel(match.away_team), isEsi: match.away_team.is_esi }} date={formatMatchDate(match.scheduled_at, match.kickoff_confirmed)} venue={match.kickoff_confirmed ? match.location || 'Lieu à confirmer' : 'Horaire et lieu à confirmer'} round={match.round_number} homeScore={match.home_score} awayScore={match.away_score} composition={[]} kind={finished ? 'score' : 'poster'} className={styles.shareShortcut} />
-}
-
-function EsiCard({ match, large, showShare }: { match: MatchRow; large: boolean; showShare: boolean }) {
+function EsiCard({ match, large }: { match: MatchRow; large: boolean }) {
   const played = match.status === 'termine' && match.home_score !== null && match.away_score !== null
   const tied = played && match.home_score === match.away_score
   const homeWon = played && match.home_score! > match.away_score!
@@ -83,12 +77,11 @@ function EsiCard({ match, large, showShare }: { match: MatchRow; large: boolean;
       </div>
       <span className={styles.screenReader}>Ouvrir la confrontation</span>
     </MatchLink>
-    {showShare && <ShareShortcut match={match} />}
     </div>
   )
 }
 
-function OtherCard({ match, compact = false, showShare }: { match: MatchRow; compact?: boolean; showShare: boolean }) {
+function OtherCard({ match, compact = false }: { match: MatchRow; compact?: boolean }) {
   const played = match.status === 'termine' && match.home_score !== null && match.away_score !== null
   return (
     <div className={styles.cardWrap}>
@@ -106,15 +99,14 @@ function OtherCard({ match, compact = false, showShare }: { match: MatchRow; com
       {match.public_note && <div className={styles.otherNote}>{match.public_note}</div>}
       <div className={styles.otherVenue}><VenueIcon />{match.kickoff_confirmed ? match.location || 'Lieu à confirmer' : 'Horaire et lieu à confirmer'}</div>
     </MatchLink>
-    {showShare && <ShareShortcut match={match} />}
     </div>
   )
 }
 
-export default function MatchCard({ match, large = false, compact = false, showShare = false }: { match: MatchRow; large?: boolean; compact?: boolean; showShare?: boolean }) {
+export default function MatchCard({ match, large = false, compact = false }: { match: MatchRow; large?: boolean; compact?: boolean }) {
   const isEsiMatch = match.home_team.is_esi || match.away_team.is_esi
-  if (compact && !isEsiMatch) return <OtherCard match={match} compact showShare={showShare} />
+  if (compact && !isEsiMatch) return <OtherCard match={match} compact />
   return isEsiMatch
-    ? <EsiCard match={match} large={large} showShare={showShare} />
-    : <OtherCard match={match} showShare={showShare} />
+    ? <EsiCard match={match} large={large} />
+    : <OtherCard match={match} />
 }

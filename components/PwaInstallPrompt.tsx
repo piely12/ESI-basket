@@ -43,6 +43,7 @@ export default function PwaInstallPrompt() {
     await promptEvent.prompt()
     const result = await promptEvent.userChoice
     if (result.outcome === 'accepted') setVisible(false)
+    else dismiss()
     setPromptEvent(null)
   }
 

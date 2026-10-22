@@ -27,7 +27,7 @@ function NavIcon({ name }: { name: string }) {
     case 'Équipe':
       return <svg viewBox="0 0 24 24" aria-hidden="true" {...shared}><path d="M16 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2M9.5 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM20 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" /></svg>
     default:
-      return <svg viewBox="0 0 24 24" aria-hidden="true" {...shared}><path d="M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8Z" /><path d="m19.4 15 .1.1 1.4 1.1-1.4 2.4-1.7-.7a8 8 0 0 1-1.5.9l-.3 1.8h-2.8l-.3-1.8a8 8 0 0 1-1.5-.9l-1.7.7-1.4-2.4 1.4-1.1a7 7 0 0 1 0-1.8l-1.4-1.1 1.4-2.4 1.7.7a8 8 0 0 1 1.5-.9l.3-1.8h2.8l.3 1.8a8 8 0 0 1 1.5.9l1.7-.7 1.4 2.4-1.4 1.1a7 7 0 0 1 .1 1.7Z" transform="translate(-1 -2)" /></svg>
+      return <svg viewBox="0 0 24 24" aria-hidden="true" {...shared}><path d="M4 21v-7m0-4V3m8 18v-9m0-4V3m8 18v-5m0-4V3" /><circle cx="4" cy="16" r="2" /><circle cx="12" cy="6" r="2" /><circle cx="20" cy="14" r="2" /></svg>
   }
 }
 
@@ -40,33 +40,29 @@ export default function PublicNav() {
   }
   return (
     <>
-      <header className="sticky top-0 z-30 border-b border-primary-foreground/10 bg-primary text-primary-foreground shadow-md">
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-2 px-3 py-1.5 sm:gap-4 sm:px-5 sm:py-3">
-          <Link href="/" className="flex min-w-0 items-center gap-1.5 sm:gap-3" aria-label="The Lions of ESI — accueil">
-            <Image src="/logos/esi.png" alt="" width={56} height={56} priority className="h-10 w-10 shrink-0 object-contain sm:h-14 sm:w-14" />
-            <span className="min-w-0 truncate font-display text-[15px] leading-none tracking-wide text-[var(--gold-500)] sm:text-2xl">THE LIONS OF ESI</span>
+      <header className="public-header">
+        <div className="public-header-inner">
+          <Link href="/" className="public-header-team" aria-label="The Lions of ESI — accueil">
+            <Image src="/logos/esi.png" alt="" width={50} height={48} priority />
+            <span className="truncate">THE LIONS OF ESI</span>
           </Link>
-          <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+          <div className="public-header-league">
             <Image
               src="/logos/inter-ecoles.png"
               alt=""
               width={55}
               height={120}
               priority
-              className="h-11 w-auto shrink-0 rounded-xl border border-border bg-[var(--logo-pill)] p-1 object-contain sm:h-16"
             />
-            <span className="flex flex-col font-display leading-none text-[var(--gold-500)]">
-              <span className="text-[9px] tracking-wide sm:text-sm">INTER-ÉCOLES</span>
-              <span className="mt-0.5 text-sm sm:mt-1 sm:text-2xl">Basketball</span>
-            </span>
+            <span><small>INTER-ÉCOLES</small><strong>BASKETBALL</strong></span>
           </div>
         </div>
       </header>
-      <nav aria-label="Navigation principale" className="fixed inset-x-0 bottom-0 z-30 grid h-[calc(65px+env(safe-area-inset-bottom))] grid-cols-6 border-t border-border bg-card pb-[env(safe-area-inset-bottom)] shadow-[0_-2px_8px_var(--match-card-shadow)]">
+      <nav aria-label="Navigation principale" className="public-bottom-nav">
         {LINKS.map((link) => (
-          <Link key={link.href} href={link.href} aria-current={isActive(link.href) ? 'page' : undefined} className={`group relative mx-1 my-1 flex flex-col items-center justify-center gap-0.5 rounded-2xl px-0.5 text-center text-[10px] leading-tight transition-all duration-200 ease-out hover:-translate-y-0.5 hover:text-brand focus-visible:outline-2 focus-visible:outline-ring sm:text-xs [&_svg]:h-5 [&_svg]:w-5 [&_svg]:transition-transform [&_svg]:duration-200 group-hover:[&_svg]:scale-110 sm:[&_svg]:h-6 sm:[&_svg]:w-6 ${isActive(link.href) ? 'bg-muted font-semibold text-brand dark:bg-gold/14 dark:text-gold' : 'text-muted-foreground'}`}>
+          <Link key={link.href} href={link.href} aria-current={isActive(link.href) ? 'page' : undefined} className="public-bottom-link focus-visible:outline-2 focus-visible:outline-ring">
             <NavIcon name={link.label} />
-            <span className={`relative after:absolute after:-bottom-1 after:left-1/2 after:h-0.5 after:-translate-x-1/2 after:rounded-full after:bg-[var(--maroon-700)] after:transition-all after:duration-200 ${isActive(link.href) ? 'after:w-full' : 'after:w-0 group-hover:after:w-full'}`}>{link.label}</span>
+            <span className="relative">{link.label}</span>
           </Link>
         ))}
       </nav>

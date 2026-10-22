@@ -3,7 +3,6 @@
 
 import { useEffect, useRef } from 'react'
 import TeamLogo from '@/components/TeamLogo'
-import MatchShareIcon from '@/components/MatchShare'
 import type { Team } from '@/lib/data/public'
 import { COURT_SLOTS, resolveStarterSlots, type LineupEntry } from '@/lib/lineup'
 import styles from './composition-board.module.css'
@@ -75,7 +74,6 @@ export default function CompositionBoard({
     >
       <div className={styles.viewport} ref={viewportRef}>
         <div className={styles.scene} ref={sceneRef}>
-          <MatchShareIcon matchId={matchId} home={{ name: team.is_esi ? 'ESI' : team.name, isEsi: team.is_esi }} away={{ name: opponent.is_esi ? 'ESI' : opponent.name, isEsi: opponent.is_esi }} date={date} venue={location || 'Lieu à confirmer'} round={null} homeScore={null} awayScore={null} composition={starters.concat(bench).map((entry) => ({ number: entry.player.jersey_number, firstName: entry.player.first_name, lastName: entry.player.last_name, role: entry.player.position }))} kind="lineup" className={styles.shareButton} />
           <div className={styles.homeLogo}>
             <TeamLogo team={team} size={92} />
           </div>

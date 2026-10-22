@@ -1,5 +1,6 @@
 import PublicNav from '@/components/PublicNav'
 import MatchList from './MatchList'
+import PageTitle from '@/components/PageTitle'
 import { getAllMatches } from '@/lib/data/public'
 
 function dateKey(value: string) {
@@ -27,10 +28,8 @@ export default async function MatchsPage() {
   return (
     <>
       <PublicNav />
-      <main className="mx-auto max-w-5xl px-4 pb-28 pt-8 sm:px-5">
-        <header className="mb-5">
-          <h1 className="font-display text-5xl leading-none text-brand sm:text-6xl">Matchs</h1>
-        </header>
+      <main className="reference-page-shell page-title-page mx-auto max-w-5xl px-4 pb-28 pt-8 sm:px-5">
+        <PageTitle title="Matchs" subtitle="Calendrier des rencontres" />
         <MatchList matches={matches} today={today} initialMonth={initialMonth} />
       </main>
     </>

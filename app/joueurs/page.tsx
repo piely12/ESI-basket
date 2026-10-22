@@ -167,11 +167,11 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ n
 
   return <main className="mx-auto max-w-5xl space-y-6 px-4 pb-24 pt-8 sm:px-6">
     <header className="overflow-hidden rounded-2xl bg-maroon-panel p-6 text-on-brand sm:p-8">
-      <p className="text-xs font-bold uppercase tracking-[0.2em] text-[var(--gold-500)]">Espace joueur Ã‚· suivi personnel</p>
+      <p className="text-xs font-bold uppercase tracking-[0.2em] text-[var(--gold-500)]">Espace joueur · suivi personnel</p>
       <div className="mt-3 flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="font-display text-4xl leading-none sm:text-5xl">Bonjour {player.first_name}</h1>
-          <p className="mt-3 text-sm text-on-brand/80">#{player.jersey_number ?? '—'} Ã‚· {player.position ?? 'Poste à définir'} Ã‚· {statusLabel}</p>
+          <p className="mt-3 text-sm text-on-brand/80">#{player.jersey_number ?? '—'} · {player.position ?? 'Poste à définir'} · {statusLabel}</p>
         </div>
         <Link href="/equipe" className="inline-flex min-h-11 items-center justify-center rounded-lg border border-[var(--gold-500)] px-4 py-2 text-sm font-bold text-[var(--gold-500)] hover:bg-on-brand/10 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--gold-deep)]">Voir l’équipe</Link>
       </div>

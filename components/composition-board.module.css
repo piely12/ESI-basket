@@ -28,26 +28,6 @@
   background: var(--composition-bg);
 }
 
-.shareButton {
-  position: absolute;
-  z-index: 5;
-  top: 716px;
-  left: 12px;
-  display: grid;
-  width: 42px;
-  height: 42px;
-  place-items: center;
-  border: 1px solid var(--match-card-gold);
-  border-radius: 50%;
-  color: var(--match-card-gold);
-  background: var(--composition-bg);
-  transition: transform .18s ease, color .18s ease, background-color .18s ease;
-}
-.shareButton svg { width: 20px; height: 20px; }
-.shareButton:hover { transform: scale(1.06); color: var(--gold-foreground); background: var(--match-card-gold); }
-.shareButton:focus-visible { outline: 3px solid var(--match-card-gold); outline-offset: 3px; }
-.shareButton:disabled { cursor: wait; opacity: .65; }
-
 .homeLogo {
   position: absolute;
   top: 37px;
