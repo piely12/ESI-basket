@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { requireRole } from '@/lib/auth/requireUser'
+import { checkConnectedActionLimit } from '@/lib/security/action-rate-limit'
 import type { CourtSlot } from '@/lib/lineup'
 import type { MatchAvailability, CompositionActionResult } from '@/app/coach/actions'
 
@@ -9,14 +10,14 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-
 
 async function authorizedMatch(matchId: string, teamId: string) {
   if (!UUID.test(matchId) || !UUID.test(teamId)) throw new Error('Match ou équipe invalide.')
-  const { supabase, profile } = await requireRole('coach_adjoint')
+  const { supabase, profile, user } = await requireRole('coach_adjoint')
   if (!profile.team_id || profile.team_id !== teamId) throw new Error('Équipe hors périmètre.')
   const [{ data: team }, { data: match }] = await Promise.all([
     supabase.from('teams').select('id').eq('id', teamId).eq('is_esi', true).maybeSingle(),
     supabase.from('matches').select('id,home_team_id,away_team_id').eq('id', matchId).maybeSingle(),
   ])
   if (!team || !match || ![match.home_team_id, match.away_team_id].includes(teamId)) throw new Error('Match ESI introuvable.')
-  return { supabase, match }
+  return { supabase, match, userId: user.id }
 }
 
 export async function saveAssistantCompositionDraft(input: {
@@ -32,7 +33,9 @@ export async function saveAssistantCompositionDraft(input: {
     || new Set(input.selectedPlayerIds).size !== input.selectedPlayerIds.length
     || input.selectedPlayerIds.length > 12) return { ok: false, error: 'Données de composition invalides.' }
 
-  const { supabase, match } = await authorizedMatch(input.matchId, input.teamId)
+  const { supabase, match, userId } = await authorizedMatch(input.matchId, input.teamId)
+  const limit = await checkConnectedActionLimit(userId, 'sensitiveMutation')
+  if (!limit.ok) return { ...limit, error: limit.message }
   const { error } = await supabase.rpc('save_match_composition_draft', {
     p_match_id: input.matchId,
     p_team_id: input.teamId,
@@ -47,7 +50,9 @@ export async function saveAssistantCompositionDraft(input: {
 }
 
 export async function publishAssistantComposition(matchId: string, teamId: string): Promise<CompositionActionResult> {
-  const { supabase, match } = await authorizedMatch(matchId, teamId)
+  const { supabase, match, userId } = await authorizedMatch(matchId, teamId)
+  const limit = await checkConnectedActionLimit(userId, 'sensitiveMutation')
+  if (!limit.ok) return { ...limit, error: limit.message }
   const { data, error } = await supabase.rpc('publish_match_composition', { p_match_id: matchId, p_team_id: teamId })
   if (error) {
     const message = error.message.toLowerCase()

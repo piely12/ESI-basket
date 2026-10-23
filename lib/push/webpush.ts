@@ -15,6 +15,22 @@ const concat = (...parts: Uint8Array[]) => {
   return output
 }
 
+function isTrustedPushEndpoint(endpoint: string) {
+  try {
+    const url = new URL(endpoint)
+    const host = url.hostname.toLowerCase()
+    const trustedHost = host === 'fcm.googleapis.com'
+      || host === 'web.push.apple.com'
+      || host === 'push.services.mozilla.com'
+      || host === 'updates.push.services.mozilla.com'
+      || host.endsWith('.notify.windows.com')
+    return url.protocol === 'https:' && !url.username && !url.password
+      && (!url.port || url.port === '443') && trustedHost
+  } catch {
+    return false
+  }
+}
+
 async function hmacKey(raw: Uint8Array) {
   return crypto.subtle.importKey('raw', asBuffer(raw), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign'])
 }
@@ -48,6 +64,7 @@ async function authorization(endpoint: string, publicKey: string, privateKey: st
 }
 
 export async function sendWebPush(subscription: WebPushSubscription, message: string, publicKey: string, privateKey: string) {
+  if (!isTrustedPushEndpoint(subscription.endpoint)) throw new Error('Untrusted push endpoint')
   const subscriberPublic = decode(subscription.keys.p256dh)
   const authSecret = decode(subscription.keys.auth)
   const serverKeys = await crypto.subtle.generateKey({ name: 'ECDH', namedCurve: 'P-256' }, true, ['deriveBits'])
@@ -65,6 +82,7 @@ export async function sendWebPush(subscription: WebPushSubscription, message: st
   const body = concat(salt, recordSize, new Uint8Array([serverPublic.length]), serverPublic, ciphertext)
   const response = await fetch(subscription.endpoint, {
     method: 'POST',
+    redirect: 'error',
     headers: {
       authorization: await authorization(subscription.endpoint, publicKey, privateKey),
       'content-encoding': 'aes128gcm',
@@ -72,6 +90,8 @@ export async function sendWebPush(subscription: WebPushSubscription, message: st
       ttl: '86400',
     },
     body,
+    cache: 'no-store',
+    signal: AbortSignal.timeout(8000),
   })
   if (!response.ok) throw Object.assign(new Error('Push service rejected the notification'), { statusCode: response.status })
 }

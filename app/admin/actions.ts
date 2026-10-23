@@ -1,18 +1,18 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { headers } from 'next/headers'
-import { isIP } from 'node:net'
 import { randomBytes } from 'node:crypto'
 import { z } from 'zod'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { sendAccountReadyEmail } from '@/lib/auth/brevo'
 import { generateOtp, hashOtp, OTP_MAX_ATTEMPTS, OTP_TTL_MINUTES } from '@/lib/auth/otp'
 import { requireRole } from '@/lib/auth/requireUser'
-import { audit, consumeRateLimit, rlKey } from '@/lib/security'
+import { audit } from '@/lib/security'
+import { checkConnectedActionLimit, type ActionLimitKind } from '@/lib/security/action-rate-limit'
+import type { ActionLimitFailure } from '@/lib/security/rate-limit-core'
 import { isValidEmail } from '@/lib/validation'
 
-export type AdminActionState = { error: string; success: string }
+export type AdminActionState = { ok?: boolean; error: string; success: string; code?: ActionLimitFailure['code']; message?: string; retryAfterSeconds?: number }
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 const ACCOUNT_FORM = z.object({
@@ -26,16 +26,9 @@ const COACH_PROFILE_FORM = z.object({
 }).strict()
 const ASSISTANT_PROFILE_FORM = COACH_PROFILE_FORM
 
-async function checkAdminRateLimit(admin: ReturnType<typeof createAdminClient>, actorId: string, action: string) {
-  const requestHeaders = await headers()
-  const rawIp = requestHeaders.get('x-real-ip')?.trim() ?? ''
-  const ip = isIP(rawIp) ? rawIp.toLowerCase() : 'unknown'
-  const config = { limit: 30, window: 60, ipLimit: 120 }
-  const [actor, address] = await Promise.all([
-    consumeRateLimit(admin, rlKey(`admin-${action}`, actorId), config.limit, config.window),
-    consumeRateLimit(admin, rlKey(`admin-${action}-ip`, ip), config.ipLimit, config.window),
-  ])
-  return actor.allowed && address.allowed
+async function checkAdminRateLimit(actorId: string, action: string) {
+  const kind: ActionLimitKind = action === 'account-create' || action === 'account-invite' ? 'invitation' : 'sensitiveMutation'
+  return checkConnectedActionLimit(actorId, kind)
 }
 
 async function getAdminContext() {
@@ -48,8 +41,8 @@ async function getAdminContext() {
   return { admin, userId: user.id, teamId: team.id }
 }
 
-function result(error: string, success = ''): AdminActionState {
-  return { error, success }
+function result(error: string, success = '', limitFailure?: ActionLimitFailure): AdminActionState {
+  return { ...(limitFailure ?? {}), ok: limitFailure ? false : !error, error, success }
 }
 
 async function issueInvitationOtp(admin: ReturnType<typeof createAdminClient>, userId: string) {
@@ -84,7 +77,8 @@ export async function createHeadCoachProfile(
   if (!parsed.success) return result('Indique le prénom et le nom du coach principal.')
   const { admin, userId, teamId } = context
   try {
-    if (!await checkAdminRateLimit(admin, userId, 'coach-profile-create')) return result('Trop de modifications. Réessaie plus tard.')
+    const limit = await checkAdminRateLimit(userId, 'coach-profile-create')
+    if (!limit.ok) return result(limit.message, '', limit)
   } catch {
     return result('Service de sécurité indisponible. Réessaie plus tard.')
   }
@@ -119,7 +113,8 @@ export async function createAssistantCoachProfile(
   if (!parsed.success) return result('Indique le prénom et le nom du coach adjoint.')
   const { admin, userId, teamId } = context
   try {
-    if (!await checkAdminRateLimit(admin, userId, 'assistant-profile-create')) return result('Trop de modifications. Réessaie plus tard.')
+    const limit = await checkAdminRateLimit(userId, 'assistant-profile-create')
+    if (!limit.ok) return result(limit.message, '', limit)
   } catch {
     return result('Service de sécurité indisponible. Réessaie plus tard.')
   }
@@ -151,7 +146,8 @@ export async function createOrLinkAccount(
 
   const { admin, userId: actorId, teamId } = context
   try {
-    if (!await checkAdminRateLimit(admin, actorId, 'account-create')) return result('Trop de modifications. Réessaie plus tard.')
+    const limit = await checkAdminRateLimit(actorId, 'account-create')
+    if (!limit.ok) return result(limit.message, '', limit)
   } catch {
     return result('Service de sécurité indisponible. Réessaie plus tard.')
   }
@@ -301,7 +297,8 @@ async function sendInvitationForProfile(ref: string, actorId: string) {
   if (!context) return result('Session expirée ou accès administrateur requis.')
   const { admin, teamId } = context
   try {
-    if (!await checkAdminRateLimit(admin, actorId, 'account-invite')) return result('Trop de modifications. Réessaie plus tard.')
+    const limit = await checkAdminRateLimit(actorId, 'account-invite')
+    if (!limit.ok) return result(limit.message, '', limit)
   } catch {
     return result('Service de sécurité indisponible. Réessaie plus tard.')
   }
@@ -342,7 +339,8 @@ export async function cancelAccountBinding(_state: AdminActionState, formData: F
   if (!context) return result('Session expirée ou accès administrateur requis.')
   const { admin, teamId, userId: actorId } = context
   try {
-    if (!await checkAdminRateLimit(admin, actorId, 'account-access')) return result('Trop de modifications. Réessaie plus tard.')
+    const limit = await checkAdminRateLimit(actorId, 'account-access')
+    if (!limit.ok) return result(limit.message, '', limit)
   } catch {
     return result('Service de sécurité indisponible. Réessaie plus tard.')
   }
@@ -408,7 +406,8 @@ export async function updateAccountAccess(_state: AdminActionState, formData: Fo
   if (!context) return result('Session expirée ou accès administrateur requis.')
   const { admin, teamId, userId: actorId } = context
   try {
-    if (!await checkAdminRateLimit(admin, actorId, 'account-access')) return result('Trop de modifications. Réessaie plus tard.')
+    const limit = await checkAdminRateLimit(actorId, 'account-access')
+    if (!limit.ok) return result(limit.message, '', limit)
   } catch {
     return result('Service de sécurité indisponible. Réessaie plus tard.')
   }

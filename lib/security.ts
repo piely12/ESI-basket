@@ -1,8 +1,10 @@
 import 'server-only'
-import { createHash } from 'node:crypto'
 import { isIP } from 'node:net'
 import { NextResponse, type NextRequest } from 'next/server'
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { createRateLimitKey, consumeRateLimitChecks, type RateLimitCheck } from '@/lib/security/rate-limit-core'
+export { consumeRateLimitChecks } from '@/lib/security/rate-limit-core'
+export type { RateLimitCheck } from '@/lib/security/rate-limit-core'
 
 // Réponse JSON qui ne doit jamais être mise en cache (données d'authentification).
 export function json(body: unknown, status = 200, headers: Record<string, string> = {}) {
@@ -36,7 +38,7 @@ export function clientUserAgent(request: NextRequest): string {
 
 // Les clés de limitation sont hachées : aucune adresse e-mail n'est stockée en clair.
 export function rlKey(...parts: string[]): string {
-  return createHash('sha256').update(parts.join('|')).digest('hex')
+  return createRateLimitKey(...parts)
 }
 
 type Rule = { key: string; limit: number }
@@ -59,6 +61,11 @@ export async function consumeRateLimit(
     throw new Error('Invalid rate-limit response')
   }
   return { allowed: result.allowed, retryAfterSeconds: result.retry_after_seconds }
+}
+
+export async function consumeRateLimits(admin: SupabaseClient, checks: RateLimitCheck[]) {
+  return consumeRateLimitChecks(checks, async ({ key, limit, windowSeconds }) =>
+    consumeRateLimit(admin, key, limit, windowSeconds))
 }
 
 export async function isLimited(admin: SupabaseClient, rules: Rule[], windowSec: number): Promise<boolean> {

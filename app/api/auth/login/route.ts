@@ -7,10 +7,11 @@ import { sendAdminLoginAlert, sendFirstLoginOtpEmail } from '@/lib/auth/brevo'
 import { generateOtp, hashFirstLoginOtp, OTP_TTL_MINUTES } from '@/lib/auth/otp'
 import {
   json, assertSameOrigin, clientIp, clientUserAgent, rlKey,
-  isLimited, recordHit, clearHits, checkProgressiveLockout, audit,
+  isLimited, consumeRateLimits, recordHit, clearHits, checkProgressiveLockout, audit,
 } from '@/lib/security'
+import { RATE_LIMITS } from '@/lib/security/rate-limit-config'
 
-const WINDOW_SEC = 15 * 60
+const WINDOW_SEC = RATE_LIMITS.login.windowSeconds
 const loginSchema = z.object({
   email: z.string().trim().toLowerCase().email().max(254),
   password: z.string().min(1).max(128),
@@ -41,7 +42,31 @@ async function sendAdminAlertLater(email: string, userId: string, ip: string, us
 export async function POST(request: NextRequest) {
   const blocked = assertSameOrigin(request)
   if (blocked) return blocked
-  const body = await request.json().catch(() => null)
+  const contentLength = Number(request.headers.get('content-length') ?? '0')
+  if (contentLength > 2048) return json({ error: 'Identifiants incorrects.' }, 413)
+  let body: unknown = null
+  try {
+    const reader = request.body?.getReader()
+    if (!reader) return json({ error: 'Identifiants incorrects.' }, 400)
+    const chunks: Uint8Array[] = []
+    let size = 0
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+      size += value.byteLength
+      if (size > 2048) {
+        await reader.cancel()
+        return json({ error: 'Identifiants incorrects.' }, 413)
+      }
+      chunks.push(value)
+    }
+    const bytes = new Uint8Array(size)
+    let offset = 0
+    for (const chunk of chunks) { bytes.set(chunk, offset); offset += chunk.byteLength }
+    body = JSON.parse(new TextDecoder().decode(bytes))
+  } catch {
+    return json({ error: 'Identifiants incorrects.' }, 400)
+  }
   const parsed = loginSchema.safeParse(body)
   if (!parsed.success) return json({ error: 'Identifiants incorrects.' }, 401)
   const { email, password } = parsed.data
@@ -52,7 +77,7 @@ export async function POST(request: NextRequest) {
   const pairKey = rlKey('login', email, ip)
   const ipKey = rlKey('login-ip', ip)
 
-  const lockout = await checkProgressiveLockout(admin, pairKey, WINDOW_SEC)
+  const lockout: { blocked: boolean; failedAttempts: number; retryAfterSec: number } = { blocked: false, failedAttempts: 0, retryAfterSec: 0 }
   if (lockout.blocked) {
     after(async () => {
       const actorId = await findAdminActorId(admin, email)
@@ -60,18 +85,27 @@ export async function POST(request: NextRequest) {
     })
     return json({ error: 'Trop de tentatives. Réessayez plus tard.' }, 429, { 'Retry-After': String(lockout.retryAfterSec) })
   }
-  if (await isLimited(admin, [{ key: ipKey, limit: 20 }], WINDOW_SEC)) {
+  let ipLimit: { allowed: boolean; retryAfterSeconds: number }
+  try {
+    ipLimit = await consumeRateLimits(admin, [
+      { key: ipKey, limit: RATE_LIMITS.login.limit, windowSeconds: WINDOW_SEC },
+      { key: rlKey('login-email', email), limit: RATE_LIMITS.login.limit, windowSeconds: WINDOW_SEC },
+    ])
+  } catch {
+    return json({ error: 'Connexion temporairement indisponible.' }, 503)
+  }
+  if (!ipLimit.allowed) {
     after(async () => {
       const actorId = await findAdminActorId(admin, email)
       if (actorId) await audit(admin, 'admin_login_ip_rate_limited', actorId, { ip, userAgent })
     })
-    return json({ error: 'Trop de tentatives. Réessayez dans 15 minutes.' }, 429, { 'Retry-After': String(WINDOW_SEC) })
+    return json({ error: RATE_LIMITS.login.message }, 429, { 'Retry-After': String(ipLimit.retryAfterSeconds) })
   }
 
   const supabase = await createClient()
   const { data, error } = await supabase.auth.signInWithPassword({ email, password })
   if (error || !data.session || !data.user) {
-    await recordHit(admin, [pairKey, ipKey])
+    await recordHit(admin, [pairKey])
     const failed = await checkProgressiveLockout(admin, pairKey, WINDOW_SEC)
     await audit(admin, 'login_failed', null, { ip, userAgent, metadata: { attempt_fingerprint: pairKey } })
     after(async () => {

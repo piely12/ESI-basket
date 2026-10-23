@@ -55,7 +55,7 @@ export default function ReglagesPage() {
       const response = await fetch('/api/contact', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ message: message.trim() }),
+        body: JSON.stringify({ message: message.trim(), website: new FormData(event.currentTarget).get('website') }),
       })
       const result = await response.json() as { ok?: boolean }
       if (response.ok && result.ok) {
@@ -134,6 +134,10 @@ export default function ReglagesPage() {
           <p className="settings-card-description mt-1">Écris-nous sans nom ni pseudonyme : aucune identité n’est enregistrée avec le message.</p>
         </div>
         <form className="space-y-3" onSubmit={submitContact}>
+          <label aria-hidden="true" className="pointer-events-none absolute -left-[10000px] h-px w-px overflow-hidden" tabIndex={-1}>
+            Ne pas remplir ce champ
+            <input name="website" type="text" autoComplete="off" tabIndex={-1} />
+          </label>
           <textarea value={message} onChange={(event) => setMessage(event.target.value)} maxLength={1000} rows={4} placeholder="Votre message" aria-label="Votre message" className="w-full resize-y rounded-xl border border-input bg-background px-4 py-3 text-foreground placeholder:text-muted-foreground" />
           <button disabled={sending} className="min-h-11 rounded-xl bg-primary px-5 py-2 font-semibold text-primary-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60">{sending ? 'Envoi…' : 'Envoyer'}</button>
           {feedback && <p role="status" className="text-sm text-muted-foreground">{feedback}</p>}

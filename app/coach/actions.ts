@@ -1,7 +1,6 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { headers } from 'next/headers'
 import { randomBytes } from 'node:crypto'
 import { redirect } from 'next/navigation'
 import { z } from 'zod'
@@ -9,13 +8,15 @@ import { requireAnyRole, requireRole } from '@/lib/auth/requireUser'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { sendAccountReadyEmail } from '@/lib/auth/brevo'
 import { generateOtp, hashOtp, OTP_TTL_MINUTES } from '@/lib/auth/otp'
-import { audit, consumeRateLimit, rlKey } from '@/lib/security'
+import { audit } from '@/lib/security'
+import { checkConnectedActionLimit } from '@/lib/security/action-rate-limit'
+import type { ActionLimitFailure } from '@/lib/security/rate-limit-core'
 import { isValidEmail } from '@/lib/validation'
 import { type CourtSlot } from '@/lib/lineup'
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 
-export type CoachInviteState = { error: string; success: string }
+export type CoachInviteState = { ok?: boolean; error: string; success: string; code?: 'RATE_LIMITED' | 'RATE_LIMIT_UNAVAILABLE'; message?: string; retryAfterSeconds?: number }
 const COACH_INVITE_FORM = z.object({
   profile_ref: z.string().regex(/^(joueur|staff):[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i),
   email: z.string().trim().toLowerCase().email().max(254),
@@ -32,17 +33,14 @@ export async function inviteTeamAccount(_state: CoachInviteState, formData: Form
   const { data: team } = await admin.from('teams').select('id').eq('id', profile.team_id).eq('is_esi', true).maybeSingle()
   if (!team) return { error: 'Cette action est réservée au coach principal de l’ESI.', success: '' }
 
-  const headersList = await headers()
-  const actorKey = rlKey('coach-invite', user.id)
-  const ipKey = rlKey('coach-invite-ip', headersList.get('x-real-ip') ?? 'unknown')
-  try {
-    const [actorLimit, ipLimit] = await Promise.all([
-      consumeRateLimit(admin, actorKey, 10, 60 * 60),
-      consumeRateLimit(admin, ipKey, 30, 60 * 60),
-    ])
-    if (!actorLimit.allowed || !ipLimit.allowed) return { error: 'Trop d’invitations ont été demandées. Réessaie plus tard.', success: '' }
-  } catch {
-    return { error: 'Le service de sécurité est indisponible. Réessaie plus tard.', success: '' }
+  const inviteLimit = await checkConnectedActionLimit(user.id, 'invitation')
+  if (!inviteLimit.ok) return {
+    ok: false,
+    error: inviteLimit.message,
+    success: '',
+    code: inviteLimit.code,
+    message: inviteLimit.message,
+    ...('retryAfterSeconds' in inviteLimit ? { retryAfterSeconds: inviteLimit.retryAfterSeconds } : {}),
   }
 
   const [kind, id] = input.data.profile_ref.split(':')
@@ -188,7 +186,7 @@ function formIds(formData: FormData, name: string) {
 }
 
 export type MatchAvailability = { player_id: string; availability_status: 'disponible' | 'blesse' | 'indisponible' }
-export type CompositionActionResult = { ok: boolean; error?: string; status?: string }
+export type CompositionActionResult = { ok: true; status?: string } | ({ ok: false; error?: string; status?: string } & Partial<ActionLimitFailure>)
 
 function compositionRpcError(operation: string, error: { code?: string; message: string; details?: string | null; hint?: string | null }) {
   console.error(`Composition RPC ${operation} failed`, {
@@ -225,8 +223,10 @@ export async function saveMatchCompositionDraft(input: {
     || input.selectedPlayerIds.some((id) => !UUID.test(id))) {
     return { ok: false, error: 'Données de composition invalides.' }
   }
-  const { supabase, match, teamIds } = await getCoachAuthorizedMatch(input.matchId)
+  const { supabase, match, teamIds, userId } = await getCoachAuthorizedMatch(input.matchId)
   if (!teamIds.includes(input.teamId)) return { ok: false, error: 'Cette équipe ne fait pas partie de votre périmètre.' }
+  const limit = await checkConnectedActionLimit(userId, 'sensitiveMutation')
+  if (!limit.ok) return { ...limit, error: limit.message }
   const { error } = await supabase.rpc('save_match_composition_draft', {
     p_match_id: input.matchId,
     p_team_id: input.teamId,
@@ -242,8 +242,10 @@ export async function saveMatchCompositionDraft(input: {
 
 export async function publishMatchComposition(matchId: string, teamId: string): Promise<CompositionActionResult> {
   if (!UUID.test(matchId) || !UUID.test(teamId)) return { ok: false, error: 'Match ou équipe invalide.' }
-  const { supabase, match, teamIds } = await getCoachAuthorizedMatch(matchId)
+  const { supabase, match, teamIds, userId } = await getCoachAuthorizedMatch(matchId)
   if (!teamIds.includes(teamId)) return { ok: false, error: 'Cette équipe ne fait pas partie de votre périmètre.' }
+  const limit = await checkConnectedActionLimit(userId, 'sensitiveMutation')
+  if (!limit.ok) return { ...limit, error: limit.message }
   const { data, error } = await supabase.rpc('publish_match_composition', {
     p_match_id: matchId,
     p_team_id: teamId,
@@ -282,6 +284,11 @@ async function getCoachIdentity() {
   return { supabase, profile, userId: user.id, teamId }
 }
 
+async function enforceSensitiveMutationLimit(userId: string) {
+  const limit = await checkConnectedActionLimit(userId, 'sensitiveMutation')
+  if (!limit.ok) throw new Error(limit.message)
+}
+
 function formText(formData: FormData, key: string, maxLength: number) {
   const value = formData.get(key)
   return typeof value === 'string' ? value.trim().slice(0, maxLength) : ''
@@ -307,8 +314,9 @@ function formInteger(formData: FormData, key: string, options: { min?: number; m
 }
 
 export async function createMatch(formData: FormData) {
-  const { supabase, profile, teamId } = await getCoachIdentity()
+  const { supabase, profile, userId, teamId } = await getCoachIdentity()
   if (profile.role !== 'admin') throw new Error('Seule l’administration peut modifier le calendrier.')
+  await enforceSensitiveMutationLimit(userId)
   const opponentId = formText(formData, 'opponent_id', 64)
   const homeAway = formText(formData, 'home_away', 8)
   const location = formText(formData, 'location', 160)
@@ -340,8 +348,9 @@ export async function createMatch(formData: FormData) {
 }
 
 export async function updatePlayerAvailability(formData: FormData) {
-  const { supabase, profile, teamId } = await getCoachIdentity()
+  const { supabase, profile, userId, teamId } = await getCoachIdentity()
   if (profile.role !== 'admin') throw new Error('Les disponibilités globales sont réservées à l’administration. Utilise l’étape 1 pour ce match.')
+  await enforceSensitiveMutationLimit(userId)
   const playerId = formText(formData, 'player_id', 64)
   const status = formText(formData, 'status', 24)
   if (!UUID.test(playerId) || !['actif', 'blesse', 'suspendu'].includes(status)) throw new Error('La disponibilité sélectionnée est invalide.')
@@ -356,7 +365,8 @@ export async function updatePlayerAvailability(formData: FormData) {
 
 export async function updateMatchDetails(formData: FormData) {
   const matchId = formText(formData, 'match_id', 64)
-  const { supabase, match } = await getAdminAuthorizedMatch(matchId)
+  const { supabase, match, userId } = await getAdminAuthorizedMatch(matchId)
+  await enforceSensitiveMutationLimit(userId)
   const location = formText(formData, 'location', 160)
   const scheduledAt = formDateTime(formData, 'scheduled_at')
   const { error } = await supabase.from('matches').update({
@@ -372,7 +382,8 @@ export async function updateMatchDetails(formData: FormData) {
 
 export async function updateMatchStatus(formData: FormData) {
   const matchId = formText(formData, 'match_id', 64)
-  const { supabase, match } = await getAdminAuthorizedMatch(matchId)
+  const { supabase, match, userId } = await getAdminAuthorizedMatch(matchId)
+  await enforceSensitiveMutationLimit(userId)
   const status = formText(formData, 'status', 24)
   if (!['programme', 'a_venir', 'jour_j', 'en_cours'].includes(status)) throw new Error('Le statut choisi est invalide.')
   const { error } = await supabase.from('matches').update({ status }).eq('id', match.id)
@@ -385,6 +396,7 @@ export async function updateMatchStatus(formData: FormData) {
 export async function saveMatchPreparation(formData: FormData) {
   const matchId = formText(formData, 'match_id', 64)
   const { supabase, userId, teamIds, match } = await getAdminAuthorizedMatch(matchId)
+  await enforceSensitiveMutationLimit(userId)
   const gamePlan = formText(formData, 'game_plan', 5000)
   const opponentNotes = formText(formData, 'opponent_notes', 5000)
   const teamId = teamIds[0]
@@ -399,7 +411,8 @@ export async function saveMatchPreparation(formData: FormData) {
 
 export async function saveMatchResult(formData: FormData) {
   const matchId = formText(formData, 'match_id', 64)
-  const { supabase, match } = await getAdminAuthorizedMatch(matchId)
+  const { supabase, match, userId } = await getAdminAuthorizedMatch(matchId)
+  await enforceSensitiveMutationLimit(userId)
   const homeScore = formInteger(formData, 'home_score', { max: 250 })
   const awayScore = formInteger(formData, 'away_score', { max: 250 })
   if (homeScore === awayScore) throw new Error('Un match de basketball terminé doit désigner une équipe gagnante.')
@@ -420,7 +433,8 @@ export async function saveMatchResult(formData: FormData) {
 
 export async function savePlayerStats(formData: FormData) {
   const matchId = formText(formData, 'match_id', 64)
-  const { supabase, match } = await getAdminAuthorizedMatch(matchId)
+  const { supabase, match, userId } = await getAdminAuthorizedMatch(matchId)
+  await enforceSensitiveMutationLimit(userId)
   const playerIds = formIds(formData, 'player_ids')
   const [{ data: roster, error: rosterError }, { data: players, error: playersError }] = await Promise.all([
     supabase.from('match_rosters').select('player_id').eq('match_id', match.id).eq('is_called_up', true),

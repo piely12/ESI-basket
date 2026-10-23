@@ -2,9 +2,11 @@ import { NextRequest } from 'next/server'
 import { z } from 'zod'
 import { assertSameOrigin, clientIp, consumeRateLimit, json, rlKey } from '@/lib/security'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { RATE_LIMITS } from '@/lib/security/rate-limit-config'
 
 const ContactMessage = z.object({
   message: z.string().trim().min(5).max(1000),
+  website: z.string().max(200).optional(),
 }).strict()
 
 export async function POST(request: NextRequest) {
@@ -23,18 +25,14 @@ export async function POST(request: NextRequest) {
   }
   const parsed = ContactMessage.safeParse(raw)
   if (!parsed.success) return json({ error: 'invalid' }, 400)
+  // Honeypot for basic automated submissions. Return success without storing it.
+  if (parsed.data.website?.trim()) return json({ ok: true })
 
   try {
     const admin = createAdminClient()
     const ipKey = rlKey('public-contact', clientIp(request))
-    const globalKey = rlKey('public-contact-global', new Date().toISOString().slice(0, 13))
-    const [ipLimit, globalLimit] = await Promise.all([
-      consumeRateLimit(admin, ipKey, 5, 60 * 60),
-      consumeRateLimit(admin, globalKey, 120, 60 * 60),
-    ])
-    if (!ipLimit.allowed || !globalLimit.allowed) {
-      return json({ error: 'rate_limited' }, 429, { 'Retry-After': String(Math.max(ipLimit.retryAfterSeconds, globalLimit.retryAfterSeconds)) })
-    }
+    const ipLimit = await consumeRateLimit(admin, ipKey, RATE_LIMITS.contact.limit, RATE_LIMITS.contact.windowSeconds)
+    if (!ipLimit.allowed) return json({ error: RATE_LIMITS.contact.message }, 429, { 'Retry-After': String(ipLimit.retryAfterSeconds) })
     const { error } = await admin.from('contact_messages').insert({ message: parsed.data.message })
     if (error) throw error
     return json({ ok: true })

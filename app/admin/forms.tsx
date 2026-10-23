@@ -1,6 +1,6 @@
 'use client'
 
-import { useActionState } from 'react'
+import { useActionState, useState } from 'react'
 import {
   cancelAccountBinding,
   createOrLinkAccount,
@@ -10,16 +10,26 @@ import {
   updateAccountAccess,
 } from './actions'
 import type { AccountProfile } from './data'
+import type { AdminActionState } from './actions'
+import { useRateLimitCooldown } from '@/components/useRateLimitCooldown'
 
 export type AccountTarget = { value: string; label: string }
-const INITIAL_ACTION_STATE = { error: '', success: '' }
+const INITIAL_ACTION_STATE: AdminActionState = { error: '', success: '' }
 
 const fieldClass = 'mt-1 min-h-12 w-full rounded-xl border border-[var(--line)] bg-[var(--surface)] px-3 text-base text-[var(--ink)] outline-none focus:border-[var(--gold-deep)] focus:ring-2 focus:ring-[var(--gold-500)]/30'
 const labelClass = 'text-sm font-semibold text-[var(--ink)]'
 const buttonClass = 'min-h-12 rounded-xl bg-maroon-panel px-5 font-semibold text-on-brand transition hover:bg-[var(--maroon-700)] disabled:cursor-wait disabled:bg-[var(--ink-soft)]'
 
 export function AdminAccountForm({ targets }: { targets: AccountTarget[] }) {
-  const [state, formAction, pending] = useActionState(createOrLinkAccount, INITIAL_ACTION_STATE)
+  const [cooldown, startCooldown] = useRateLimitCooldown()
+  const [state, formAction, pending] = useActionState(async (previous: AdminActionState, formData: FormData) => {
+    const next = await createOrLinkAccount(previous, formData)
+    if (next.code === 'RATE_LIMITED') startCooldown(next.retryAfterSeconds ?? 0)
+    return next
+  }, INITIAL_ACTION_STATE)
+  const [profileRef, setProfileRef] = useState('')
+  const [mode, setMode] = useState('creer')
+  const [email, setEmail] = useState('')
 
   if (targets.length === 0) {
     return <p className="rounded-xl bg-[var(--paper)] p-4 text-sm text-[var(--ink-soft)]">
@@ -31,30 +41,30 @@ export function AdminAccountForm({ targets }: { targets: AccountTarget[] }) {
     <form action={formAction} className="grid gap-4 md:grid-cols-2">
       <div>
         <label htmlFor="profile-ref" className={labelClass}>Fiche à rattacher</label>
-        <select id="profile-ref" name="profile_ref" className={fieldClass} required defaultValue="">
+        <select id="profile-ref" name="profile_ref" className={fieldClass} required value={profileRef} onChange={(event) => setProfileRef(event.target.value)}>
           <option value="" disabled>Choisir une fiche</option>
           {targets.map((target) => <option key={target.value} value={target.value}>{target.label}</option>)}
         </select>
       </div>
       <div>
         <label htmlFor="account-mode" className={labelClass}>Compte</label>
-        <select id="account-mode" name="mode" className={fieldClass} defaultValue="creer">
+        <select id="account-mode" name="mode" className={fieldClass} value={mode} onChange={(event) => setMode(event.target.value)}>
           <option value="creer">Créer un compte invité</option>
           <option value="lier">Rattacher un compte existant</option>
         </select>
       </div>
       <div>
         <label htmlFor="account-email" className={labelClass}>Adresse e-mail du compte</label>
-        <input id="account-email" name="email" type="email" autoComplete="email" maxLength={254} className={fieldClass} required />
+        <input id="account-email" name="email" type="email" autoComplete="email" maxLength={254} className={fieldClass} required value={email} onChange={(event) => setEmail(event.target.value)} />
       </div>
       <p className="self-center text-sm text-[var(--ink-soft)]">Aucun mot de passe n’est défini ou affiché ici. La personne le choisira après vérification par e-mail.</p>
       <div className="md:col-span-2">
         <p className="mb-3 text-xs text-[var(--ink-soft)]">Une fiche déjà liée doit d’abord être détachée explicitement avant de recevoir une autre adresse e-mail.</p>
-        <button type="submit" className={buttonClass} disabled={pending}>
-          {pending ? 'Enregistrement…' : 'Enregistrer le compte'}
+        <button type="submit" className={buttonClass} disabled={pending || cooldown > 0}>
+          {pending ? 'Enregistrement…' : cooldown > 0 ? `Réessaie dans ${cooldown} s` : 'Enregistrer le compte'}
         </button>
         <p aria-live="polite" role={state.error ? 'alert' : 'status'} className={`mt-3 min-h-5 text-sm ${state.error ? 'text-danger' : 'text-brand'}`}>
-          {state.error || state.success}
+          {state.message || state.error || state.success}
         </p>
       </div>
     </form>
@@ -96,7 +106,12 @@ export function AssistantCoachProfileForm() {
 }
 
 export function ProfileAccountRow({ profile }: { profile: AccountProfile }) {
-  const [resendState, resendAction, resendPending] = useActionState(resendInvitation, INITIAL_ACTION_STATE)
+  const [resendCooldown, startResendCooldown] = useRateLimitCooldown()
+  const [resendState, resendAction, resendPending] = useActionState(async (previous: AdminActionState, formData: FormData) => {
+    const next = await resendInvitation(previous, formData)
+    if (next.code === 'RATE_LIMITED') startResendCooldown(next.retryAfterSeconds ?? 0)
+    return next
+  }, INITIAL_ACTION_STATE)
   const [cancelState, cancelAction, cancelPending] = useActionState(cancelAccountBinding, INITIAL_ACTION_STATE)
   const [accessState, accessAction, accessPending] = useActionState(updateAccountAccess, INITIAL_ACTION_STATE)
   const badge = profile.status === 'actif' ? 'bg-success-bg text-success'
@@ -115,8 +130,8 @@ export function ProfileAccountRow({ profile }: { profile: AccountProfile }) {
         {profile.status === 'invité' && <>
           <form action={resendAction} className="flex flex-wrap items-center gap-2">
             <input type="hidden" name="profile_ref" value={profile.ref} />
-            <button className="min-h-10 rounded-lg border border-[var(--line)] px-3 text-sm font-semibold" disabled={resendPending}>{resendPending ? 'Envoi…' : 'Renvoyer l’invitation'}</button>
-            <span aria-live="polite" role={resendState.error ? 'alert' : 'status'} className="text-xs">{resendState.error || resendState.success}</span>
+            <button className="min-h-10 rounded-lg border border-[var(--line)] px-3 text-sm font-semibold" disabled={resendPending || resendCooldown > 0}>{resendPending ? 'Envoi…' : resendCooldown > 0 ? `Réessaie dans ${resendCooldown} s` : 'Renvoyer l’invitation'}</button>
+            <span aria-live="polite" role={resendState.error ? 'alert' : 'status'} className="text-xs">{resendState.message || resendState.error || resendState.success}</span>
           </form>
         </>}
         <form action={cancelAction} className="flex flex-wrap items-center gap-2">

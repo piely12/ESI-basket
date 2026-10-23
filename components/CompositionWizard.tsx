@@ -8,6 +8,7 @@ import { COURT_SLOTS, type CourtSlot, type LineupEntry, type LineupPlayer } from
 import type { Team } from '@/lib/data/public'
 import { publishMatchComposition, saveMatchCompositionDraft, type MatchAvailability } from '@/app/coach/actions'
 import styles from './composition-wizard.module.css'
+import { useRateLimitCooldown } from '@/components/useRateLimitCooldown'
 
 type Availability = MatchAvailability['availability_status']
 type WorkflowStatus = 'brouillon' | 'publiee' | 'verrouillee'
@@ -45,6 +46,7 @@ export default function CompositionWizard({
   const [step, setStep] = useState<1 | 2 | 3>(() => initialStatus === 'publiee' || initialStatus === 'verrouillee' ? 3 : initialSelectedIds.length === 12 ? (Object.keys(initialSlots).length === 5 ? 3 : 2) : 1)
   const [status, setStatus] = useState<WorkflowStatus>(initialStatus)
   const [message, setMessage] = useState('')
+  const [retryAfterSeconds, startCooldown] = useRateLimitCooldown()
   const [isPending, startTransition] = useTransition()
   const availablePlayers = players.filter((player) => availability[player.id] === 'disponible')
   const canSelectTwelve = availablePlayers.length >= 12 && selectedIds.length === 12
@@ -71,7 +73,12 @@ export default function CompositionWizard({
     startTransition(async () => {
       setMessage('')
       const result = await saveAction(payload())
-      setMessage(result.ok ? 'Brouillon enregistré.' : result.error ?? 'Impossible d’enregistrer le brouillon.')
+      if (!result.ok) {
+        if (result.code === 'RATE_LIMITED') startCooldown(result.retryAfterSeconds ?? 0)
+        setMessage(result.message ?? result.error ?? 'Impossible d’enregistrer le brouillon.')
+        return
+      }
+      setMessage('Brouillon enregistré.')
       if (result.ok) setStatus((current) => current === 'publiee' ? current : 'brouillon')
     })
   }
@@ -80,7 +87,11 @@ export default function CompositionWizard({
     startTransition(async () => {
       setMessage('')
       const result = await saveAction(payload())
-      if (!result.ok) { setMessage(result.error ?? 'Impossible d’enregistrer le brouillon.'); return }
+      if (!result.ok) {
+        if (result.code === 'RATE_LIMITED') startCooldown(result.retryAfterSeconds ?? 0)
+        setMessage(result.message ?? result.error ?? 'Impossible d’enregistrer le brouillon.')
+        return
+      }
       setStatus((current) => current === 'publiee' ? current : 'brouillon')
       setStep(next)
     })
@@ -90,9 +101,17 @@ export default function CompositionWizard({
     startTransition(async () => {
       setMessage('')
       const saved = await saveAction(payload())
-      if (!saved.ok) { setMessage(saved.error ?? 'Impossible de vérifier le brouillon.'); return }
+      if (!saved.ok) {
+        if (saved.code === 'RATE_LIMITED') startCooldown(saved.retryAfterSeconds ?? 0)
+        setMessage(saved.message ?? saved.error ?? 'Impossible de vérifier le brouillon.')
+        return
+      }
       const result = await publishAction(matchId, team.id)
-      if (!result.ok) { setMessage(result.error ?? 'La publication a échoué.'); return }
+      if (!result.ok) {
+        if (result.code === 'RATE_LIMITED') startCooldown(result.retryAfterSeconds ?? 0)
+        setMessage(result.message ?? result.error ?? 'La publication a échoué.')
+        return
+      }
       setStatus('publiee')
        setMessage('Composition publiée. Les joueurs dont le compte est rattaché reçoivent une notification dans leur espace.')
       router.refresh()
@@ -177,10 +196,10 @@ export default function CompositionWizard({
       <div className={styles.actionCount}><strong>{step===1 ? selectedIds.length+'/12' : step===2 ? Object.keys(slots).length+'/5' : statusText}</strong><span>{step===1 ? 'JOUEURS RETENUS' : step===2 ? 'TITULAIRES CHOISIS' : 'STATUT DE LA COMPOSITION'}</span></div>
       <div className={styles.actions}>
         {step>1 && <button type="button" className={styles.secondaryButton} disabled={isPending} onClick={()=>setStep((step-1) as 1|2)}>Retour</button>}
-        {step===1 && <button type="button" className={styles.secondaryButton} disabled={isPending||locked} onClick={persistDraft}>Enregistrer le brouillon</button>}
-        {step===1 && <button type="button" className={styles.primaryButton} disabled={locked||!validRosterSize||!canSelectTwelve||isPending} onClick={()=>advance(2)}>{isPending?'Enregistrement…':'Suivant'}</button>}
-        {step===2 && <><button type="button" className={styles.secondaryButton} disabled={isPending||locked} onClick={persistDraft}>Brouillon</button><button type="button" className={styles.primaryButton} disabled={locked||Object.keys(slots).length!==5||isPending} onClick={()=>advance(3)}>{isPending?'Enregistrement…':'Aperçu'}</button></>}
-        {step===3 && <><button type="button" className={styles.secondaryButton} disabled={isPending} onClick={persistDraft}>Enregistrer le brouillon</button><button type="button" className={styles.primaryButton} disabled={locked||isPending||!validRosterSize||selectedIds.length!==12||Object.keys(slots).length!==5||availablePlayers.length<12} onClick={publish}>{isPending?'Publication…':status==='publiee'?'Confirmer la mise à jour':'Confirmer et publier'}</button></>}
+        {step===1 && <button type="button" className={styles.secondaryButton} disabled={isPending||locked||retryAfterSeconds>0} onClick={persistDraft}>Enregistrer le brouillon</button>}
+        {step===1 && <button type="button" className={styles.primaryButton} disabled={locked||!validRosterSize||!canSelectTwelve||isPending||retryAfterSeconds>0} onClick={()=>advance(2)}>{isPending?'Enregistrement…':retryAfterSeconds>0?`Réessaie dans ${retryAfterSeconds} s`:'Suivant'}</button>}
+        {step===2 && <><button type="button" className={styles.secondaryButton} disabled={isPending||locked||retryAfterSeconds>0} onClick={persistDraft}>Brouillon</button><button type="button" className={styles.primaryButton} disabled={locked||Object.keys(slots).length!==5||isPending||retryAfterSeconds>0} onClick={()=>advance(3)}>{isPending?'Enregistrement…':retryAfterSeconds>0?`Réessaie dans ${retryAfterSeconds} s`:'Aperçu'}</button></>}
+        {step===3 && <><button type="button" className={styles.secondaryButton} disabled={isPending||retryAfterSeconds>0} onClick={persistDraft}>Enregistrer le brouillon</button><button type="button" className={styles.primaryButton} disabled={locked||isPending||!validRosterSize||selectedIds.length!==12||Object.keys(slots).length!==5||availablePlayers.length<12||retryAfterSeconds>0} onClick={publish}>{isPending?'Publication…':retryAfterSeconds>0?`Réessaie dans ${retryAfterSeconds} s`:status==='publiee'?'Confirmer la mise à jour':'Confirmer et publier'}</button></>}
       </div>
     </footer>
   </section>

@@ -41,6 +41,8 @@ export async function sendOtpEmail(to: string, code: string, ttlMinutes: number)
           <p style="color:#666;font-size:13px">Si vous n'êtes pas à l'origine de cette demande, ignorez cet e-mail : votre mot de passe reste inchangé.</p>
         </div>`,
     }),
+    cache: 'no-store',
+    signal: AbortSignal.timeout(5000),
   })
   if (!res.ok) throw new Error(`Brevo ${res.status}: ${await res.text()}`)
 }

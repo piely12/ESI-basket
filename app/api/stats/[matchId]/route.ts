@@ -4,10 +4,12 @@ import { getCurrentUserProfile } from '@/lib/auth/roles'
 import { manualStatsActionSchema } from '@/lib/stats/manual-schema'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
+import { consumeRateLimit, rlKey } from '@/lib/security'
+import { RATE_LIMITS } from '@/lib/security/rate-limit-config'
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
-function json(status: number, body: Record<string, unknown>) {
-  return NextResponse.json(body, { status, headers: { 'Cache-Control': 'no-store' } })
+function json(status: number, body: Record<string, unknown>, headers: Record<string, string> = {}) {
+  return NextResponse.json(body, { status, headers: { 'Cache-Control': 'no-store', ...headers } })
 }
 
 async function authorize(request: Request) {
@@ -37,6 +39,12 @@ export async function POST(request: Request, context: RouteContext<'/api/stats/[
 async function handle(request: Request, params: Promise<{ matchId: string }>, patchOnly: boolean) {
   const auth = await authorize(request)
   if ('response' in auth) return auth.response
+  try {
+    const limit = await consumeRateLimit(createAdminClient(), rlKey('connected-sensitive-mutation', auth.user.id), RATE_LIMITS.sensitiveMutation.limit, RATE_LIMITS.sensitiveMutation.windowSeconds)
+    if (!limit.allowed) return json(429, { error: 'rate_limited', message: RATE_LIMITS.sensitiveMutation.message }, { 'Retry-After': String(limit.retryAfterSeconds) })
+  } catch {
+    return json(503, { error: 'rate_limit_unavailable', message: 'Le service de sécurité est indisponible. Réessaie plus tard.' })
+  }
   const { matchId } = await params
   if (!UUID.test(matchId)) return json(400, { error: 'invalid' })
   const contentLength = Number(request.headers.get('content-length') ?? '0')

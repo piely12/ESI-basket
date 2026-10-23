@@ -380,6 +380,22 @@ body {
 .dark body:not(:has(.reference-page-shell)) .public-header-league img, html[data-theme="dark"] body:not(:has(.reference-page-shell)) .public-header-league img { width:21px; height:38px; border:0; border-radius:3px; background:transparent; padding:0; }
 .dark body:not(:has(.reference-page-shell)) .public-header-league small, html[data-theme="dark"] body:not(:has(.reference-page-shell)) .public-header-league small { font-size:10px; }
 .dark body:not(:has(.reference-page-shell)) .public-header-league strong, html[data-theme="dark"] body:not(:has(.reference-page-shell)) .public-header-league strong { font-size:17px; }
+@media (max-width:639px) {
+  .public-header-inner { min-height:60px; padding:8px 14px; }
+  .public-header-team { gap:8px; font-size:17px; }
+  .public-header-team img { width:44px; height:44px; }
+  .public-header-league { gap:8px; }
+  .public-header-league img { height:48px; }
+  .public-header-league small { font-size:10px; }
+  .public-header-league strong { font-size:15px; }
+  .dark body:not(:has(.reference-page-shell)) .public-header, html[data-theme="dark"] body:not(:has(.reference-page-shell)) .public-header { height:62px; }
+  .dark body:not(:has(.reference-page-shell)) .public-header-inner, html[data-theme="dark"] body:not(:has(.reference-page-shell)) .public-header-inner { min-height:0; padding:0 14px; }
+  .dark body:not(:has(.reference-page-shell)) .public-header-team, html[data-theme="dark"] body:not(:has(.reference-page-shell)) .public-header-team { gap:9px; font-size:21px; }
+  .dark body:not(:has(.reference-page-shell)) .public-header-team img, html[data-theme="dark"] body:not(:has(.reference-page-shell)) .public-header-team img { width:54px; height:52px; }
+  .dark body:not(:has(.reference-page-shell)) .public-header-league img, html[data-theme="dark"] body:not(:has(.reference-page-shell)) .public-header-league img { width:23px; height:40px; }
+  .dark body:not(:has(.reference-page-shell)) .public-header-league small, html[data-theme="dark"] body:not(:has(.reference-page-shell)) .public-header-league small { font-size:10px; }
+  .dark body:not(:has(.reference-page-shell)) .public-header-league strong, html[data-theme="dark"] body:not(:has(.reference-page-shell)) .public-header-league strong { font-size:18px; }
+}
 .dark body:not(:has(.reference-page-shell)) .public-bottom-nav, html[data-theme="dark"] body:not(:has(.reference-page-shell)) .public-bottom-nav { display:flex; height:calc(58px + env(safe-area-inset-bottom)); align-items:stretch; border-color:var(--public-nav-border); padding:3px 4px env(safe-area-inset-bottom); }
 .dark body:not(:has(.reference-page-shell)) .public-bottom-link, html[data-theme="dark"] body:not(:has(.reference-page-shell)) .public-bottom-link { flex:1; gap:3px; margin:0; border-radius:14px; color:var(--public-nav-text); font-size:10.5px; }
 .dark body:not(:has(.reference-page-shell)) .public-bottom-link[aria-current="page"], html[data-theme="dark"] body:not(:has(.reference-page-shell)) .public-bottom-link[aria-current="page"] { flex:1.25; border-radius:18px; background:var(--public-nav-active-bg); color:var(--public-nav-active-label); }
@@ -476,9 +492,10 @@ body {
   text-transform: uppercase;
 }
 @media (max-width: 640px) {
-  .home-hero { min-height: 420px; padding: 40px 24px 32px; }
+  .home-hero { min-height: 320px; padding: 28px 20px 24px; }
   .home-hero-lion { right: 0; width: 100%; height: 100%; aspect-ratio: auto; opacity: .5; }
-  .home-hero-stats { gap: 26px; margin-top: 32px; }
+  .home-hero-title { font-size: clamp(3.5rem, 14vw, 5rem); }
+  .home-hero-stats { gap: 22px; margin-top: 24px; }
   .home-hero-stats small { font-size: 11px; }
 }
 .dark .hero-panel {
