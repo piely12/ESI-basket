@@ -23,7 +23,6 @@
   --hero: var(--primary);
   --home-hero-bg: #5f0b19;
   --logo-pill: var(--card);
-  --lion: oklch(0.33 0.12 18 / 40%);
   --page-gradient: var(--background);
   --settings-card: var(--card);
   --settings-card-border: var(--border);
@@ -111,7 +110,6 @@
   --primary: oklch(0.2 0 0);
   --primary-foreground: oklch(0.95 0.005 85);
   --logo-pill: oklch(0.95 0.005 85);
-  --lion: #3e0113;
   --page-gradient: linear-gradient(180deg, #020204, #0b0a10);
   --settings-card: #0c0d12;
   --settings-card-border: #26252b;
@@ -270,22 +268,10 @@ body {
   overflow: visible;
   padding: 0 0 22px;
 }
-.page-title-lion {
-  position: absolute;
-  z-index: 0;
-  top: -23px;
-  right: -20px;
-  width: 130px;
-  height: 112px;
-  background-color: var(--lion);
-  -webkit-mask: url('/images/lion-couronne.png') no-repeat center / contain;
-  mask: url('/images/lion-couronne.png') no-repeat center / contain;
-  pointer-events: none;
-}
 .page-title-heading {
   position: relative;
   z-index: 1;
-  width: calc(100% - 130px);
+  width: 100%;
   margin: 0;
   color: var(--settings-text);
   font-family: 'Plus Jakarta Sans', var(--font-sans), Arial, sans-serif;

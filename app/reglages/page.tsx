@@ -90,9 +90,10 @@ export default function ReglagesPage() {
       <PwaSettings />
 
       <details className="settings-card theme-card group rounded-lg border border-[var(--line)] bg-[var(--surface)] p-4">
-        <summary className="cursor-pointer list-none focus-visible:outline-2 focus-visible:outline-ring [&::-webkit-details-marker]:hidden">
+        <summary className="relative cursor-pointer list-none pr-8 focus-visible:outline-2 focus-visible:outline-ring [&::-webkit-details-marker]:hidden">
           <span className="settings-card-title block">Conditions générales d’utilisation</span>
           <span className="settings-card-description mt-1 block">Application : The Lions of ESI Basketball · Mise à jour : 10 novembre 2026</span>
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="absolute right-0 top-1/2 size-5 -translate-y-1/2 text-brand transition-transform group-open:rotate-180"><path d="m6 9 6 6 6-6" /></svg>
         </summary>
         <div className="settings-card-description mt-4 space-y-4 border-t border-settings-divider pt-4">
           <section><h3 className="mb-1 font-bold text-foreground">1. Objet</h3><p>L’application The Lions of ESI Basketball permet de consulter les matchs, résultats, classements, statistiques, compositions et actualités de l’équipe de basketball de l’École Supérieure d’Industrie (ESI), qui participe aux Inter-Écoles de l’INP-HB. Elle est éditée par l’équipe de l’ESI Basketball Homme, en Côte d’Ivoire. En l’utilisant, vous acceptez les présentes conditions.</p></section>
@@ -107,9 +108,10 @@ export default function ReglagesPage() {
       </details>
 
       <details className="settings-card theme-card group rounded-lg border border-[var(--line)] bg-[var(--surface)] p-4">
-        <summary className="cursor-pointer list-none focus-visible:outline-2 focus-visible:outline-ring [&::-webkit-details-marker]:hidden">
+        <summary className="relative cursor-pointer list-none pr-8 focus-visible:outline-2 focus-visible:outline-ring [&::-webkit-details-marker]:hidden">
           <span className="settings-card-title block">Politique de confidentialité</span>
           <span className="settings-card-description mt-1 block">Application : The Lions of ESI Basketball · Mise à jour : 22 octobre 2026</span>
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="absolute right-0 top-1/2 size-5 -translate-y-1/2 text-brand transition-transform group-open:rotate-180"><path d="m6 9 6 6 6-6" /></svg>
         </summary>
         <div className="settings-card-description mt-4 space-y-4 border-t border-settings-divider pt-4">
           <p>Cette politique explique comment l’application collecte, utilise et protège vos données personnelles, conformément à la loi ivoirienne n° 2013-450 du 19 juin 2013 relative à la protection des données à caractère personnel.</p>

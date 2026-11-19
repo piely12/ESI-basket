@@ -14,16 +14,26 @@ function BellIcon({ className = 'size-5' }: { className?: string }) {
 }
 
 export default function MatchNotificationsSetting() {
-  const [supported] = useState(() => typeof window !== 'undefined' && 'Notification' in window && 'serviceWorker' in navigator && 'PushManager' in window)
+  const [supported, setSupported] = useState(false)
+  const [supportMessage, setSupportMessage] = useState('')
   const [enabled, setEnabled] = useState(false)
   const [busy, setBusy] = useState(false)
   const [feedback, setFeedback] = useState('')
 
   useEffect(() => {
-    if (!supported) return
+    const isSupported = typeof window !== 'undefined' && window.isSecureContext
+      && 'Notification' in window && 'serviceWorker' in navigator && 'PushManager' in window
+    setSupported(isSupported)
+    if (!isSupported) {
+      if (typeof window !== 'undefined' && !window.isSecureContext) setSupportMessage('Les notifications nécessitent une connexion sécurisée HTTPS.')
+      else if (typeof window !== 'undefined' && (!('serviceWorker' in navigator) || !('PushManager' in window))) {
+        setSupportMessage('Les notifications push ne sont pas disponibles ici. Sur iPhone ou iPad, ouvre l’application depuis l’écran d’accueil.')
+      } else setSupportMessage('Ce navigateur ne prend pas en charge les notifications.')
+      return
+    }
     void navigator.serviceWorker.ready.then((registration) => registration.pushManager.getSubscription())
       .then((subscription) => setEnabled(Boolean(subscription))).catch(() => setEnabled(false))
-  }, [supported])
+  }, [])
 
   async function toggle() {
     if (busy || !supported) return
@@ -43,22 +53,33 @@ export default function MatchNotificationsSetting() {
 
       const permission = Notification.permission === 'default' ? await Notification.requestPermission() : Notification.permission
       if (permission !== 'granted') {
-        setFeedback('Les notifications sont bloquées. Autorise-les dans les réglages du site de ton navigateur, puis réessaie.')
+        setFeedback('Les notifications sont bloquées. Dans les réglages du site de ton navigateur, choisis « Notifications : Autoriser », puis recharge cette page.')
         return
       }
 
       const keyResponse = await fetch('/api/push/vapid-public-key')
-      if (!keyResponse.ok) throw new Error('configuration')
+      if (!keyResponse.ok) {
+        setFeedback(keyResponse.status === 503
+          ? 'Le service de notifications n’est pas configuré sur le serveur.'
+          : 'Impossible de récupérer la configuration des notifications. Réessaie plus tard.')
+        return
+      }
       const { publicKey } = await keyResponse.json() as { publicKey: string }
       const created = await registration.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: decodeKey(publicKey) })
       const saved = await fetch('/api/push/subscriptions', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(created.toJSON()) })
       if (!saved.ok) {
-        await created.unsubscribe()
-        throw new Error('save')
+        await created.unsubscribe().catch(() => false)
+        setFeedback(saved.status === 429
+          ? 'Trop de tentatives d’activation depuis cet appareil. Réessaie plus tard.'
+          : saved.status === 503
+            ? 'Le serveur n’a pas pu enregistrer ton abonnement. Vérifie la configuration push et la base de données.'
+            : 'L’abonnement n’a pas pu être enregistré. Réessaie plus tard.')
+        return
       }
       setEnabled(true)
-      setFeedback('Tu recevras le samedi à 11 h le programme des matchs ESI prévus ce jour-là.')
-    } catch {
+      setFeedback('Les notifications des matchs de l’ESI Basketball sont activées.')
+    } catch (error) {
+      console.error('[push] Activation failed', error)
       setFeedback('Impossible de configurer les notifications pour le moment. Réessaie plus tard.')
     } finally {
       setBusy(false)
@@ -68,9 +89,9 @@ export default function MatchNotificationsSetting() {
   return <section className="settings-card theme-card flex items-center gap-3.5 rounded-lg border border-[var(--line)] bg-[var(--surface)] p-4">
     <div className="min-w-0 flex-1">
       <h2 className="settings-card-title">Notifications de matchs</h2>
-      <p className="settings-card-description mt-1">Autorise les notifications pour recevoir le samedi à 11 h le programme des matchs ESI prévus ce jour-là.</p>
+      <p className="settings-card-description mt-1">Active les notifications pour suivre les matchs de l’ESI Basketball.</p>
       {feedback && <p role="status" className="mt-2 text-sm text-muted-foreground">{feedback}</p>}
-      {!supported && <p className="mt-2 text-sm text-muted-foreground">Les notifications push ne sont pas disponibles sur ce navigateur.</p>}
+      {!supported && <p className="mt-2 text-sm text-muted-foreground">{supportMessage}</p>}
     </div>
     <button type="button" aria-pressed={enabled} aria-label={enabled ? 'Désactiver les notifications de matchs' : 'Activer les notifications de matchs'} title={enabled ? 'Désactiver les notifications' : 'Activer les notifications'} disabled={!supported || busy} onClick={toggle} className={`grid size-11 shrink-0 place-items-center rounded-xl border border-gold bg-gold text-gold-foreground transition-all hover:bg-gold-deep focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:cursor-not-allowed disabled:opacity-50 ${enabled ? 'shadow-md ring-2 ring-gold/35' : 'shadow-sm'}`}>
       <BellIcon />
