@@ -212,6 +212,9 @@
 @container (max-width: 480px) {
   .content {
     inset-block: 4.5%;
+    display: grid;
+    align-content: space-between;
+    grid-template-rows: auto auto auto auto auto;
   }
 
   .number {
@@ -219,7 +222,7 @@
   }
 
   .identity {
-    margin-top: 2cqw;
+    margin-top: 0;
   }
 
   .familyName {
@@ -234,12 +237,12 @@
   }
 
   .goldRule {
-    margin-top: 2.7cqw;
+    margin-top: 0;
   }
 
   .measurements {
     gap: 4.2cqw;
-    margin-top: 1cqw;
+    margin-top: 0;
   }
 
   .measurement dt {
@@ -252,6 +255,7 @@
   }
 
   .position {
+    margin-top: 0;
     font-size: 5.8cqw;
   }
 }
