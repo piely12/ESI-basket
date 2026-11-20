@@ -36,7 +36,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         {children}
         <PwaInstallPrompt />
         <SplashScreen />
-        <SiteSpeedInsights />
+        {process.env.VERCEL_ENV === 'production' && <SiteSpeedInsights />}
       </body>
     </html>
   );

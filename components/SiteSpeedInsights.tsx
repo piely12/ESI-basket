@@ -11,6 +11,5 @@ function anonymizeVital(event: VitalEvent): VitalEvent {
 }
 
 export default function SiteSpeedInsights() {
-  if (process.env.VERCEL_ENV !== 'production') return null
   return <SpeedInsights beforeSend={anonymizeVital} />
 }
