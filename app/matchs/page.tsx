@@ -1,7 +1,7 @@
 import PublicNav from '@/components/PublicNav'
 import MatchList from './MatchList'
 import PageTitle from '@/components/PageTitle'
-import { getAllMatches } from '@/lib/data/public'
+import { getMatchesPage } from '@/lib/data/public'
 
 function dateKey(value: string) {
   const parts = new Intl.DateTimeFormat('en-CA', {
@@ -20,7 +20,7 @@ function todayInAbidjan() {
 }
 
 export default async function MatchsPage() {
-  const matches = await getAllMatches()
+  const { matches, hasMore } = await getMatchesPage()
   const today = todayInAbidjan()
   const firstUpcoming = matches.find((match) => dateKey(match.scheduled_at) >= today && match.status !== 'termine')
   const initialMonth = (firstUpcoming ? dateKey(firstUpcoming.scheduled_at) : today).slice(0, 7)
@@ -30,7 +30,7 @@ export default async function MatchsPage() {
       <PublicNav />
       <main className="reference-page-shell page-title-page mx-auto max-w-5xl px-4 pb-28 pt-8 sm:px-5">
         <PageTitle title="Matchs" subtitle="Calendrier des rencontres" />
-        <MatchList matches={matches} today={today} initialMonth={initialMonth} />
+        <MatchList matches={matches} hasMore={hasMore} today={today} initialMonth={initialMonth} />
       </main>
     </>
   )

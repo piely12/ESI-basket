@@ -69,13 +69,19 @@ function matchdayLabel(key: string) {
 
 export default function MatchList({
   matches,
+  hasMore: initialHasMore,
   today,
   initialMonth,
 }: {
   matches: MatchRow[]
+  hasMore: boolean
   today: string
   initialMonth: string
 }) {
+  const [loadedMatches, setLoadedMatches] = useState(matches)
+  const [hasMore, setHasMore] = useState(initialHasMore)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const [loadError, setLoadError] = useState('')
   const [filter, setFilter] = useState<Filter>('tous')
   const [scope, setScope] = useState<Scope>('lions')
   const [viewMonth, setViewMonth] = useState(initialMonth)
@@ -83,7 +89,7 @@ export default function MatchList({
   const [calendarOpen, setCalendarOpen] = useState(false)
   const selectedWeek = selectedDate ? weekKey(selectedDate) : null
 
-  const indexedMatches = useMemo(() => matches.map((match) => ({ match, day: dateKey(match.scheduled_at) })), [matches])
+  const indexedMatches = useMemo(() => loadedMatches.map((match) => ({ match, day: dateKey(match.scheduled_at) })), [loadedMatches])
   const scopedMatches = useMemo(
     () => scope === 'lions' ? indexedMatches.filter(({ match }) => match.home_team.is_esi || match.away_team.is_esi) : indexedMatches,
     [indexedMatches, scope],
@@ -129,6 +135,23 @@ export default function MatchList({
     if (filtered.length) {
       const target = nextFilter === 'termines' ? filtered[filtered.length - 1] : filtered[0]
       setViewMonth(target.day.slice(0, 7))
+    }
+  }
+
+  async function loadMoreMatches() {
+    if (loadingMore || !hasMore) return
+    setLoadingMore(true)
+    setLoadError('')
+    try {
+      const response = await fetch(`/api/public/matches?offset=${loadedMatches.length}`, { credentials: 'same-origin' })
+      const result = await response.json() as { matches?: MatchRow[]; hasMore?: boolean; error?: string }
+      if (!response.ok || !Array.isArray(result.matches)) throw new Error(result.error || 'Chargement impossible.')
+      setLoadedMatches((current) => [...current, ...result.matches!])
+      setHasMore(Boolean(result.hasMore))
+    } catch {
+      setLoadError('Impossible de charger la suite du calendrier. Réessaie.')
+    } finally {
+      setLoadingMore(false)
     }
   }
 
@@ -225,7 +248,7 @@ export default function MatchList({
 
         {selectedWeek && weekEnd && <p className="text-sm font-semibold text-brand">Semaine du {shortDate(selectedWeek)} au {shortDate(weekEnd)}</p>}
 
-        {matches.length === 0 ? (
+        {loadedMatches.length === 0 ? (
           <EmptyState title="Le calendrier est vide" description="Les matchs apparaîtront ici dès leur programmation." />
         ) : selectedWeek && weekMatches?.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-[var(--line)] bg-[var(--surface)] p-6 text-center text-sm text-[var(--ink-soft)]">
@@ -253,6 +276,12 @@ export default function MatchList({
             {filter === 'avenir' ? 'Aucun match à venir pour le moment.' : filter === 'termines' ? 'Aucun match terminé dans le calendrier.' : 'Aucun match dans le calendrier pour le moment.'}
           </div>
         )}
+        {hasMore && <div className="grid justify-items-center gap-2 pt-2">
+          {loadError && <p role="alert" className="text-sm text-danger">{loadError}</p>}
+          <button type="button" onClick={loadMoreMatches} disabled={loadingMore} className="min-h-11 rounded-full border border-[var(--line)] bg-[var(--surface)] px-5 text-sm font-semibold text-brand transition hover:bg-[var(--paper)] disabled:cursor-wait disabled:opacity-60">
+            {loadingMore ? 'Chargement…' : 'Charger plus de matchs'}
+          </button>
+        </div>}
       </section>
 
     </div>

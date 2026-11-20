@@ -6,6 +6,12 @@ export default function TeamBanner({ team, season = '2026-2027' }) {
   if (!config) return null
 
   const longName = config.name.length > 6
+  const ghostSize = longName
+    ? 'text-[clamp(1.55rem,6vw,6rem)] sm:text-[clamp(3rem,8vw,6rem)]'
+    : 'text-[clamp(4rem,12vw,9rem)]'
+  const titleSize = longName
+    ? 'text-[clamp(1.25rem,5.2vw,4.4rem)] sm:text-[clamp(1.9rem,6vw,4.4rem)]'
+    : 'text-[clamp(2.55rem,8vw,6.2rem)]'
   const style = {
     '--team-bg': config.bg,
     '--team-left': config.left,
@@ -48,7 +54,7 @@ export default function TeamBanner({ team, season = '2026-2027' }) {
       {/* Sigle fantôme en arrière-plan */}
       <span
         aria-hidden="true"
-        className={`pointer-events-none absolute left-[40%] top-1/2 -translate-y-1/2 select-none whitespace-nowrap font-team-graffiti text-[clamp(4rem,12vw,9rem)] leading-none ${longName ? 'text-[clamp(3rem,8vw,6rem)]' : ''}`}
+        className={`pointer-events-none absolute left-[40%] top-1/2 -translate-y-1/2 select-none whitespace-nowrap font-team-graffiti leading-none ${ghostSize}`}
         style={{ color: 'transparent', WebkitTextStroke: '1.5px var(--team-ghost)' }}
       >
         {config.name}
@@ -57,7 +63,7 @@ export default function TeamBanner({ team, season = '2026-2027' }) {
       {/* Nom et saison */}
       <div className="absolute inset-y-0 left-[35%] z-10 flex w-[61%] flex-col justify-center overflow-hidden">
         <p className="mb-1 text-[9px] font-medium uppercase tracking-[0.28em] text-[var(--team-title)] sm:text-[10px]">ÉQUIPE</p>
-        <h1 className={`m-0 whitespace-nowrap font-team-graffiti text-[clamp(2.55rem,8vw,6.2rem)] leading-[0.96] text-[var(--team-title)] ${longName ? 'text-[clamp(1.9rem,6vw,4.4rem)]' : ''}`}>
+        <h1 className={`m-0 whitespace-nowrap font-team-graffiti leading-[0.96] text-[var(--team-title)] ${titleSize}`}>
           {config.name}
         </h1>
         <p className="mt-1 text-[9px] font-semibold uppercase tracking-[0.16em] text-[var(--team-title)] sm:text-[10px]">Saison {season}</p>

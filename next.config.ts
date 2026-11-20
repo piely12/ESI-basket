@@ -19,6 +19,7 @@ const supabaseHostname = (() => {
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  compress: true,
   images: {
     remotePatterns: [{
       protocol: 'https',
@@ -32,6 +33,8 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       { source: "/:path*", headers: securityHeaders },
+      { source: "/images/:path*", headers: [{ key: "Cache-Control", value: "public, max-age=86400, stale-while-revalidate=604800" }] },
+      { source: "/logos/:path*", headers: [{ key: "Cache-Control", value: "public, max-age=86400, stale-while-revalidate=604800" }] },
       { source: "/login", headers: [{ key: "Cache-Control", value: "private, no-store, max-age=0, must-revalidate" }] },
       { source: "/premiere-connexion", headers: [{ key: "Cache-Control", value: "private, no-store, max-age=0, must-revalidate" }] },
     ];

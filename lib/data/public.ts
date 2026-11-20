@@ -139,12 +139,17 @@ export async function getLastResult(): Promise<MatchRow | null> {
   return matches.find((match) => match.home_team.is_esi || match.away_team.is_esi) ?? null
 }
 
-export async function getAllMatches(): Promise<MatchRow[]> {
+export const MATCHES_PAGE_SIZE = 40
+
+export async function getMatchesPage(offset = 0, limit = MATCHES_PAGE_SIZE): Promise<{ matches: MatchRow[]; hasMore: boolean }> {
   const supabase = await createClient()
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('matches').select(MATCH_SELECT)
     .order('scheduled_at', { ascending: true })
-  return (data as unknown as MatchRow[]) ?? []
+    .range(offset, offset + limit)
+  if (error) throw new Error('Impossible de charger le calendrier des matchs.')
+  const rows = (data as unknown as MatchRow[]) ?? []
+  return { matches: rows.slice(0, limit), hasMore: rows.length > limit }
 }
 
 export type LineupRow = {
@@ -424,21 +429,19 @@ export async function getPublishedNews(limit = 9): Promise<PublishedNews[]> {
 
 export async function getPlayerProfile(id: string, filters: { seasonId?: string; round?: number; period?: 'all' | '30d' | '90d' } = {}) {
   const supabase = await createClient()
-  const [{ data: player }, { data: seasonRows }] = await Promise.all([
+  const [{ data: player }, { data: seasonRows }, { data: allStats }] = await Promise.all([
     supabase.from('players').select('id, first_name, last_name, jersey_number, position, photo_url, status').eq('id', id).maybeSingle(),
     supabase.from('seasons').select('id,name,is_current').order('starts_on', { ascending: false }),
+    supabase.from('match_player_stats')
+      .select('id,match_id,minutes_played,points,rebounds,rebounds_defensive,rebounds_offensive,assists,steals,blocks,turnovers,personal_fouls,fg_made,fg_attempted,three_made,three_attempted,ft_made,ft_attempted,published_at,match:matches(id,scheduled_at,status,home_score,away_score,round_number,season_id,home_team:teams!matches_home_team_id_fkey(id,name,is_esi),away_team:teams!matches_away_team_id_fkey(id,name,is_esi))')
+      .eq('player_id', id).not('published_at', 'is', null)
+      .order('created_at', { ascending: false }),
   ])
   if (!player) return null
   const seasons = seasonRows ?? []
   const season = seasons.find((item) => item.id === filters.seasonId)
     ?? seasons.find((item) => item.is_current)
     ?? seasons[0]
-
-  const { data: allStats } = await supabase
-    .from('match_player_stats')
-    .select('id,match_id,minutes_played,points,rebounds,rebounds_defensive,rebounds_offensive,assists,steals,blocks,turnovers,personal_fouls,fg_made,fg_attempted,three_made,three_attempted,ft_made,ft_attempted,published_at,match:matches(id,scheduled_at,status,home_score,away_score,round_number,season_id,home_team:teams!matches_home_team_id_fkey(id,name,is_esi),away_team:teams!matches_away_team_id_fkey(id,name,is_esi))')
-    .eq('player_id', id).not('published_at', 'is', null)
-    .order('created_at', { ascending: false })
 
   const typedStats = (allStats ?? []) as unknown as PlayerProfileStat[]
   const seasonStats = season ? typedStats

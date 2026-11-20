@@ -6,12 +6,12 @@ export default function PlayerCardVisual({ player, variant = 'profile' }: { play
   const card = playerCardInfo(player)
   const status = card.status === 'blesse' ? 'Blessé' : card.status === 'suspendu' ? 'Suspendu' : null
   const photo = card.photo_url
-    ? <Image src={card.photo_url} alt={`${card.first_name} ${card.last_name}`} width={360} height={460} unoptimized className="h-full w-full object-cover object-top" />
+    ? <Image src={card.photo_url} alt={`${card.first_name} ${card.last_name}`} width={360} height={460} sizes="(min-width: 1024px) 340px, (min-width: 640px) 42vw, 40vw" className="h-full w-full object-cover object-top" />
     : <div className="grid h-full w-full place-items-center bg-on-brand/5 font-display text-5xl text-on-brand/45">{card.first_name?.[0]}{card.last_name?.[0]}</div>
 
   if (variant === 'compact') {
     const compactPhoto = card.photo_url ? (
-      <Image src={card.photo_url} alt={`${card.first_name} ${card.last_name}`} width={360} height={460} unoptimized className="h-full w-full object-cover object-bottom" />
+      <Image src={card.photo_url} alt={`${card.first_name} ${card.last_name}`} width={360} height={460} sizes="(min-width: 1024px) 33vw, 50vw" className="h-full w-full object-cover object-bottom" />
     ) : null
 
     return (

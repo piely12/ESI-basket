@@ -21,18 +21,28 @@ export default function MatchNotificationsSetting() {
   const [feedback, setFeedback] = useState('')
 
   useEffect(() => {
-    const isSupported = typeof window !== 'undefined' && window.isSecureContext
-      && 'Notification' in window && 'serviceWorker' in navigator && 'PushManager' in window
-    setSupported(isSupported)
-    if (!isSupported) {
-      if (typeof window !== 'undefined' && !window.isSecureContext) setSupportMessage('Les notifications nécessitent une connexion sécurisée HTTPS.')
-      else if (typeof window !== 'undefined' && (!('serviceWorker' in navigator) || !('PushManager' in window))) {
-        setSupportMessage('Les notifications push ne sont pas disponibles ici. Sur iPhone ou iPad, ouvre l’application depuis l’écran d’accueil.')
-      } else setSupportMessage('Ce navigateur ne prend pas en charge les notifications.')
-      return
-    }
-    void navigator.serviceWorker.ready.then((registration) => registration.pushManager.getSubscription())
-      .then((subscription) => setEnabled(Boolean(subscription))).catch(() => setEnabled(false))
+    let active = true
+    void Promise.resolve().then(async () => {
+      const isSupported = window.isSecureContext
+        && 'Notification' in window && 'serviceWorker' in navigator && 'PushManager' in window
+      if (!active) return
+      setSupported(isSupported)
+      if (!isSupported) {
+        if (!window.isSecureContext) setSupportMessage('Les notifications nécessitent une connexion sécurisée HTTPS.')
+        else if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+          setSupportMessage('Les notifications push ne sont pas disponibles ici. Sur iPhone ou iPad, ouvre l’application depuis l’écran d’accueil.')
+        } else setSupportMessage('Ce navigateur ne prend pas en charge les notifications.')
+        return
+      }
+      try {
+        const registration = await navigator.serviceWorker.ready
+        const subscription = await registration.pushManager.getSubscription()
+        if (active) setEnabled(Boolean(subscription))
+      } catch {
+        if (active) setEnabled(false)
+      }
+    })
+    return () => { active = false }
   }, [])
 
   async function toggle() {
@@ -45,9 +55,15 @@ export default function MatchNotificationsSetting() {
       if (subscription) {
         const endpoint = subscription.endpoint
         await subscription.unsubscribe()
-        await fetch('/api/push/subscriptions', { method: 'DELETE', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ endpoint }) })
+        const removed = await fetch('/api/push/subscriptions', {
+          method: 'DELETE',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ endpoint }),
+        })
         setEnabled(false)
-        setFeedback('Notifications désactivées sur cet appareil.')
+        setFeedback(removed.ok
+          ? 'Les notifications sont désactivées sur cet appareil.'
+          : 'Les notifications sont désactivées sur cet appareil. Le nettoyage du serveur sera réessayé plus tard.')
         return
       }
 
@@ -66,7 +82,11 @@ export default function MatchNotificationsSetting() {
       }
       const { publicKey } = await keyResponse.json() as { publicKey: string }
       const created = await registration.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: decodeKey(publicKey) })
-      const saved = await fetch('/api/push/subscriptions', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(created.toJSON()) })
+      const saved = await fetch('/api/push/subscriptions', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(created.toJSON()),
+      })
       if (!saved.ok) {
         await created.unsubscribe().catch(() => false)
         setFeedback(saved.status === 429
@@ -77,24 +97,33 @@ export default function MatchNotificationsSetting() {
         return
       }
       setEnabled(true)
-      setFeedback('Les notifications des matchs de l’ESI Basketball sont activées.')
+      setFeedback('C’est activé ! Tu recevras les actualités des matchs de l’ESI Basketball sur cet appareil.')
     } catch (error) {
       console.error('[push] Activation failed', error)
-      setFeedback('Impossible de configurer les notifications pour le moment. Réessaie plus tard.')
+      setFeedback(Notification.permission === 'denied'
+        ? 'Les notifications sont bloquées dans les réglages du navigateur. Autorise-les pour ce site, puis réessaie.'
+        : 'Le navigateur n’a pas pu créer l’abonnement push. Vérifie que les notifications sont autorisées, puis réessaie.')
     } finally {
       setBusy(false)
     }
   }
 
-  return <section className="settings-card theme-card flex items-center gap-3.5 rounded-lg border border-[var(--line)] bg-[var(--surface)] p-4">
-    <div className="min-w-0 flex-1">
-      <h2 className="settings-card-title">Notifications de matchs</h2>
-      <p className="settings-card-description mt-1">Active les notifications pour suivre les matchs de l’ESI Basketball.</p>
-      {feedback && <p role="status" className="mt-2 text-sm text-muted-foreground">{feedback}</p>}
-      {!supported && <p className="mt-2 text-sm text-muted-foreground">{supportMessage}</p>}
+  return <section className="settings-card theme-card rounded-xl border border-[var(--line)] bg-[var(--surface)] p-4 sm:p-5">
+    <div className="flex items-center gap-3.5">
+      <span aria-hidden="true" className="grid size-11 shrink-0 place-items-center rounded-xl bg-gold/15 text-gold-deep">
+        <BellIcon />
+      </span>
+      <div className="min-w-0 flex-1">
+        <h2 className="settings-card-title">Notifications de matchs</h2>
+        <p className="settings-card-description mt-1">Ne manque aucun rendez-vous des Lions : active les notifications des matchs de l’ESI Basketball.</p>
+      </div>
     </div>
-    <button type="button" aria-pressed={enabled} aria-label={enabled ? 'Désactiver les notifications de matchs' : 'Activer les notifications de matchs'} title={enabled ? 'Désactiver les notifications' : 'Activer les notifications'} disabled={!supported || busy} onClick={toggle} className={`grid size-11 shrink-0 place-items-center rounded-xl border border-gold bg-gold text-gold-foreground transition-all hover:bg-gold-deep focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:cursor-not-allowed disabled:opacity-50 ${enabled ? 'shadow-md ring-2 ring-gold/35' : 'shadow-sm'}`}>
+    <button type="button" aria-pressed={enabled} disabled={!supported || busy} onClick={toggle}
+      className="mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2 font-semibold text-primary-foreground shadow-sm transition hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto">
       <BellIcon />
+      {busy ? 'Activation…' : enabled ? 'Désactiver les notifications' : 'Activer les notifications'}
     </button>
+    {feedback && <p role="status" aria-live="polite" className="mt-3 rounded-lg border border-[var(--line)] bg-[var(--paper)] px-3 py-2 text-sm text-[var(--ink)]">{feedback}</p>}
+    {!supported && supportMessage && <p role="status" className="mt-3 text-sm text-muted-foreground">{supportMessage}</p>}
   </section>
 }

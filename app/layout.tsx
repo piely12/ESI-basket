@@ -3,6 +3,8 @@ import { headers } from 'next/headers'
 import Script from 'next/script'
 import SplashScreen from '@/components/SplashScreen'
 import PwaInstallPrompt from '@/components/PwaInstallPrompt'
+import SiteSpeedInsights from '@/components/SiteSpeedInsights'
+import { barlow, bebasNeue, jakartaSans, permanentMarker } from './fonts'
 import "./globals.css";
 
 
@@ -17,7 +19,7 @@ export const viewport: Viewport = { themeColor: 'oklch(0.3514 0.1269 16.8)' }
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const nonce = (await headers()).get('x-nonce') ?? undefined
   return (
-    <html lang="fr" suppressHydrationWarning>
+    <html lang="fr" className={`${barlow.variable} ${bebasNeue.variable} ${jakartaSans.variable} ${permanentMarker.variable}`} suppressHydrationWarning>
       <head>
         <Script id="lions-theme-session" strategy="beforeInteractive" nonce={nonce}>{`const root = document.documentElement;
           const applySavedTheme = () => {
@@ -34,6 +36,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         {children}
         <PwaInstallPrompt />
         <SplashScreen />
+        <SiteSpeedInsights />
       </body>
     </html>
   );

@@ -168,8 +168,25 @@ export default function CompositionBoard({
             })}
           </div>
 
-          {/* Conserve ici la suite de ton JSX original si le fichier
-              contient d'autres sections après le bloc des joueurs. */}
+          <h3 className={styles.subsTitle}>LES REMPLAÇANTS</h3>
+          {bench.length > 0 ? (
+            <ul className={styles.subs} aria-label="Les sept remplaçants">
+              {bench.slice(0, 7).map(({ player }) => (
+                <li key={player.id}>
+                  <span className={styles.benchNumber}>{player.jersey_number ?? '—'}</span>
+                  <span className={styles.benchName}>{player.first_name} {player.last_name}</span>
+                  <span className={styles.benchPosition}>{player.position || 'REMPLAÇANT'}</span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className={styles.emptyBench}>Les remplaçants seront affichés après publication de la composition.</p>
+          )}
+
+          <div className={styles.coach}>
+            <span>COACH</span>
+            <strong>{team.is_esi ? 'SAIH PIELY' : coachName || '—'}</strong>
+          </div>
         </div>
       </div>
     </article>

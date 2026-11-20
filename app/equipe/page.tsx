@@ -3,6 +3,13 @@ import RosterGrid from './RosterGrid'
 import { getRoster } from '@/lib/data/public'
 import PageTitle from '@/components/PageTitle'
 
+const staff = [
+  { name: 'SAIH PIELY', role: 'Coach principal' },
+  { name: 'N’GUESSAN DANIEL-ANGE', role: 'Coach adjoint' },
+  { name: 'MELEDJE ELMIRA', role: 'Statisticienne' },
+  { name: 'KPANGBE NOURA', role: 'Vidéaste' },
+]
+
 export default async function EquipePage() {
   const roster = await getRoster()
 
@@ -12,6 +19,15 @@ export default async function EquipePage() {
       <main className="reference-page-shell page-title-page mx-auto max-w-screen-2xl px-4 pb-28 pt-8 sm:px-6 lg:px-10 2xl:px-12">
         <PageTitle title="Les Lions de l’ESI" subtitle={`${roster.length} joueur${roster.length === 1 ? '' : 's'}`} />
         <RosterGrid players={roster} />
+        <section aria-labelledby="staff-title" className="mt-10 border-t border-border pt-6">
+          <h2 id="staff-title" className="mb-4 font-display text-3xl uppercase text-brand">Le staff</h2>
+          <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            {staff.map((person) => <li key={person.role} className="rounded-xl border border-border bg-card p-4">
+              <p className="font-semibold uppercase leading-snug text-foreground">{person.name}</p>
+              <p className="mt-1 text-sm font-bold uppercase tracking-[0.12em] text-gold-deep">{person.role}</p>
+            </li>)}
+          </ul>
+        </section>
       </main>
     </>
   )
