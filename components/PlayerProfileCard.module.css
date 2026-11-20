@@ -15,11 +15,11 @@
 
 .watermark {
   position: absolute;
-  z-index: 0;
-  top: -12cqw;
+  z-index: 2;
+  top: -8cqw;
   right: 8cqw;
   color: #6A242E;
-  font-size: 86cqw;
+  font-size: 68cqw;
   font-weight: 900;
   line-height: 0.9;
   pointer-events: none;
@@ -39,7 +39,7 @@
 
 .portrait {
   position: absolute;
-  z-index: 2;
+  z-index: 3;
   right: 0;
   bottom: 0;
   display: grid;
@@ -86,7 +86,7 @@
 
 .content {
   position: absolute;
-  z-index: 3;
+  z-index: 4;
   inset: 5.7% auto 6.5% 5.8%;
   display: flex;
   width: 50%;
@@ -140,6 +140,10 @@
   flex: 0 0 auto;
   margin-top: 4cqw;
   background: #E0B054;
+}
+
+.physicalDetails {
+  display: contents;
 }
 
 .measurements {
@@ -197,7 +201,7 @@
   position: absolute;
   top: 5.8%;
   right: 5.8%;
-  z-index: 4;
+  z-index: 5;
   border-radius: 999px;
   background: #E0B054;
   padding: 0.55em 1em;
@@ -223,6 +227,12 @@
 
   .identity {
     margin-top: 0;
+  }
+
+  .physicalDetails {
+    display: flex;
+    flex-direction: column;
+    gap: 1cqw;
   }
 
   .familyName {

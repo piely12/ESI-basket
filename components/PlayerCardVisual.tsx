@@ -66,12 +66,14 @@ export default function PlayerCardVisual({ player, variant = 'profile' }: { play
           <p className={styles.familyName}>{card.first_name}</p>
           <h2 className={styles.firstName}>{card.last_name}</h2>
         </div>
-        <div aria-hidden="true" className={styles.goldRule} />
-        {(height || weight) && <dl className={styles.measurements}>
-          {height && <div className={styles.measurement}><dt>TAILLE</dt><dd>{height}</dd></div>}
-          {height && weight && <div aria-hidden="true" className={styles.measurementDivider} />}
-          {weight && <div className={styles.measurement}><dt>POIDS</dt><dd>{weight}</dd></div>}
-        </dl>}
+        {(height || weight) && <div className={styles.physicalDetails}>
+          <div aria-hidden="true" className={styles.goldRule} />
+          <dl className={styles.measurements}>
+            {height && <div className={styles.measurement}><dt>TAILLE</dt><dd>{height}</dd></div>}
+            {height && weight && <div aria-hidden="true" className={styles.measurementDivider} />}
+            {weight && <div className={styles.measurement}><dt>POIDS</dt><dd>{weight}</dd></div>}
+          </dl>
+        </div>}
         <p className={styles.position}>{card.position || 'Poste à préciser'}</p>
       </div>
       {status && <span className={styles.status}>{status}</span>}
