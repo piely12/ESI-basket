@@ -1,0 +1,275 @@
+.card {
+  position: relative;
+  isolation: isolate;
+  container-type: inline-size;
+  width: 100%;
+  max-width: 1076px;
+  aspect-ratio: 1076 / 780;
+  margin-inline: auto;
+  overflow: hidden;
+  border-radius: clamp(10px, 3.2vw, 34px);
+  color: #FCF8F2;
+  background: #5C161E;
+  font-family: "Big Shoulders Display", "Arial Narrow", "Roboto Condensed", sans-serif;
+}
+
+.watermark {
+  position: absolute;
+  z-index: 0;
+  top: -12cqw;
+  right: 8cqw;
+  color: #6A242E;
+  font-size: 86cqw;
+  font-weight: 900;
+  line-height: 0.9;
+  pointer-events: none;
+  user-select: none;
+}
+
+.arch {
+  position: absolute;
+  z-index: 1;
+  top: 0;
+  right: 10%;
+  width: 29%;
+  height: 100%;
+  border-radius: 50% 50% 0 0;
+  background: #6A242E;
+}
+
+.portrait {
+  position: absolute;
+  z-index: 2;
+  right: 0;
+  bottom: 0;
+  display: grid;
+  width: 53%;
+  height: 92%;
+  align-items: end;
+  justify-items: center;
+}
+
+.photo {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center bottom;
+  filter: drop-shadow(0 1cqw 1.6cqw rgb(20 0 0 / 30%));
+}
+
+.placeholder {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.initials {
+  position: absolute;
+  right: 10%;
+  bottom: 17%;
+  z-index: 0;
+  color: rgb(252 248 242 / 12%);
+  font-size: 12cqw;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.silhouette {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+}
+
+.content {
+  position: absolute;
+  z-index: 3;
+  inset: 5.7% auto 6.5% 5.8%;
+  display: flex;
+  width: 50%;
+  min-width: 0;
+  flex-direction: column;
+}
+
+.number {
+  margin: 0;
+  color: #E0B054;
+  font-size: 17cqw;
+  font-weight: 900;
+  letter-spacing: -0.04em;
+  line-height: 0.78;
+}
+
+.identity {
+  min-width: 0;
+  margin-top: 2.8cqw;
+}
+
+.familyName {
+  max-width: 82%;
+  margin: 0;
+  overflow: hidden;
+  color: #CDB2B6;
+  font-size: 6.7cqw;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  line-height: 1;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.firstName {
+  max-width: 82%;
+  margin: 1cqw 0 0;
+  color: #FCF8F2;
+  font-size: 13.5cqw;
+  font-weight: 900;
+  letter-spacing: -0.025em;
+  line-height: 0.88;
+  overflow-wrap: anywhere;
+  text-transform: uppercase;
+}
+
+.goldRule {
+  width: 68%;
+  height: max(1px, 0.2cqw);
+  flex: 0 0 auto;
+  margin-top: 4cqw;
+  background: #E0B054;
+}
+
+.measurements {
+  display: flex;
+  width: 82%;
+  min-width: 0;
+  align-items: stretch;
+  gap: 5cqw;
+  margin: 1.5cqw 0 0;
+}
+
+.measurement {
+  min-width: 0;
+}
+
+.measurement dt {
+  color: #CDB2B6;
+  font-size: 3cqw;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  line-height: 1;
+}
+
+.measurement dd {
+  margin: 1.2cqw 0 0;
+  color: #FCF8F2;
+  font-size: 6.7cqw;
+  font-weight: 900;
+  line-height: 0.95;
+  white-space: nowrap;
+}
+
+.measurementDivider {
+  width: max(1px, 0.2cqw);
+  flex: 0 0 auto;
+  margin-block: 0.5cqw;
+  background: #E0B054;
+}
+
+.position {
+  max-width: 95%;
+  margin: auto 0 0;
+  overflow: hidden;
+  color: #E0B054;
+  font-size: 6.5cqw;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  line-height: 1;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.status {
+  position: absolute;
+  top: 5.8%;
+  right: 5.8%;
+  z-index: 4;
+  border-radius: 999px;
+  background: #E0B054;
+  padding: 0.55em 1em;
+  color: #5C161E;
+  font-family: "Big Shoulders Display", "Arial Narrow", sans-serif;
+  font-size: clamp(10px, 1.4cqw, 15px);
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+@container (max-width: 480px) {
+  .content {
+    inset-block: 4.5%;
+  }
+
+  .number {
+    font-size: 15cqw;
+  }
+
+  .identity {
+    margin-top: 2cqw;
+  }
+
+  .familyName {
+    font-size: 6.2cqw;
+  }
+
+  .firstName {
+    max-width: 82%;
+    margin-top: 0.8cqw;
+    font-size: 10.2cqw;
+    line-height: 0.84;
+  }
+
+  .goldRule {
+    margin-top: 2.7cqw;
+  }
+
+  .measurements {
+    gap: 4.2cqw;
+    margin-top: 1cqw;
+  }
+
+  .measurement dt {
+    font-size: 2.8cqw;
+  }
+
+  .measurement dd {
+    margin-top: 0.8cqw;
+    font-size: 5.4cqw;
+  }
+
+  .position {
+    font-size: 5.8cqw;
+  }
+}
+
+@container (max-width: 340px) {
+  .number {
+    font-size: 14cqw;
+  }
+
+  .firstName {
+    font-size: 9.5cqw;
+  }
+
+  .measurement dd {
+    font-size: 5.1cqw;
+  }
+
+  .position {
+    font-size: 5.4cqw;
+  }
+}

@@ -21,6 +21,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   return (
     <html lang="fr" className={`${barlow.variable} ${bebasNeue.variable} ${jakartaSans.variable} ${permanentMarker.variable}`} suppressHydrationWarning>
       <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;900&display=swap" rel="stylesheet" />
         <Script id="lions-theme-session" strategy="beforeInteractive" nonce={nonce}>{`const root = document.documentElement;
           const applySavedTheme = () => {
             let saved = null;
