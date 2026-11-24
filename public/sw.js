@@ -23,6 +23,30 @@ self.addEventListener('push', (event) => {
   }))
 })
 
+// The browser may rotate a push subscription (expiry, key refresh). Resubscribe
+// with the same server key and register the new endpoint so reminders keep
+// reaching this device; the old endpoint is removed on the server.
+self.addEventListener('pushsubscriptionchange', (event) => {
+  event.waitUntil((async () => {
+    const options = event.oldSubscription?.options
+    if (!options?.applicationServerKey) return
+    const subscription = event.newSubscription
+      || await self.registration.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: options.applicationServerKey })
+    await fetch('/api/push/subscriptions', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(subscription.toJSON()),
+    })
+    if (event.oldSubscription?.endpoint && event.oldSubscription.endpoint !== subscription.endpoint) {
+      await fetch('/api/push/subscriptions', {
+        method: 'DELETE',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ endpoint: event.oldSubscription.endpoint }),
+      })
+    }
+  })().catch(() => undefined))
+})
+
 self.addEventListener('notificationclick', (event) => {
   event.notification.close()
   const target = new URL(event.notification.data?.url || '/matchs', self.location.origin)

@@ -33,7 +33,7 @@ export default async function MatchDetailPage({ params }: { params: Promise<{ id
         </Link>
         <MatchCard match={match} large />
 
-        {isEsiMatch && <section aria-label="Composition ESI">
+        {isEsiMatch && <section id="composition" aria-label="Composition ESI" className="scroll-mt-20 sm:scroll-mt-28">
           {!lineupVisible ? <div className="rounded-xl border border-[var(--line)] bg-[var(--surface)] p-6 text-center">
             <div className="font-display text-5xl text-[var(--ink-soft)]">N/A</div>
             <p className="mt-1 text-sm text-[var(--ink-soft)]">La composition sera dévoilée le jour du match.</p>

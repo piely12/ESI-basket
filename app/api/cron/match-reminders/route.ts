@@ -1,5 +1,6 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { sendWebPush } from '@/lib/push/webpush'
+import { buildMatchReminderPayload } from '@/lib/push/match-reminder'
 
 export const dynamic = 'force-dynamic'
 
@@ -15,11 +16,9 @@ export async function GET(request: Request) {
 
   try {
     const admin = createAdminClient()
-    const today = new Date()
-    const weekday = today.getUTCDay()
-    if (weekday !== 6) return Response.json({ ok: true, sent: 0, reason: 'not_saturday' })
-
-    const date = today.toISOString().slice(0, 10)
+    // Runs every day at 11:00 in Abidjan (UTC+0 all year, no daylight saving):
+    // a reminder goes out on the day of each ESI match, whatever the weekday.
+    const date = new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Abidjan' }).format(new Date())
     const start = new Date(`${date}T00:00:00.000Z`).toISOString()
     const end = new Date(new Date(start).getTime() + 24 * 60 * 60 * 1000).toISOString()
     const { data: esi, error: teamError } = await admin.from('teams').select('id').eq('is_esi', true).maybeSingle()
@@ -36,13 +35,12 @@ export async function GET(request: Request) {
     if (matchesError) throw matchesError
     if (!matches?.length) return Response.json({ ok: true, sent: 0, reason: 'no_esi_match_today' })
 
-    const matchLines = matches.map((match) => {
+    const payload = buildMatchReminderPayload(matches.map((match) => {
       const home = Array.isArray(match.home) ? match.home[0] : match.home
       const away = Array.isArray(match.away) ? match.away[0] : match.away
       const opponent = match.home_team_id === esi.id ? away : home
-      const time = new Intl.DateTimeFormat('fr-FR', { hour: '2-digit', minute: '2-digit', timeZone: 'Africa/Abidjan' }).format(new Date(match.scheduled_at))
-      return `ESI – ${opponent?.name ?? 'match'} à ${time}${match.location ? ` (${match.location})` : ''}`
-    })
+      return { id: match.id, scheduledAt: match.scheduled_at, opponent: opponent?.name ?? null, location: match.location }
+    }))
     const { data: subscriptions, error: subsError } = await admin.from('match_reminder_subscriptions').select('id,endpoint,p256dh,auth')
     if (subsError) throw subsError
 
@@ -54,11 +52,6 @@ export async function GET(request: Request) {
       if (claimError) throw claimError
       if (!claim) continue
 
-      const payload = {
-        title: matches.length === 1 ? 'Les Lions jouent aujourd’hui !' : `Les Lions ont ${matches.length} matchs aujourd’hui`,
-        body: matchLines.join(' · ').slice(0, 900),
-        url: '/matchs',
-      }
       try {
         await sendWebPush({ endpoint: subscription.endpoint, keys: { p256dh: subscription.p256dh, auth: subscription.auth } }, JSON.stringify(payload), publicKey, privateKey)
         sent += 1
