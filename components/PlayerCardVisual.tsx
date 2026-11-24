@@ -1,6 +1,7 @@
 import Image from 'next/image'
 import type { Player } from '@/lib/data/public'
 import { playerCardInfo } from '@/lib/data/player-card'
+import { playerCardImage, CARD_WIDTH, CARD_HEIGHT } from '@/lib/data/player-card-images'
 import styles from './PlayerProfileCard.module.css'
 
 export default function PlayerCardVisual({ player, variant = 'profile' }: { player: Player; variant?: 'profile' | 'compact' }) {
@@ -8,6 +9,29 @@ export default function PlayerCardVisual({ player, variant = 'profile' }: { play
   const status = card.status === 'blesse' ? 'Blessé' : card.status === 'suspendu' ? 'Suspendu' : null
   const isLoukouProfilePhoto = variant === 'profile' && card.jersey_number === 33 && card.first_name === 'KONAN' && card.last_name === 'LOUKOU'
   const profilePhotoUrl = isLoukouProfilePhoto ? '/images/players/konan-loukou.png' : card.photo_url
+  const cardImage = playerCardImage(card.jersey_number)
+  const cardAlt = `Carte joueur #${card.jersey_number} ${card.last_name} ${card.first_name}, ${(card.position ?? '').toLowerCase()}`
+
+  if (cardImage) {
+    const compact = variant === 'compact'
+    return (
+      <article className="relative w-full">
+        <Image
+          src={compact ? cardImage.small : cardImage.full}
+          alt={cardAlt}
+          width={CARD_WIDTH}
+          height={CARD_HEIGHT}
+          sizes={compact ? '(min-width: 1024px) 33vw, 50vw' : '(min-width: 1024px) 900px, 100vw'}
+          priority={!compact}
+          unoptimized
+          style={{ width: '100%', height: 'auto', aspectRatio: `${CARD_WIDTH} / ${CARD_HEIGHT}` }}
+          className="block rounded-[3.2%] shadow-[0_5px_14px_var(--match-card-shadow)]"
+        />
+        {status && <span className="absolute right-2 top-2 rounded bg-danger px-2 py-1 text-[10px] font-bold uppercase leading-none text-on-brand">{status}</span>}
+      </article>
+    )
+  }
+
   const photo = profilePhotoUrl
     ? <Image src={profilePhotoUrl} alt={`Photo de ${card.first_name} ${card.last_name}`} width={560} height={720} sizes="(min-width: 1024px) 48vw, 52vw" className={`${styles.photo} ${isLoukouProfilePhoto ? styles.photoBlend : ''}`} />
     : null
