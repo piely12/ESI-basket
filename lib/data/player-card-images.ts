@@ -23,7 +23,7 @@ export const CARD_HEIGHT = 780
 
 // Incrémenter cette valeur quand une carte est remplacée : les fichiers sont servis avec un
 // cache d'un an (immutable), le paramètre ?v= force les téléphones à recharger la nouvelle image.
-export const CARD_VERSION = 3
+export const CARD_VERSION = 4
 
 export function playerCardImage(jerseyNumber: number | null) {
   const file = jerseyNumber === null ? undefined : CARD_FILES[jerseyNumber]
