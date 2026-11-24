@@ -18,7 +18,7 @@
   z-index: 2;
   top: -8cqw;
   right: 8cqw;
-  color: #6A242E;
+  color: #7A2D38;
   font-size: 68cqw;
   font-weight: 900;
   line-height: 0.9;
@@ -56,6 +56,10 @@
   object-fit: contain;
   object-position: center bottom;
   filter: drop-shadow(0 1cqw 1.6cqw rgb(20 0 0 / 30%));
+}
+
+.photoBlend {
+  mix-blend-mode: lighten;
 }
 
 .placeholder {

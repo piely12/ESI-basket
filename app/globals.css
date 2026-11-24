@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* `dark:` suit l'interrupteur de l'app (classe .dark), pas le réglage du système. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 /* Thème clair : valeurs visuelles existantes conservées. */
 :root {
   color-scheme: light;
@@ -97,99 +100,127 @@
   --composition-divider: oklch(0.34 0.04 18);
   --sk-base: oklch(0.91 0.018 65);
   --sk-shine: oklch(0.98 0.008 80);
+  --surface-raised: var(--muted);
 }
 
-/* Thème sombre : charbon et or, avec le bordeaux en accent. */
+/*
+ * Thème sombre « Bordeaux velours ».
+ * - Neutres prune très sombres (teinte 10) : tout l'écran appartient à
+ *   l'univers bordeaux du club, sans virer au brun.
+ * - Trois niveaux de surface (fond < carte < surélevé) et des filets
+ *   opaques prune, nets et bien visibles, pour délimiter chaque bloc.
+ * - Bordeaux lumineux pour les boutons et les moments forts, or pour les
+ *   accents (actif, chiffres, étiquettes, focus), titres en ivoire.
+ */
 .dark {
   color-scheme: dark;
-  --background: oklch(0.14 0 0);
-  --foreground: oklch(0.95 0.005 85);
-  --card: oklch(0.2 0 0);
-  --card-foreground: oklch(0.95 0.005 85);
-  --primary: oklch(0.2 0 0);
-  --primary-foreground: oklch(0.95 0.005 85);
-  --logo-pill: oklch(0.95 0.005 85);
-  --page-gradient: linear-gradient(180deg, #020204, #0b0a10);
-  --settings-card: #0c0d12;
-  --settings-card-border: #26252b;
-  --settings-text: #ffffff;
-  --settings-muted: #b3b3bd;
-  --settings-divider: #191a1f;
-  --settings-toggle-on: #f6b54d;
-  --settings-toggle-off: #33323a;
-  --settings-toggle-thumb: #fdfdfd;
-  --public-header-bg: linear-gradient(90deg, #200109, #3b0412 62%, #1e030a);
-  --public-header-border: #4a2930;
-  --public-header-team: #f4c75a;
-  --public-header-league: #f1eadf;
-  --public-nav-bg: #08090e;
-  --public-nav-border: #241f24;
-  --public-nav-text: #c8c8d0;
-  --public-nav-active-bg: #460211;
-  --public-nav-active-icon: #e0627f;
-  --public-nav-active-label: #f8dcd0;
-  --public-nav-underline: #f6c453;
-  --public-header-stripe: rgb(122 21 48 / 40%);
-  --brand: oklch(0.85 0.15 85);
-  --muted: oklch(0.24 0 0);
-  --muted-foreground: oklch(0.72 0.01 85);
-  --border: oklch(0.85 0.15 85 / 22%);
-  --input: oklch(0.85 0.15 85 / 30%);
-  --ring: oklch(0.85 0.15 85);
-  --gold: oklch(0.85 0.15 85);
-  --gold-foreground: oklch(0.22 0.07 18);
-  --gold-deep: oklch(0.8 0.14 80);
-  --destructive: oklch(0.7 0.19 25);
-  --wine: oklch(0.5 0.17 20);
-  --hero: linear-gradient(135deg, oklch(0.25 0 0), oklch(0.18 0 0));
 
+  /* Fondations */
+  --background: oklch(0.13 0.016 10);
+  --foreground: oklch(0.965 0.01 60);
+  --card: oklch(0.18 0.022 10);
+  --card-foreground: var(--foreground);
+  --surface-raised: oklch(0.225 0.028 10);
+  --muted: var(--surface-raised);
+  --muted-foreground: oklch(0.74 0.025 20);
+  --border: oklch(0.34 0.045 12);
+  --input: oklch(0.41 0.055 12);
+
+  /* Marque */
+  --primary: oklch(0.5 0.17 15);
+  --primary-foreground: oklch(0.985 0.006 60);
+  --brand: oklch(0.92 0.04 75);
+  --gold: oklch(0.83 0.145 80);
+  --gold-foreground: oklch(0.22 0.07 18);
+  --gold-deep: oklch(0.74 0.15 62);
+  --ring: var(--gold);
+  --wine: oklch(0.5 0.17 15);
+  --destructive: oklch(0.7 0.19 25);
+  --hero: linear-gradient(135deg, oklch(0.34 0.12 14), oklch(0.2 0.05 10));
+  --home-hero-bg: radial-gradient(120% 90% at 85% 0%, oklch(0.44 0.16 16), transparent 60%), linear-gradient(160deg, oklch(0.32 0.115 14), oklch(0.19 0.05 10));
+  --logo-pill: var(--foreground);
+  --page-gradient: var(--background);
+
+  /* Réglages */
+  --settings-card: var(--card);
+  --settings-card-border: var(--border);
+  --settings-text: var(--foreground);
+  --settings-muted: var(--muted-foreground);
+  --settings-divider: oklch(0.28 0.035 12);
+  --settings-toggle-on: var(--gold);
+  --settings-toggle-off: oklch(0.3 0.03 10);
+  --settings-toggle-thumb: oklch(0.99 0.004 60);
+
+  /* En-tête et navigation publics */
+  --public-header-bg: linear-gradient(100deg, oklch(0.19 0.06 12), oklch(0.27 0.1 14) 60%, oklch(0.19 0.06 12));
+  --public-header-border: oklch(0.32 0.06 12);
+  --public-header-team: var(--gold);
+  --public-header-league: var(--foreground);
+  --public-header-stripe: oklch(0.5 0.17 15 / 28%);
+  --public-nav-bg: oklch(0.12 0.016 10 / 88%);
+  --public-nav-border: oklch(0.3 0.04 12);
+  --public-nav-text: oklch(0.72 0.025 20);
+  --public-nav-active-bg: oklch(0.5 0.17 15 / 30%);
+  --public-nav-active-icon: var(--gold);
+  --public-nav-active-label: var(--foreground);
+  --public-nav-underline: var(--gold);
+
+  /* Compatibilité */
   --maroon-900: var(--brand);
   --maroon-700: var(--brand);
   --maroon-panel: var(--primary);
   --gold-500: var(--gold);
   --on-brand: var(--primary-foreground);
-  --on-brand-soft: var(--muted-foreground);
-  --gold-soft: color-mix(in oklch, var(--gold) 30%, transparent);
-  --line-strong: var(--ring);
+  --on-brand-soft: oklch(0.985 0.006 60 / 78%);
+  --gold-soft: color-mix(in oklch, var(--gold) 16%, transparent);
+  --line-strong: oklch(0.5 0.07 14);
   --danger: var(--destructive);
-  --danger-bg: oklch(0.24 0.055 25);
-  --danger-border: oklch(0.52 0.12 25);
-  --success: oklch(0.78 0.12 145);
-  --success-bg: oklch(0.23 0.05 145);
-  --success-border: oklch(0.48 0.09 145);
-  --warning: oklch(0.84 0.12 78);
-  --warning-bg: oklch(0.25 0.07 78);
-  --warning-border: oklch(0.52 0.09 78);
+  --danger-bg: oklch(0.23 0.05 22);
+  --danger-border: oklch(0.5 0.12 25);
+  --success: oklch(0.8 0.13 150);
+  --success-bg: oklch(0.22 0.04 150);
+  --success-border: oklch(0.46 0.08 150);
+  --warning: oklch(0.85 0.12 80);
+  --warning-bg: oklch(0.24 0.05 70);
+  --warning-border: oklch(0.5 0.08 75);
   --neutral-bg: var(--muted);
   --neutral-ink: var(--muted-foreground);
-  --player-card-gradient: linear-gradient(115deg, oklch(0.23 0 0), oklch(0.18 0 0) 48%, oklch(0.14 0 0));
+
+  /* Fiche joueur */
+  --player-card-gradient: linear-gradient(115deg, oklch(0.3 0.09 14), oklch(0.21 0.04 12) 50%, oklch(0.16 0.02 10));
   --player-card-gold: var(--gold);
   --player-card-orange: var(--gold-deep);
   --player-card-first-name: var(--foreground);
-  --match-card-background: var(--primary);
+
+  /* Cartes de match */
+  --match-card-background: var(--card);
   --match-card-gold: var(--gold);
   --match-card-deep-gold: var(--gold-deep);
   --card-muted-text: var(--muted-foreground);
-  --match-card-status-bg: var(--muted);
+  --match-card-status-bg: oklch(0.11 0.016 10 / 70%);
   --match-card-border: var(--border);
-  --match-card-shadow: oklch(0 0 0 / 35%);
-  --match-card-shadow-hover: oklch(0 0 0 / 48%);
-  --match-card-overlay: oklch(0.5 0.17 20 / 18%);
-  --match-card-details: oklch(0.11 0 0 / 64%);
-  --card-gradient: linear-gradient(135deg, var(--card), var(--background));
+  --match-card-shadow: oklch(0.05 0.015 10 / 55%);
+  --match-card-shadow-hover: oklch(0.05 0.015 10 / 70%);
+  --match-card-overlay: oklch(0.5 0.17 15 / 30%);
+  --match-card-details: oklch(0.1 0.015 10 / 60%);
+  --card-gradient: linear-gradient(150deg, oklch(0.22 0.04 12), oklch(0.165 0.02 10));
   --card-border: var(--border);
-  --header-surface: oklch(0.11 0 0 / 94%);
+  --header-surface: oklch(0.13 0.016 10 / 90%);
+
+  /* Composition */
   --composition-bg: var(--background);
   --composition-panel: var(--card);
   --composition-paint: var(--primary);
   --composition-ink: var(--foreground);
   --composition-muted: var(--muted-foreground);
   --composition-gold: var(--gold);
-  --composition-deep-ink: oklch(0.12 0 0);
-  --composition-line: oklch(0.67 0.12 82 / 76%);
-  --composition-divider: oklch(0.67 0.12 82 / 28%);
-  --sk-base: oklch(0.23 0 0);
-  --sk-shine: oklch(0.3 0 0);
+  --composition-deep-ink: oklch(0.14 0.02 10);
+  --composition-line: oklch(0.83 0.145 80 / 60%);
+  --composition-divider: oklch(0.3 0.04 12);
+
+  /* Squelettes de chargement */
+  --sk-base: oklch(0.21 0.025 10);
+  --sk-shine: oklch(0.27 0.03 10);
 }
 
 @theme inline {
@@ -407,8 +438,9 @@ body {
   z-index: -1;
   pointer-events: none;
   background:
-    radial-gradient(45rem 24rem at 100% -5%, oklch(0.85 0.15 85 / 7%), transparent 70%),
-    radial-gradient(40rem 24rem at 0% 110%, oklch(0.5 0.17 20 / 16%), transparent 70%);
+    radial-gradient(42rem 26rem at 110% -8%, oklch(0.5 0.17 15 / 22%), transparent 70%),
+    radial-gradient(36rem 22rem at -10% 105%, oklch(0.5 0.17 15 / 12%), transparent 70%),
+    radial-gradient(28rem 18rem at 0% 0%, oklch(0.83 0.145 80 / 3%), transparent 70%);
 }
 
 .hero-panel { background: var(--hero); }
@@ -487,25 +519,40 @@ body {
   .home-hero-stats small { font-size: 11px; }
 }
 .dark .hero-panel {
-  border: 1px solid oklch(0.85 0.15 85 / 28%);
-  border-left: 4px solid var(--wine);
-  box-shadow: 0 20px 50px -24px oklch(0 0 0 / 80%);
+  border: 1px solid oklch(0.95 0.03 60 / 9%);
+  box-shadow: inset 0 1px 0 oklch(1 0 0 / 6%), 0 24px 48px -24px oklch(0.05 0.01 18 / 85%);
+}
+.dark .home-hero {
+  box-shadow: inset 0 1px 0 oklch(1 0 0 / 8%), 0 28px 56px -28px oklch(0.05 0.01 18 / 90%);
+}
+
+/* Surfaces : un reflet d'arête en haut donne du relief sans contour doré. */
+.dark .theme-card,
+.dark .settings-card {
+  box-shadow: inset 0 1px 0 oklch(1 0 0 / 7%), 0 14px 30px -18px oklch(0.05 0.015 10 / 80%);
 }
 
 .dark header.sticky {
-  background: oklch(0.11 0 0 / 94%);
-  border-bottom-color: oklch(0.85 0.15 85 / 30%);
+  background: var(--header-surface);
+  border-bottom-color: var(--border);
+  -webkit-backdrop-filter: saturate(140%) blur(14px);
+  backdrop-filter: saturate(140%) blur(14px);
 }
-.dark nav.fixed {
-  background: oklch(0.11 0 0 / 96%);
-  border-top-color: oklch(0.85 0.15 85 / 26%);
+.dark nav.fixed,
+.dark .public-bottom-nav {
+  background: var(--public-nav-bg);
+  border-top-color: var(--public-nav-border);
+  -webkit-backdrop-filter: saturate(140%) blur(16px);
+  backdrop-filter: saturate(140%) blur(16px);
 }
 
+.dark :where(input, select, textarea)::placeholder { color: oklch(0.76 0.022 55 / 70%); }
+
 .dark ::selection {
-  background: oklch(0.85 0.15 85 / 30%);
+  background: oklch(0.83 0.145 80 / 28%);
   color: var(--foreground);
 }
-.dark { scrollbar-color: oklch(0.4 0 0) var(--background); }
+.dark { scrollbar-color: oklch(0.34 0.025 18) var(--background); }
 
 :where(a, button, input, select, textarea):focus-visible {
   outline: 3px solid var(--ring);
@@ -581,3 +628,23 @@ html[data-splash-enabled="true"]:not([data-splash-seen="true"]) .lions-splash { 
   *, *::before, *::after { animation: none !important; transition: none !important; }
   .skeleton-reveal { opacity: 1; }
 }
+
+/* Ligne ESI du classement : surlignage bordeaux en fondu plutôt qu'un aplat. */
+.dark .standings-esi-row {
+  background: linear-gradient(90deg, oklch(0.5 0.17 15 / 45%), oklch(0.5 0.17 15 / 10%));
+}
+
+/* En-tête public en verre sombre : le contenu défile dessous, flouté. */
+.dark .public-header {
+  -webkit-backdrop-filter: saturate(140%) blur(16px);
+  backdrop-filter: saturate(140%) blur(16px);
+}
+
+/* Fiches joueurs compactes : filet net autour de la carte en mode sombre. */
+.dark .player-card-compact {
+  box-shadow: inset 0 0 0 1px var(--border), inset 0 1px 0 oklch(1 0 0 / 8%), 0 10px 24px -14px var(--match-card-shadow);
+}
+
+/* Bordures plus franches au survol et sur les champs actifs. */
+.dark .theme-card:hover { border-color: var(--line-strong); }
+.dark :where(input, select, textarea):where(:not([type="checkbox"], [type="radio"])):focus { border-color: var(--gold); }

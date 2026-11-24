@@ -12,6 +12,9 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // The standalone Vite card demo has its own TypeScript/Oxlint checks.
+    "esi-player-card/**",
+    "player-card-demo/**",
   ]),
 ]);
 

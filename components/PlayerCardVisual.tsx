@@ -6,8 +6,10 @@ import styles from './PlayerProfileCard.module.css'
 export default function PlayerCardVisual({ player, variant = 'profile' }: { player: Player; variant?: 'profile' | 'compact' }) {
   const card = playerCardInfo(player)
   const status = card.status === 'blesse' ? 'Blessé' : card.status === 'suspendu' ? 'Suspendu' : null
-  const photo = card.photo_url
-    ? <Image src={card.photo_url} alt={`Photo de ${card.first_name} ${card.last_name}`} width={560} height={720} sizes="(min-width: 1024px) 48vw, 52vw" className="h-full w-full object-contain object-bottom drop-shadow-[0_10px_18px_rgba(20,0,0,0.32)]" />
+  const isLoukouProfilePhoto = variant === 'profile' && card.jersey_number === 33 && card.first_name === 'KONAN' && card.last_name === 'LOUKOU'
+  const profilePhotoUrl = isLoukouProfilePhoto ? '/images/players/konan-loukou.png' : card.photo_url
+  const photo = profilePhotoUrl
+    ? <Image src={profilePhotoUrl} alt={`Photo de ${card.first_name} ${card.last_name}`} width={560} height={720} sizes="(min-width: 1024px) 48vw, 52vw" className={`${styles.photo} ${isLoukouProfilePhoto ? styles.photoBlend : ''}`} />
     : null
 
   if (variant === 'compact') {
@@ -16,7 +18,7 @@ export default function PlayerCardVisual({ player, variant = 'profile' }: { play
       : null
 
     return (
-      <article className="relative isolate aspect-[4/3] w-full overflow-hidden rounded-[10px] bg-[image:var(--player-card-gradient)] text-on-brand shadow-[0_5px_14px_var(--match-card-shadow)]">
+      <article className="player-card-compact relative isolate aspect-[4/3] w-full overflow-hidden rounded-[10px] bg-[image:var(--player-card-gradient)] text-on-brand shadow-[0_5px_14px_var(--match-card-shadow)]">
         <div aria-hidden="true" className="absolute inset-y-0 left-0 z-20 w-1.5 bg-gradient-to-b from-[var(--gold-500)] to-[var(--gold-deep)]" />
         <div aria-hidden="true" className="absolute bottom-0 left-1.5 right-0 z-20 h-[3px] bg-gradient-to-r from-[var(--gold-500)] to-transparent" />
         <div aria-hidden="true" className="pointer-events-none absolute -right-1 -top-3 z-[3] select-none font-display text-[7rem] leading-none text-[var(--gold-500)]/15 sm:text-[8rem]">

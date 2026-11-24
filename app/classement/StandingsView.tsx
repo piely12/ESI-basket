@@ -42,7 +42,7 @@ export default function StandingsView({ rows }: { rows: StandingRow[] }) {
                 aria-label={`Voir le classement de ${isEsi ? 'ESI' : row.team.name}, rang ${row.rank}`}
                 onClick={() => openTeam(row.team_id)}
                 onKeyDown={(event) => handleRowKeyDown(event, row.team_id)}
-                className={`cursor-pointer border-t border-border transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold ${isEsi ? 'bg-primary text-primary-foreground' : 'text-foreground hover:bg-muted'}`}
+                className={`cursor-pointer border-t border-border transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold ${isEsi ? 'bg-primary text-primary-foreground standings-esi-row' : 'text-foreground hover:bg-muted'}`}
               >
                 <td className={`w-20 whitespace-nowrap px-3 py-3.5 font-display text-xl sm:px-4 ${isEsi ? 'shadow-[inset_4px_0_0_var(--gold)]' : ''}`}>
                   <span className={`mr-2 inline-block size-[7px] rounded-full align-middle ${qualified ? 'bg-success' : 'bg-muted-foreground/50'}`} role="img" aria-label={qualified ? 'Qualifiée' : 'Hors qualification'} />

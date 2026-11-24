@@ -180,9 +180,9 @@
   color: var(--ink);
 }
 
-:global(.dark) .card { box-shadow: 0 4px 14px var(--match-card-shadow); }
+:global(.dark) .card { box-shadow: inset 0 1px 0 oklch(1 0 0 / 5%), 0 18px 36px -20px var(--match-card-shadow); }
 :global(.dark) .card:hover,
-:global(.dark) .otherCard:hover { border-color: var(--gold-500); }
+:global(.dark) .otherCard:hover { border-color: color-mix(in oklch, var(--gold-500) 55%, transparent); }
 :global(.dark) .otherTeams .teamName { color: var(--ink); }
 
 @media (max-width: 600px) {
