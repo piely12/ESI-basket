@@ -1,7 +1,8 @@
 /**
  * Texte et lien de la notification « jour de match ».
  *
- * Exemple : « Les Lions 🦁 de l’ESI affrontent l’ESCAE à 18h au gymnase du Sud. »
+ * Titre : « Jour de Match à ESI Land. »
+ * Texte : « Les Lions affrontent l’ESCAE à 18h »
  * Un clic ouvre la page du match, directement sur la composition.
  */
 
@@ -13,7 +14,7 @@ export type ReminderMatch = {
 }
 
 const TIME_ZONE = 'Africa/Abidjan'
-export const MATCH_REMINDER_TITLE = 'Jour de match à ESI-Land.'
+export const MATCH_REMINDER_TITLE = 'Jour de Match à ESI Land.'
 
 /** « l’ESCAE », « l’E. Projet » ; sans article si le nom ne commence pas par une voyelle. */
 export function withArticle(team: string) {
@@ -30,21 +31,9 @@ export function formatMatchTime(iso: string) {
   return minute === '00' ? `${hour}h` : `${hour}h${minute}`
 }
 
-const MASCULINE = /^(gymnase|palais|stade|terrain|complexe|centre|dôme|dome|parquet|campus)\b/i
-const FEMININE = /^(salle|halle|arène|arene|cour|maison|base)\b/i
-
-/** « au gymnase du Sud », « à la salle omnisports », « à Cocody ». */
-export function formatVenue(location: string) {
-  const place = location.trim()
-  if (MASCULINE.test(place)) return `au ${place.charAt(0).toLowerCase()}${place.slice(1)}`
-  if (FEMININE.test(place)) return `à la ${place.charAt(0).toLowerCase()}${place.slice(1)}`
-  return `à ${place}`
-}
-
 export function matchReminderSentence(match: ReminderMatch) {
-  const opponent = match.opponent ? ` ${withArticle(match.opponent)}` : ''
-  const venue = match.location?.trim() ? ` ${formatVenue(match.location)}` : ''
-  return `Les Lions 🦁 de l’ESI affrontent${opponent || ' leur adversaire'} à ${formatMatchTime(match.scheduledAt)}${venue}.`
+  const opponent = match.opponent?.trim() ? withArticle(match.opponent) : 'leur adversaire'
+  return `Les Lions affrontent ${opponent} à ${formatMatchTime(match.scheduledAt)}`
 }
 
 export function matchReminderUrl(match: Pick<ReminderMatch, 'id'>) {
@@ -55,7 +44,7 @@ export function matchReminderUrl(match: Pick<ReminderMatch, 'id'>) {
 export function buildMatchReminderPayload(matches: ReminderMatch[]) {
   return {
     title: MATCH_REMINDER_TITLE,
-    body: matches.map(matchReminderSentence).join(' ').slice(0, 900),
+    body: matches.map(matchReminderSentence).join(' · ').slice(0, 900),
     url: matchReminderUrl(matches[0]),
   }
 }

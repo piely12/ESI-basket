@@ -7,7 +7,6 @@ import {
   detectPlatform,
   enableErrorMessage,
   enableMatchNotifications,
-  getRegistration,
   isStandalone,
   pushSupported,
   saveSubscription,
@@ -149,23 +148,6 @@ export default function MatchNotificationsSetting() {
     setFeedback({ tone: 'ok', text: 'Notifications désactivées.' })
   }
 
-  async function sendTest() {
-    setFeedback(null)
-    try {
-      const registration = await getRegistration()
-      await registration.showNotification('Test réussi ✅', {
-        body: 'Les notifications fonctionnent.',
-        icon: '/icons/esi-192.png',
-        badge: '/icons/esi-192.png',
-        tag: 'lions-test',
-        data: { url: '/matchs' },
-      })
-      setFeedback({ tone: 'ok', text: 'Test envoyé. Rien reçu ? Vérifie « Ne pas déranger ».' })
-    } catch {
-      setFeedback({ tone: 'error', text: 'Test impossible sur cet appareil.' })
-    }
-  }
-
   async function run(action: () => Promise<void>) {
     if (busy) return
     setBusy(true)
@@ -193,7 +175,7 @@ export default function MatchNotificationsSetting() {
           <h2 id="match-notifications-title" className="settings-card-title">Notifications de matchs</h2>
           {status === 'on' && <span className="rounded-full border border-success-border bg-success-bg px-2 py-0.5 text-xs font-bold text-success">Activées</span>}
         </div>
-        <p className="settings-card-description mt-1">Un rappel à 11h, chaque jour de match.</p>
+        <p className="settings-card-description mt-1">Active les notifications pour ne pas manquer les actualités des Lions de l’ESI Basket.</p>
       </div>
     </div>
 
@@ -203,16 +185,10 @@ export default function MatchNotificationsSetting() {
       {busy ? 'Activation…' : 'Activer les notifications'}
     </button>}
 
-    {status === 'on' && <div className="mt-4 flex flex-col gap-2 sm:flex-row">
-      <button type="button" disabled={busy} onClick={() => void run(sendTest)}
-        className={`${buttonClass} border border-[var(--line)] bg-transparent text-[var(--ink)] hover:border-[var(--line-strong)]`}>
-        Tester
-      </button>
-      <button type="button" disabled={busy} onClick={() => void run(disable)}
-        className={`${buttonClass} text-[var(--ink-soft)] hover:text-[var(--ink)]`}>
-        {busy ? 'Un instant…' : 'Désactiver'}
-      </button>
-    </div>}
+    {status === 'on' && <button type="button" disabled={busy} onClick={() => void run(disable)}
+      className={`${buttonClass} mt-4 w-full border border-[var(--line)] bg-transparent text-[var(--ink-soft)] hover:border-[var(--line-strong)] hover:text-[var(--ink)] sm:w-auto`}>
+      {busy ? 'Un instant…' : 'Désactiver les notifications'}
+    </button>}
 
     {status === 'ios-install' && <div className="mt-4 rounded-lg border border-[var(--line)] bg-[var(--paper)] p-3.5">
       <p className="text-sm font-semibold text-[var(--ink)]">Sur iPhone, installe d’abord l’app :</p>
