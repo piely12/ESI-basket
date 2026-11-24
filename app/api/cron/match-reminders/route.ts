@@ -1,6 +1,7 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { sendWebPush } from '@/lib/push/webpush'
 import { buildMatchReminderPayload } from '@/lib/push/match-reminder'
+import { vapidPublicKey } from '@/lib/push/config'
 
 export const dynamic = 'force-dynamic'
 
@@ -9,7 +10,7 @@ export async function GET(request: Request) {
   if (!secret || request.headers.get('authorization') !== `Bearer ${secret}`) {
     return Response.json({ error: 'unauthorized' }, { status: 401 })
   }
-  const publicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY
+  const publicKey = vapidPublicKey()
   const privateKey = process.env.VAPID_PRIVATE_KEY
   const subject = process.env.VAPID_SUBJECT
   if (!publicKey || !privateKey || !subject) return Response.json({ error: 'push_not_configured' }, { status: 503 })
