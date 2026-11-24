@@ -3,6 +3,7 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import NotificationNudge from '@/components/NotificationNudge'
 
 const LINKS = [
   { href: '/', label: 'Accueil' },
@@ -66,6 +67,7 @@ export default function PublicNav() {
           </Link>
         ))}
       </nav>
+      <NotificationNudge />
     </>
   )
 }

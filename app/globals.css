@@ -648,3 +648,79 @@ html[data-splash-enabled="true"]:not([data-splash-seen="true"]) .lions-splash { 
 /* Bordures plus franches au survol et sur les champs actifs. */
 .dark .theme-card:hover { border-color: var(--line-strong); }
 .dark :where(input, select, textarea):where(:not([type="checkbox"], [type="radio"])):focus { border-color: var(--gold); }
+
+/* Message du jour : invitation à activer la cloche de notification. */
+.notification-nudge {
+  position: fixed;
+  z-index: 45;
+  right: 12px;
+  bottom: calc(82px + env(safe-area-inset-bottom));
+  left: 12px;
+  display: flex;
+  max-width: 30rem;
+  align-items: center;
+  gap: 12px;
+  margin-inline: auto;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: var(--card);
+  padding: 12px 10px 12px 12px;
+  color: var(--card-foreground);
+  box-shadow: 0 18px 40px -16px oklch(0.1 0.02 18 / 45%);
+  animation: nudge-in 420ms cubic-bezier(.2, .8, .2, 1) both;
+}
+.dark .notification-nudge { box-shadow: inset 0 1px 0 oklch(1 0 0 / 7%), 0 18px 40px -16px oklch(0.03 0.01 10 / 85%); }
+.notification-nudge__bell {
+  display: grid;
+  width: 48px;
+  height: 48px;
+  flex: none;
+  place-items: center;
+  border: 0;
+  border-radius: 999px;
+  background: var(--gold);
+  color: var(--gold-foreground);
+  box-shadow: 0 0 0 4px color-mix(in oklch, var(--gold) 22%, transparent);
+  cursor: pointer;
+  transition: transform .15s ease;
+}
+.notification-nudge__bell:hover { transform: scale(1.06); }
+.notification-nudge__bell:disabled { cursor: wait; opacity: .7; }
+.notification-nudge__ring { transform-origin: 50% 8%; animation: bell-ring 2.4s ease-in-out 600ms infinite; }
+.notification-nudge__kicker {
+  margin: 0 0 2px;
+  color: var(--gold-deep);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+}
+.notification-nudge__text { margin: 0; font-size: 13.5px; font-weight: 500; line-height: 1.35; }
+.notification-nudge__text strong { color: var(--brand); font-weight: 800; }
+.notification-nudge__text[data-tone="error"] { color: var(--danger); }
+.notification-nudge__text[data-tone="ok"] { color: var(--success); font-weight: 700; }
+.notification-nudge__close {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  flex: none;
+  align-self: flex-start;
+  place-items: center;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted-foreground);
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+}
+.notification-nudge__close:hover { background: var(--muted); color: var(--foreground); }
+@keyframes nudge-in { from { opacity: 0; transform: translateY(14px) scale(.98); } to { opacity: 1; transform: none; } }
+@keyframes bell-ring {
+  0%, 50%, 100% { transform: rotate(0); }
+  8% { transform: rotate(16deg); }
+  16% { transform: rotate(-14deg); }
+  24% { transform: rotate(10deg); }
+  32% { transform: rotate(-6deg); }
+  40% { transform: rotate(3deg); }
+}
