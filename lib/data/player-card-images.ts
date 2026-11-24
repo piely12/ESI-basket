@@ -4,7 +4,7 @@
 const CARD_FILES: Record<number, string> = {
   0: 'carte_kouassi_famien_1',
   1: 'carte_amon_jean_loic_1',
-  2: 'carte_botchi_pethuel_1',
+  2: 'carte_botchi_pethuel_2',
   4: 'carte_yoboue_micael_1',
   5: 'carte_marc_gbago_2',
   6: 'carte_mboua_salomon_1',
@@ -23,7 +23,7 @@ export const CARD_HEIGHT = 780
 
 // Incrémenter cette valeur quand une carte est remplacée : les fichiers sont servis avec un
 // cache d'un an (immutable), le paramètre ?v= force les téléphones à recharger la nouvelle image.
-export const CARD_VERSION = 2
+export const CARD_VERSION = 3
 
 export function playerCardImage(jerseyNumber: number | null) {
   const file = jerseyNumber === null ? undefined : CARD_FILES[jerseyNumber]
