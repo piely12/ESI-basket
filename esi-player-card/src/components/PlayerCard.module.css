@@ -1,0 +1,208 @@
+:global(:root) {
+  --bordeaux: #5C161E;
+  --or: #E0B054;
+  --blanc: #FCF8F2;
+  --rose: #CDB2B6;
+  --bordeaux-clair: #7A2D38;
+  --police-carte: "Big Shoulders Display", "Arial Narrow", "Roboto Condensed", sans-serif;
+}
+
+.card {
+  position: relative;
+  isolation: isolate;
+  container-type: inline-size;
+  container-name: player-card;
+  width: 100%;
+  aspect-ratio: 1076 / 780;
+  overflow: hidden;
+  border-radius: 3.2cqw;
+  color: var(--blanc);
+  background: var(--bordeaux);
+  box-shadow: 0 10px 28px rgb(32 0 5 / 16%);
+  font-family: var(--police-carte);
+}
+
+.watermark {
+  position: absolute;
+  z-index: -1;
+  top: -18cqw;
+  right: 3cqw;
+  color: #6A242E;
+  font-size: 62cqw;
+  font-weight: 900;
+  line-height: 1;
+  pointer-events: none;
+  user-select: none;
+}
+
+.playerPhoto {
+  position: absolute;
+  z-index: 0;
+  right: 1.5%;
+  bottom: 0;
+  display: grid;
+  width: 52%;
+  height: 91%;
+  align-items: end;
+  justify-items: center;
+  pointer-events: none;
+}
+
+.photo {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center bottom;
+  filter: drop-shadow(0 0.9cqw 1.6cqw rgb(20 0 0 / 28%));
+  transition: transform 220ms ease;
+}
+
+.arche {
+  overflow: hidden;
+  clip-path: inset(0 round 50% 50% 0 0);
+}
+
+.placeholder {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.placeholderSvg {
+  width: 100%;
+  height: 100%;
+}
+
+.initials {
+  fill: rgb(252 248 242 / 8%);
+  font-family: var(--police-carte);
+  font-size: 132px;
+  font-weight: 900;
+}
+
+.silhouette,
+.neck {
+  fill: var(--bordeaux-clair);
+}
+
+.content {
+  position: absolute;
+  z-index: 1;
+  inset: 5.6% auto 5.2% 5.6%;
+  display: flex;
+  width: 55%;
+  min-width: 0;
+  flex-direction: column;
+}
+
+.number {
+  margin: 0;
+  color: var(--or);
+  font-size: 17cqw;
+  font-weight: 900;
+  line-height: 0.78;
+}
+
+.identity {
+  width: 100%;
+  min-width: 0;
+  margin-top: 4cqw;
+}
+
+.familyName {
+  max-width: 82%;
+  margin: 0;
+  overflow: hidden;
+  color: var(--rose);
+  font-size: 6.7cqw;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  line-height: 1;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.firstName {
+  max-width: 82%;
+  margin: 1.5cqw 0 0;
+  overflow-wrap: anywhere;
+  color: var(--blanc);
+  font-size: 13.5cqw;
+  font-weight: 900;
+  letter-spacing: -0.025em;
+  line-height: 0.88;
+  text-transform: uppercase;
+}
+
+.goldRule {
+  width: 79%;
+  height: max(1px, 0.2cqw);
+  flex: 0 0 auto;
+  margin-top: 4.4cqw;
+  background: var(--or);
+}
+
+.measurements {
+  display: flex;
+  width: 82%;
+  min-width: 0;
+  align-items: stretch;
+  gap: 5cqw;
+  margin: 2.4cqw 0 0;
+}
+
+.measurement {
+  min-width: 0;
+}
+
+.measurement dt {
+  color: var(--rose);
+  font-size: 3cqw;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  line-height: 1;
+}
+
+.measurement dd {
+  margin: 1.2cqw 0 0;
+  color: var(--blanc);
+  font-size: 6.7cqw;
+  font-weight: 900;
+  line-height: 0.95;
+  white-space: nowrap;
+}
+
+.measurementDivider {
+  width: max(1px, 0.2cqw);
+  flex: 0 0 auto;
+  margin-block: 0.5cqw;
+  background: var(--or);
+}
+
+.position {
+  max-width: 90%;
+  margin: auto 0 0;
+  overflow: hidden;
+  color: var(--or);
+  font-size: 6.5cqw;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  line-height: 1;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+@media (hover: hover) and (min-width: 900px) {
+  .card:hover .photo {
+    transform: scale(1.035) translateY(4px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .photo {
+    transition: none;
+  }
+}
