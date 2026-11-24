@@ -1,7 +1,7 @@
 import type { Player } from '@/lib/data/public'
 
 const OFFICIAL_ROSTER: Record<number, Pick<Player, 'first_name' | 'last_name' | 'position'> & { height: string; weight: string }> = {
-  0: { first_name: 'KOUASSI', last_name: 'FAMIEN', position: 'Pivot', height: '1M92', weight: '85 KG' },
+  0: { first_name: 'KOUASSI', last_name: 'FAMIEN', position: 'Pivot', height: '1M92', weight: '83 KG' },
   1: { first_name: 'AMON', last_name: 'JEAN LOÏC', position: 'Meneur', height: '1M82', weight: '76 KG' },
   2: { first_name: 'BOTCHI', last_name: 'PETHUEL', position: 'Meneur', height: '1M78', weight: '71 KG' },
   3: { first_name: 'NEBIE', last_name: 'ANGE MICHEL', position: 'Meneur', height: '1M75', weight: '74 KG' },

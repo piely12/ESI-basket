@@ -5,6 +5,7 @@ const CARD_FILES: Record<number, string> = {
   0: 'carte_kouassi_famien_1',
   1: 'carte_amon_jean_loic_1',
   2: 'carte_botchi_pethuel_1',
+  4: 'carte_yoboue_micael_1',
   5: 'carte_marc_gbago_2',
   6: 'carte_mboua_salomon_1',
   7: 'carte_dalougou_christ_israel_1',
