@@ -21,8 +21,17 @@ const CARD_FILES: Record<number, string> = {
 export const CARD_WIDTH = 1076
 export const CARD_HEIGHT = 780
 
+// Incrémenter cette valeur quand une carte est remplacée : les fichiers sont servis avec un
+// cache d'un an (immutable), le paramètre ?v= force les téléphones à recharger la nouvelle image.
+export const CARD_VERSION = 2
+
 export function playerCardImage(jerseyNumber: number | null) {
   const file = jerseyNumber === null ? undefined : CARD_FILES[jerseyNumber]
   if (!file) return null
-  return { full: `/cartes/${file}.webp`, small: `/cartes/${file}_540.webp` }
+  const url = (suffix: string) => `/cartes/${file}${suffix}.webp?v=${CARD_VERSION}`
+  return {
+    full: url(''),
+    small: url('_540'),
+    srcSet: `${url('_540')} 540w, ${url('_800')} 800w, ${url('')} 1076w`,
+  }
 }

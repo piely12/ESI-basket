@@ -16,14 +16,17 @@ export default function PlayerCardVisual({ player, variant = 'profile' }: { play
     const compact = variant === 'compact'
     return (
       <article className="relative w-full">
-        <Image
+        {/* eslint-disable-next-line @next/next/no-img-element -- images déjà optimisées (WebP 540/800/1076), srcSet manuel */}
+        <img
           src={compact ? cardImage.small : cardImage.full}
+          srcSet={cardImage.srcSet}
+          sizes={compact ? '(min-width: 1024px) 33vw, 50vw' : '(min-width: 1024px) 900px, 100vw'}
           alt={cardAlt}
           width={CARD_WIDTH}
           height={CARD_HEIGHT}
-          sizes={compact ? '(min-width: 1024px) 33vw, 50vw' : '(min-width: 1024px) 900px, 100vw'}
-          priority={!compact}
-          unoptimized
+          loading={compact ? 'lazy' : 'eager'}
+          fetchPriority={compact ? 'auto' : 'high'}
+          decoding="async"
           style={{ width: '100%', height: 'auto', aspectRatio: `${CARD_WIDTH} / ${CARD_HEIGHT}` }}
           className="block rounded-[3.2%] shadow-[0_5px_14px_var(--match-card-shadow)]"
         />
