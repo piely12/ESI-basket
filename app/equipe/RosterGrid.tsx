@@ -27,7 +27,7 @@ export default function RosterGrid({ players }: { players: Player[] }) {
             </svg>
             {position && <span className="absolute right-0.5 top-0.5 size-2.5 rounded-full border-2 border-[var(--surface)] bg-[var(--gold-deep)]" />}
           </summary>
-          <div className="fixed inset-x-3 bottom-[calc(70px+env(safe-area-inset-bottom)+1rem)] z-40 max-h-[55vh] overflow-y-auto rounded-2xl border border-[var(--line)] bg-[var(--surface)] p-3 shadow-2xl sm:inset-x-auto sm:bottom-[calc(65px+1rem)] sm:left-1/2 sm:right-auto sm:top-auto sm:w-80 sm:-translate-x-1/2 sm:max-h-[60vh] sm:rounded-2xl sm:p-4" role="group" aria-label="Choisir un poste">
+          <div className="fixed inset-x-3 bottom-[calc(80px+env(safe-area-inset-bottom)+1rem)] z-40 max-h-[55vh] overflow-y-auto rounded-2xl border border-[var(--line)] bg-[var(--surface)] p-3 shadow-2xl sm:inset-x-auto sm:bottom-[calc(72px+1rem)] sm:left-1/2 sm:right-auto sm:top-auto sm:w-80 sm:-translate-x-1/2 sm:max-h-[60vh] sm:rounded-2xl sm:p-4" role="group" aria-label="Choisir un poste">
             <p className="px-3 py-2 text-xs font-bold uppercase tracking-wide text-[var(--ink-soft)]">Filtrer par poste</p>
             <div className="grid grid-cols-2 gap-1 sm:block">
             <button type="button" aria-label="Annuler le filtre et afficher tout l'effectif" onClick={() => { setPosition(null); if (filterMenu.current) filterMenu.current.open = false }} className="col-span-2 flex min-h-11 w-full items-center gap-2 rounded-lg border border-[var(--line)] bg-[var(--paper)] px-3 text-left text-sm font-bold text-brand hover:bg-[var(--line)] sm:col-span-1">

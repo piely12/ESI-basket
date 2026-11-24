@@ -376,12 +376,12 @@ body {
 .public-header-league img { width:auto; height:44px; border-radius:12px; border:1px solid var(--border); background:var(--logo-pill); padding:4px; object-fit:contain; }
 .public-header-league small { display:block; color:var(--public-header-team); font-size:9px; }
 .public-header-league strong { display:block; margin-top:3px; font-size:14px; font-weight:400; }
-.public-bottom-nav { position:fixed; inset:auto 0 0; z-index:30; display:grid; height:calc(65px + env(safe-area-inset-bottom)); grid-template-columns:repeat(6,minmax(0,1fr)); border-top:1px solid var(--public-nav-border); background:var(--public-nav-bg); padding-bottom:env(safe-area-inset-bottom); }
-.public-bottom-link { position:relative; display:flex; min-width:0; flex:1; flex-direction:column; align-items:center; justify-content:center; gap:2px; margin:4px; border-radius:16px; color:var(--public-nav-text); font-size:10px; line-height:1.15; text-decoration:none; }
+.public-bottom-nav { position:fixed; inset:auto 0 0; z-index:30; display:grid; height:calc(var(--bottom-nav-h, 72px) + env(safe-area-inset-bottom)); grid-template-columns:repeat(6,minmax(0,1fr)); border-top:1px solid var(--public-nav-border); background:var(--public-nav-bg); padding-bottom:env(safe-area-inset-bottom); }
+.public-bottom-link { position:relative; display:flex; min-width:0; flex:1; flex-direction:column; align-items:center; justify-content:flex-start; gap:clamp(3px,1vw,5px); margin:4px 2px; padding-top:clamp(7px,2vw,10px); border-radius:16px; color:var(--public-nav-text); font-size:clamp(10px,2.75vw,12px); font-weight:500; letter-spacing:-0.01em; line-height:1.1; text-decoration:none; }
 .public-bottom-link[aria-current="page"] { background:var(--public-nav-active-bg); color:var(--public-nav-active-label); }
 .public-bottom-link[aria-current="page"] svg { color:var(--public-nav-active-icon); }
-.public-bottom-link svg { width:20px; height:20px; color:inherit; }
-.public-bottom-link[aria-current="page"] span::after { position:absolute; right:50%; bottom:-5px; left:50%; height:2px; border-radius:2px; background:var(--public-nav-underline); content:""; transform:translateX(-50%); width:24px; }
+.public-bottom-link svg { width:clamp(24px,6.6vw,30px); height:clamp(24px,6.6vw,30px); flex-shrink:0; color:inherit; }
+.public-bottom-link[aria-current="page"] span::after { position:absolute; right:50%; bottom:-6px; left:50%; height:2px; border-radius:2px; background:var(--public-nav-underline); content:""; transform:translateX(-50%); width:24px; }
 @media (min-width:640px) { .public-header-inner { min-height:80px; padding:12px 20px; } .public-header-team { gap:12px; font-size:24px; } .public-header-team img { width:56px; height:56px; } .public-header-league img { height:64px; } .public-header-league small { font-size:14px; } .public-header-league strong { font-size:24px; } }
 .dark .public-header, html[data-theme="dark"] .public-header { border-color:var(--public-header-border); }
 .dark .public-header-inner, html[data-theme="dark"] .public-header-inner { max-width:80rem; }
@@ -397,9 +397,9 @@ body {
 .dark body:not(:has(.reference-page-shell)) .public-header-league small, html[data-theme="dark"] body:not(:has(.reference-page-shell)) .public-header-league small { font-size:10px; }
 .dark body:not(:has(.reference-page-shell)) .public-header-league strong, html[data-theme="dark"] body:not(:has(.reference-page-shell)) .public-header-league strong { font-size:17px; }
 @media (max-width:639px) {
-  .public-bottom-nav { height:calc(70px + env(safe-area-inset-bottom)); }
-  .public-bottom-link { gap:2px; margin:3px; border-radius:14px; font-size:10px; }
-  .public-bottom-link svg { width:20px; height:20px; }
+  .public-bottom-nav { --bottom-nav-h: 80px; }
+  @media (max-width:340px) { .public-bottom-link { font-size:9.5px; letter-spacing:-0.02em; } }
+  .public-bottom-link { border-radius:14px; }
   .public-header-inner { min-height:60px; padding:8px 14px; }
   .public-header-team { gap:8px; font-size:17px; }
   .public-header-team img { width:44px; height:44px; }
