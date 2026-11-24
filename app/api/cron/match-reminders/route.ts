@@ -6,13 +6,13 @@ import { vapidPublicKey } from '@/lib/push/config'
 export const dynamic = 'force-dynamic'
 
 export async function GET(request: Request) {
-  const secret = process.env.CRON_SECRET
+  const secret = process.env.CRON_SECRET?.trim()
   if (!secret || request.headers.get('authorization') !== `Bearer ${secret}`) {
     return Response.json({ error: 'unauthorized' }, { status: 401 })
   }
   const publicKey = vapidPublicKey()
-  const privateKey = process.env.VAPID_PRIVATE_KEY
-  const subject = process.env.VAPID_SUBJECT
+  const privateKey = process.env.VAPID_PRIVATE_KEY?.trim()
+  const subject = process.env.VAPID_SUBJECT?.trim()
   if (!publicKey || !privateKey || !subject) return Response.json({ error: 'push_not_configured' }, { status: 503 })
 
   try {

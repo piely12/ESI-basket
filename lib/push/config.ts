@@ -1,3 +1,5 @@
+import { serviceRoleKey } from '@/lib/supabase/admin'
+
 /*
  * Configuration des notifications push.
  *
@@ -15,10 +17,10 @@ export function vapidPublicKey() {
 /** État de la configuration, sans jamais exposer les valeurs. */
 export function pushConfigStatus() {
   return {
-    publicKey: process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY?.trim() ? 'variable' : 'intégrée au code',
+    publicKey: process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY?.trim() ? 'variable' : 'code',
     privateKey: Boolean(process.env.VAPID_PRIVATE_KEY?.trim()),
     subject: Boolean(process.env.VAPID_SUBJECT?.trim()),
     cronSecret: Boolean(process.env.CRON_SECRET?.trim()),
-    supabaseServiceRole: Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY?.trim()),
+    supabaseServiceRole: Boolean(serviceRoleKey()),
   }
 }
