@@ -128,7 +128,7 @@ export default function MatchNotificationsSetting() {
     } else if (result.reason === 'denied') {
       setStatus('denied')
     } else {
-      setFeedback({ tone: 'error', text: ENABLE_MESSAGES[result.reason] })
+      setFeedback({ tone: 'error', text: ENABLE_MESSAGES[result.reason] + (result.detail ? ` (${result.detail})` : '') })
     }
   }
 

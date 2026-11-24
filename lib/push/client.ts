@@ -7,7 +7,7 @@ export type Platform = 'ios' | 'android' | 'mac' | 'desktop'
 
 export type EnableResult =
   | { ok: true; registration: ServiceWorkerRegistration }
-  | { ok: false; reason: 'denied' | 'dismissed' | 'unavailable' | 'network' | 'rate-limited' | 'save-failed' }
+  | { ok: false; reason: 'denied' | 'dismissed' | 'unavailable' | 'network' | 'rate-limited' | 'save-failed'; detail?: string }
 
 export const PUSH_SYNC_KEY = 'lions-push-synced'
 const READY_TIMEOUT = 10_000
@@ -112,7 +112,12 @@ export async function enableMatchNotifications(): Promise<EnableResult> {
   const saved = await saveSubscription(subscription).catch(() => null)
   if (!saved?.ok) {
     await subscription.unsubscribe().catch(() => false)
-    return { ok: false, reason: saved?.status === 429 ? 'rate-limited' : 'save-failed' }
+    if (saved?.status === 429) return { ok: false, reason: 'rate-limited' }
+    // Shows the HTTP status and the server's error code so a screenshot is
+    // enough to know what failed (e.g. « 503 · 42P01 » = table missing).
+    const body = await saved?.json().catch(() => null) as { code?: string } | null
+    const detail = saved ? [String(saved.status), body?.code].filter(Boolean).join(' · ') : 'réseau'
+    return { ok: false, reason: 'save-failed', detail }
   }
   try { sessionStorage.setItem(PUSH_SYNC_KEY, '1') } catch { /* Storage unavailable. */ }
 

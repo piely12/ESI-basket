@@ -73,7 +73,7 @@ export default function NotificationNudge() {
         setMessage({ tone: 'ok', text: 'Notifications activées ✅' })
         window.setTimeout(() => setVisible(false), 2500)
       } else {
-        setMessage({ tone: 'error', text: ENABLE_MESSAGES[result.reason] })
+        setMessage({ tone: 'error', text: ENABLE_MESSAGES[result.reason] + (result.detail ? ` (${result.detail})` : '') })
       }
     } catch (error) {
       setMessage({ tone: 'error', text: enableErrorMessage(error) })

@@ -28,7 +28,13 @@ export async function POST(request: NextRequest) {
   const parsed = Subscription.safeParse(await request.json().catch(() => null))
   if (!parsed.success) return json({ error: 'invalid' }, 400)
 
-  const admin = createAdminClient()
+  let admin: ReturnType<typeof createAdminClient>
+  try {
+    admin = createAdminClient()
+  } catch (error) {
+    console.error('[push] Supabase admin client unavailable', describe(error))
+    return json({ error: 'unavailable', code: 'config' }, 503)
+  }
   try {
     const limit = await consumeRateLimit(admin, rlKey('push-subscribe', clientIp(request)), 10, 60 * 60)
     if (!limit.allowed) return json({ error: 'rate_limited' }, 429)
@@ -45,7 +51,9 @@ export async function POST(request: NextRequest) {
   }, { onConflict: 'endpoint' })
   if (error) {
     console.error('[push] Subscription could not be stored', describe(error))
-    return json({ error: 'unavailable' }, 503)
+    // Postgres/PostgREST codes (e.g. 42P01 = table missing) are not secret and
+    // let the settings card show what is wrong.
+    return json({ error: 'unavailable', code: (error as { code?: string }).code || 'database' }, 503)
   }
   return json({ ok: true })
 }
