@@ -18,8 +18,8 @@ export default function PlayerCardVisual({ player, variant = 'profile' }: { play
       <article className="relative w-full">
         {/* eslint-disable-next-line @next/next/no-img-element -- images déjà optimisées (WebP 540/800/1076), srcSet manuel */}
         <img
-          src={compact ? cardImage.small : cardImage.full}
-          srcSet={cardImage.srcSet}
+          src={compact ? cardImage.listSmall : cardImage.full}
+          srcSet={compact ? cardImage.listSrcSet : cardImage.srcSet}
           sizes={compact ? '(min-width: 1024px) 33vw, 50vw' : '(min-width: 1024px) 900px, 100vw'}
           alt={cardAlt}
           width={CARD_WIDTH}

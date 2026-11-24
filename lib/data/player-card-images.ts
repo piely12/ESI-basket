@@ -33,5 +33,8 @@ export function playerCardImage(jerseyNumber: number | null) {
     full: url(''),
     small: url('_540'),
     srcSet: `${url('_540')} 540w, ${url('_800')} 800w, ${url('')} 1076w`,
+    // Version « liste » (page Équipe) : sans taille ni poids, plus légère.
+    listSmall: url('_liste_540'),
+    listSrcSet: `${url('_liste_540')} 540w, ${url('_liste_800')} 800w`,
   }
 }
