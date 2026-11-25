@@ -30,23 +30,44 @@ export type BoxScoreRow = {
 
 export type BoxScoreTotal = Omit<BoxScoreRow, 'id' | 'playerId' | 'name' | 'jersey' | 'isMvp'>
 
-// Les 14 stats de la fiche de match, dans l'ordre de la fiche papier.
-const COLUMNS: { key: keyof BoxScoreTotal; top: string; bottom?: string; title: string }[] = [
-  { key: 'pf', top: 'F', title: 'Fautes' },
-  { key: 'twoA', top: '2 pts', bottom: 'tentés', title: 'Tirs à 2 points tentés' },
-  { key: 'twoM', top: '2 pts', bottom: 'réussis', title: 'Tirs à 2 points réussis' },
-  { key: 'threeA', top: '3 pts', bottom: 'tentés', title: 'Tirs à 3 points tentés' },
-  { key: 'threeM', top: '3 pts', bottom: 'réussis', title: 'Tirs à 3 points réussis' },
-  { key: 'ftA', top: 'LF', bottom: 'tentés', title: 'Lancers francs tentés' },
-  { key: 'ftM', top: 'LF', bottom: 'réussis', title: 'Lancers francs réussis' },
-  { key: 'rd', top: 'Reb', bottom: 'déf.', title: 'Rebonds défensifs' },
-  { key: 'ro', top: 'Reb', bottom: 'off.', title: 'Rebonds offensifs' },
-  { key: 'ast', top: 'PD', title: 'Passes décisives' },
-  { key: 'stl', top: 'INT', title: 'Interceptions' },
-  { key: 'blk', top: 'CTR', title: 'Contres' },
-  { key: 'tov', top: 'BP', title: 'Pertes de balle' },
-  { key: 'pts', top: 'PTS', title: 'Points' },
+// Les stats de la fiche de match, dans l'ordre de la fiche papier. Les tirs
+// réunissent réussis et tentés en une colonne « 2/5 » avec une barre de réussite.
+type Column =
+  | { kind: 'count'; key: keyof BoxScoreTotal; top: string; bottom?: string; title: string }
+  | { kind: 'ratio'; key: string; made: keyof BoxScoreTotal; attempted: keyof BoxScoreTotal; top: string; title: string }
+
+const COLUMNS: Column[] = [
+  { kind: 'count', key: 'pf', top: 'F', title: 'Fautes' },
+  { kind: 'ratio', key: 'two', made: 'twoM', attempted: 'twoA', top: '2 pts', title: 'Tirs à 2 points réussis / tentés' },
+  { kind: 'ratio', key: 'three', made: 'threeM', attempted: 'threeA', top: '3 pts', title: 'Tirs à 3 points réussis / tentés' },
+  { kind: 'ratio', key: 'ft', made: 'ftM', attempted: 'ftA', top: 'LF', title: 'Lancers francs réussis / tentés' },
+  { kind: 'count', key: 'rd', top: 'Reb', bottom: 'déf.', title: 'Rebonds défensifs' },
+  { kind: 'count', key: 'ro', top: 'Reb', bottom: 'off.', title: 'Rebonds offensifs' },
+  { kind: 'count', key: 'ast', top: 'PD', title: 'Passes décisives' },
+  { kind: 'count', key: 'stl', top: 'INT', title: 'Interceptions' },
+  { kind: 'count', key: 'blk', top: 'CTR', title: 'Contres' },
+  { kind: 'count', key: 'tov', top: 'BP', title: 'Pertes de balle' },
+  { kind: 'count', key: 'pts', top: 'PTS', title: 'Points' },
 ]
+
+/** « 2/5 » avec, dessous, une barre qui montre la part de tirs réussis. */
+function Ratio({ made, attempted }: { made: number; attempted: number }) {
+  const share = attempted > 0 ? Math.round((made / attempted) * 100) : 0
+  return (
+    <span className={`ml-auto grid w-12 gap-1 ${attempted ? '' : 'text-[var(--ink-soft)]'}`} title={attempted ? `${share} % de réussite` : 'Aucun tir tenté'}>
+      <span>{made}/{attempted}</span>
+      <span className="block h-1.5 overflow-hidden rounded-full bg-[var(--neutral-bg)]" aria-hidden="true">
+        <span className="block h-full rounded-full bg-primary" style={{ width: `${share}%` }} />
+      </span>
+    </span>
+  )
+}
+
+function Cell({ column, values }: { column: Column; values: BoxScoreTotal }) {
+  return column.kind === 'ratio'
+    ? <Ratio made={values[column.made]} attempted={values[column.attempted]} />
+    : <>{values[column.key]}</>
+}
 
 // Fond opaque pour la colonne figée, sinon les chiffres apparaîtraient dessous en défilant.
 const STICKY = 'sticky left-0 z-10 bg-[var(--surface)] shadow-[1px_0_0_var(--line)]'
@@ -54,12 +75,12 @@ const STICKY = 'sticky left-0 z-10 bg-[var(--surface)] shadow-[1px_0_0_var(--lin
 export default function MatchBoxScore({ rows, total }: { rows: BoxScoreRow[]; total: BoxScoreTotal }) {
   return (
     <div className="overflow-x-auto overscroll-x-contain" role="region" aria-label="Statistiques des joueurs, défilement horizontal" tabIndex={0}>
-      <table className="w-full min-w-[820px] border-separate border-spacing-0 text-sm tabular-nums">
+      <table className="w-full min-w-[680px] border-separate border-spacing-0 text-sm tabular-nums">
         <thead>
           <tr className="text-[11px] font-extrabold uppercase tracking-[0.1em] text-[var(--ink-soft)]">
             <th scope="col" className={`${STICKY} py-2 pr-3 text-left`}>Joueur</th>
             {COLUMNS.map((column) => (
-              <th key={column.key} scope="col" title={column.title} className="whitespace-nowrap px-2 py-2 text-right align-bottom leading-tight">{column.top}{column.bottom && <span className="block text-[9px] tracking-[0.06em]">{column.bottom}</span>}</th>
+              <th key={column.key} scope="col" title={column.title} className="whitespace-nowrap px-2 py-2 text-right align-bottom leading-tight">{column.top}{column.kind === 'count' && column.bottom && <span className="block text-[9px] tracking-[0.06em]">{column.bottom}</span>}</th>
             ))}
           </tr>
         </thead>
@@ -74,7 +95,7 @@ export default function MatchBoxScore({ rows, total }: { rows: BoxScoreRow[]; to
                 </Link>
               </th>
               {COLUMNS.map((column) => (
-                <td key={column.key} className={`whitespace-nowrap border-t border-[var(--line)] px-2 py-2.5 text-right font-semibold ${column.key === 'pts' ? 'font-extrabold text-brand' : ''}`}>{row[column.key]}</td>
+                <td key={column.key} className={`whitespace-nowrap border-t border-[var(--line)] px-2 py-2.5 text-right font-semibold ${column.key === 'pts' ? 'font-extrabold text-brand' : ''}`}><Cell column={column} values={row} /></td>
               ))}
             </tr>
           ))}
@@ -83,7 +104,7 @@ export default function MatchBoxScore({ rows, total }: { rows: BoxScoreRow[]; to
           <tr className="font-extrabold">
             <th scope="row" className={`${STICKY} border-t-2 border-[var(--ink)] py-2.5 pr-3 text-left`}>Équipe</th>
             {COLUMNS.map((column) => (
-              <td key={column.key} className="whitespace-nowrap border-t-2 border-[var(--ink)] px-2 py-2.5 text-right">{total[column.key]}</td>
+              <td key={column.key} className="whitespace-nowrap border-t-2 border-[var(--ink)] px-2 py-2.5 text-right"><Cell column={column} values={total} /></td>
             ))}
           </tr>
         </tfoot>

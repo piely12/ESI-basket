@@ -33,10 +33,6 @@ export default async function MatchDetailPage({ params }: { params: Promise<{ id
         </Link>
         <MatchCard match={match} large />
 
-        {rankStats && playerStats.length > 0 && <MatchStatsSheet stats={playerStats} mvpPlayerId={mvpPlayerId} roundNumber={match.round_number} />}
-        {rankStats && teamStats.length > 0 && <TeamStatsDuel homeTeam={match.home_team} awayTeam={match.away_team} homeScore={match.home_score} awayScore={match.away_score} stats={teamStats} />}
-        {rankStats && !playerStats.length && !teamStats.length && <p className="rounded-xl border border-[var(--line)] bg-[var(--surface)] p-5 text-sm text-[var(--ink-soft)]">Les statistiques détaillées de ce match seront publiées après validation.</p>}
-
         {isEsiMatch && !(rankStats && !starters.length) && <section id="composition" aria-label="Composition ESI" className="scroll-mt-20 sm:scroll-mt-28">
           {!lineupVisible ? <div className="rounded-xl border border-[var(--line)] bg-[var(--surface)] p-6 text-center">
             <div className="font-display text-5xl text-[var(--ink-soft)]">N/A</div>
@@ -52,6 +48,11 @@ export default async function MatchDetailPage({ params }: { params: Promise<{ id
             bench={bench}
           /> : <p className="rounded-xl border border-[var(--line)] bg-[var(--surface)] p-5 text-sm text-[var(--ink-soft)]">Composition en attente de validation.</p>}
         </section>}
+
+        {rankStats && playerStats.length > 0 && <MatchStatsSheet stats={playerStats} mvpPlayerId={mvpPlayerId} roundNumber={match.round_number} />}
+        {rankStats && teamStats.length > 0 && <TeamStatsDuel homeTeam={match.home_team} awayTeam={match.away_team} homeScore={match.home_score} awayScore={match.away_score} stats={teamStats} />}
+        {rankStats && !playerStats.length && !teamStats.length && <p className="rounded-xl border border-[var(--line)] bg-[var(--surface)] p-5 text-sm text-[var(--ink-soft)]">Les statistiques détaillées de ce match seront publiées après validation.</p>}
+
 
         <section aria-labelledby="match-standings-title" className="min-w-0 rounded-xl border border-[var(--line)] bg-[var(--surface)] p-4 sm:p-5">
           <h2 id="match-standings-title" className="mb-3 font-display text-3xl text-brand">Classement</h2>
