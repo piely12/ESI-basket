@@ -2,79 +2,126 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import PublicNav from '@/components/PublicNav'
 import PlayerCardVisual from '@/components/PlayerCardVisual'
-import { getPlayerProfile } from '@/lib/data/public'
+import PlayerSeasonStats, { type SeasonTotals } from '@/components/PlayerSeasonStats'
+import SeasonSelect from '@/components/SeasonSelect'
+import { ShotRatio } from '@/components/MatchBoxScore'
+import { getNextMatch, getPlayerProfile } from '@/lib/data/public'
+import { formatMatchDate } from '@/lib/format'
+
+const n = (value: number | null | undefined) => value ?? 0
+const teamName = (team: { name: string; is_esi: boolean }) => (team.is_esi ? 'ESI' : team.name)
 
 export default async function PlayerPage({ params, searchParams }: {
   params: Promise<{ id: string }>
-  searchParams: Promise<{ season?: string; round?: string }>
+  searchParams: Promise<{ season?: string }>
 }) {
   const [{ id }, query] = await Promise.all([params, searchParams])
-  const roundValue = query.round ? Number(query.round) : undefined
-  const round = Number.isInteger(roundValue) && roundValue! > 0 && roundValue! <= 99 ? roundValue : undefined
-  const period = 'all'
-  const result = await getPlayerProfile(id, { seasonId: query.season, round, period })
+  const [result, nextMatch] = await Promise.all([
+    getPlayerProfile(id, { seasonId: query.season }),
+    getNextMatch().catch(() => null),
+  ])
   if (!result) notFound()
-  const { player, season, seasons, seasonStats, stats } = result
-  const rounds = [...new Set(seasonStats.map((stat) => stat.match?.round_number).filter((value): value is number => value !== null && value !== undefined))].sort((a, b) => a - b)
-  const played = stats.filter((stat) => Number(stat.minutes_played ?? 0) > 0)
-  type TotalKey = 'minutes_played' | 'points' | 'rebounds' | 'assists' | 'steals' | 'blocks' | 'turnovers' | 'personal_fouls' | 'fg_made' | 'fg_attempted' | 'three_made' | 'three_attempted' | 'ft_made' | 'ft_attempted'
-  const total = (key: TotalKey): number | null => {
-    const values = stats.map((stat) => stat[key]).filter((value): value is number => typeof value === 'number')
-    return values.length === stats.length && values.length ? values.reduce((sum, value) => sum + value, 0) : null
+  const { player, season, seasons, stats, mvpMatchIds } = result
+
+  // A match counts as played as soon as the player has a stat line,
+  // even when minutes were not recorded on the match sheet.
+  const sum = (pick: (stat: (typeof stats)[number]) => number | null) => stats.reduce((total, stat) => total + n(pick(stat)), 0)
+  const totals: SeasonTotals = {
+    played: stats.length,
+    points: sum((s) => s.points),
+    rebounds: sum((s) => s.rebounds),
+    assists: sum((s) => s.assists),
+    steals: sum((s) => s.steals),
+    blocks: sum((s) => s.blocks),
+    turnovers: sum((s) => s.turnovers),
+    fouls: sum((s) => s.personal_fouls),
+    twoMade: sum((s) => s.fg_made) - sum((s) => s.three_made),
+    twoAttempted: sum((s) => s.fg_attempted) - sum((s) => s.three_attempted),
+    threeMade: sum((s) => s.three_made),
+    threeAttempted: sum((s) => s.three_attempted),
+    ftMade: sum((s) => s.ft_made),
+    ftAttempted: sum((s) => s.ft_attempted),
   }
-  const average = (key: TotalKey) => {
-    const value = total(key)
-    return value === null || !played.length ? '—' : (value / played.length).toFixed(1)
-  }
-  const made = total('fg_made')
-  const attempted = total('fg_attempted')
-  const threesMade = total('three_made')
-  const threesAttempted = total('three_attempted')
-  const freeThrowsMade = total('ft_made')
-  const freeThrowsAttempted = total('ft_attempted')
-  const twoMade = made === null || threesMade === null ? null : made - threesMade
-  const twoAttempted = attempted === null || threesAttempted === null ? null : attempted - threesAttempted
-  const percentage = (makes: number | null, attempts: number | null) => makes === null || !attempts ? '—' : `${(makes / attempts * 100).toFixed(1)}%`
-  const summary = [
-    ['Matchs joués', played.length], ['PTS / match', average('points')], ['REB / match', average('rebounds')],
-    ['AST / match', average('assists')], ['Interceptions / match', average('steals')], ['Contres / match', average('blocks')],
-    ['Balles perdues / match', average('turnovers')], ['Fautes / match', average('personal_fouls')],
-    ['Tirs', percentage(made, attempted)], ['2 points', percentage(twoMade, twoAttempted)],
-    ['3 points', percentage(threesMade, threesAttempted)], ['Lancers francs', percentage(freeThrowsMade, freeThrowsAttempted)],
-  ]
+  const upcoming = nextMatch && (!season || nextMatch.season_id === season.id) ? nextMatch : null
 
   return (
     <>
       <PublicNav />
-      <main className="mx-auto max-w-screen-xl space-y-5 px-4 pb-28 pt-7 sm:px-6 lg:space-y-7 lg:px-10">
-        <Link href="/equipe" className="inline-flex min-h-10 items-center gap-2 rounded text-sm font-semibold text-brand focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--gold-deep)]">Effectif</Link>
+      <main className="mx-auto max-w-3xl space-y-4 px-4 pb-28 pt-5 sm:px-6">
+        <Link href="/equipe" className="inline-flex min-h-10 items-center gap-1 rounded text-sm font-semibold text-brand focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--gold-deep)]">‹ Effectif</Link>
         <PlayerCardVisual player={player} />
-        <form method="get" className="grid gap-3 rounded-xl border border-[var(--line)] bg-[var(--surface)] p-4 sm:grid-cols-2 lg:grid-cols-4 lg:items-end">
-          <label className="grid gap-1 text-xs font-bold uppercase tracking-wide text-[var(--ink-soft)]">Saison
-            <select name="season" defaultValue={season?.id ?? ''} className="min-h-11 rounded-lg border border-[var(--line)] bg-[var(--paper)] px-3 text-sm font-semibold normal-case tracking-normal text-[var(--ink)]">{seasons.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select>
-          </label>
-          <label className="grid gap-1 text-xs font-bold uppercase tracking-wide text-[var(--ink-soft)]">Journée
-            <select name="round" defaultValue={query.round ?? ''} className="min-h-11 rounded-lg border border-[var(--line)] bg-[var(--paper)] px-3 text-sm font-semibold normal-case tracking-normal text-[var(--ink)]"><option value="">Toutes les journées</option>{rounds.map((value) => <option key={value} value={value}>Journée {value}</option>)}</select>
-          </label>
-          <div className="flex gap-2"><button type="submit" className="min-h-11 flex-1 rounded-lg bg-maroon-panel px-4 text-sm font-bold text-on-brand">Appliquer</button><Link href={`/equipe/${id}`} className="inline-flex min-h-11 items-center justify-center rounded-lg border border-[var(--line)] px-4 text-sm font-semibold text-brand">Réinitialiser</Link></div>
-        </form>
-        <section className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 sm:gap-3" aria-label={`Statistiques de la saison ${season?.name ?? ''}`}>
-          {summary.map(([label, value]) => <div key={label} className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-3 text-center sm:p-4"><div className="font-display text-3xl text-brand sm:text-4xl">{value}</div><div className="text-[10px] font-bold uppercase tracking-wide text-[var(--ink-soft)] sm:text-xs">{label}</div></div>)}
-        </section>
-        <section className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-4 sm:p-5">
-          <h1 className="font-display text-3xl text-brand">Historique des matchs {season ? `· ${season.name}` : ''}</h1>
-          {stats.length ? <div className="mt-2 divide-y divide-[var(--line)]">
-            {stats.map((stat) => {
-              const esiIsHome = stat.match.home_team.is_esi
-              const opponent = esiIsHome ? stat.match.away_team.name : stat.match.home_team.name
-              const esiScore = esiIsHome ? stat.match.home_score : stat.match.away_score
-              const opponentScore = esiIsHome ? stat.match.away_score : stat.match.home_score
-              return <Link key={stat.id} href={`/matchs/${stat.match.id}`} className="flex flex-col gap-1 rounded py-3 hover:bg-[var(--line)]/20 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--gold-deep)] sm:flex-row sm:items-center sm:justify-between">
-                <div><p className="font-semibold">vs {opponent}</p><p className="text-xs text-[var(--ink-soft)]">{new Date(stat.match.scheduled_at).toLocaleDateString('fr-FR', { timeZone: 'Africa/Abidjan', day: 'numeric', month: 'short', year: 'numeric' })} {esiScore !== null && opponentScore !== null ? `· ${esiScore}–${opponentScore}` : ''}</p></div>
-                <p className="text-sm tabular-nums text-[var(--ink-soft)]">{stat.points ?? '—'} pts · {stat.rebounds ?? '—'} reb · {stat.assists ?? '—'} passes</p>
-              </Link>
-            })}
-          </div> : <p className="mt-2 text-sm text-[var(--ink-soft)]">Aucun match joué pour le moment.</p>}
+
+        <div className="flex justify-start">
+          <SeasonSelect seasons={seasons} current={season?.id ?? null} />
+        </div>
+
+        <PlayerSeasonStats totals={totals} />
+
+        <section aria-labelledby="match-log-title" className="grid gap-3">
+          <h2 id="match-log-title" className="font-display text-3xl leading-none text-brand">Match par match</h2>
+
+          {upcoming && <Link href={`/matchs/${upcoming.id}`} className="grid gap-1 rounded-xl border border-dashed border-[var(--line)] bg-[var(--surface)] px-4 py-3 opacity-75 transition hover:opacity-100">
+            <span className="flex items-center justify-between gap-3">
+              <span className="font-bold">{upcoming.round_number ? `J${upcoming.round_number} · ` : ''}vs {teamName(upcoming.home_team.is_esi ? upcoming.away_team : upcoming.home_team)}</span>
+              <span className="rounded-md bg-[var(--neutral-bg)] px-2 py-1 text-[11px] font-extrabold uppercase tracking-[0.1em] text-[var(--ink-soft)]">À venir</span>
+            </span>
+            <span className="text-sm text-[var(--ink-soft)]">{formatMatchDate(upcoming.scheduled_at, upcoming.kickoff_confirmed)}{upcoming.location ? ` · ${upcoming.location}` : ''}</span>
+          </Link>}
+
+          {stats.length ? stats.map((stat) => {
+            const match = stat.match
+            const esiHome = match.home_team.is_esi
+            const opponent = esiHome ? match.away_team : match.home_team
+            const esiScore = esiHome ? match.home_score : match.away_score
+            const opponentScore = esiHome ? match.away_score : match.home_score
+            const hasScore = esiScore !== null && opponentScore !== null
+            const won = hasScore && esiScore! > opponentScore!
+            const isMvp = mvpMatchIds.includes(match.id)
+            return (
+              <article key={stat.id} className="grid gap-3 rounded-xl border border-[var(--line)] bg-[var(--surface)] p-4">
+                <header className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <h3 className="font-bold">{match.round_number ? `J${match.round_number} · ` : ''}vs {teamName(opponent)}</h3>
+                    <p className="text-xs text-[var(--ink-soft)]">{new Date(match.scheduled_at).toLocaleDateString('fr-FR', { timeZone: 'Africa/Abidjan', weekday: 'short', day: 'numeric', month: 'short' })}</p>
+                  </div>
+                  {hasScore && <span className={`shrink-0 rounded-md px-2 py-1 text-xs font-extrabold tabular-nums ${won ? 'bg-[var(--success-bg)] text-[var(--success)]' : 'bg-[var(--danger-bg)] text-[var(--danger)]'}`}>{won ? 'V' : 'D'} {esiScore}–{opponentScore}</span>}
+                </header>
+
+                <div className="flex items-end gap-5">
+                  {([['PTS', stat.points], ['REB', stat.rebounds], ['PD', stat.assists]] as const).map(([label, value]) => (
+                    <span key={label} className="grid">
+                      <span className="font-display text-3xl leading-none text-brand tabular-nums">{n(value)}</span>
+                      <span className="text-[10px] font-extrabold uppercase tracking-[0.12em] text-[var(--ink-soft)]">{label}</span>
+                    </span>
+                  ))}
+                  {isMvp && <span className="ml-auto self-center rounded-md bg-gold px-2 py-1 text-[11px] font-extrabold tracking-[0.08em] text-gold-foreground">MVP</span>}
+                </div>
+
+                <details className="group">
+                  <summary className="flex min-h-9 cursor-pointer list-none items-center gap-1 text-sm font-bold text-brand [&::-webkit-details-marker]:hidden">
+                    Détail du match <span aria-hidden="true" className="transition group-open:rotate-180">▾</span>
+                  </summary>
+                  <div className="mt-2 grid grid-cols-3 gap-2 text-center text-xs font-bold">
+                    {([['2 pts', n(stat.fg_made) - n(stat.three_made), n(stat.fg_attempted) - n(stat.three_attempted)], ['3 pts', n(stat.three_made), n(stat.three_attempted)], ['LF', n(stat.ft_made), n(stat.ft_attempted)]] as const).map(([label, made, attempted]) => (
+                      <span key={label} className="grid gap-1 rounded-lg bg-[var(--neutral-bg)] px-2 py-2 text-[var(--ink-soft)]">
+                        {label}
+                        <span className="text-sm text-[var(--ink)] [&>span]:mx-auto"><ShotRatio made={made} attempted={attempted} /></span>
+                      </span>
+                    ))}
+                  </div>
+                  <div className="mt-2 grid grid-cols-4 gap-2 text-center text-xs font-bold">
+                    {([['Int.', stat.steals], ['Contres', stat.blocks], ['B. perdues', stat.turnovers], ['Fautes', stat.personal_fouls]] as const).map(([label, value]) => (
+                      <span key={label} className="grid gap-1 rounded-lg bg-[var(--neutral-bg)] px-2 py-2 text-[var(--ink-soft)]">
+                        {label}
+                        <span className="text-base text-[var(--ink)] tabular-nums">{n(value)}</span>
+                      </span>
+                    ))}
+                  </div>
+                  <Link href={`/matchs/${match.id}`} className="mt-3 inline-flex min-h-9 items-center text-sm font-extrabold text-brand hover:underline">Voir la feuille de match ›</Link>
+                </details>
+              </article>
+            )
+          }) : <p className="rounded-xl border border-[var(--line)] bg-[var(--surface)] p-5 text-sm text-[var(--ink-soft)]">Aucun match joué cette saison pour le moment.</p>}
         </section>
       </main>
     </>

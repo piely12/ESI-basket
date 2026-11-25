@@ -466,9 +466,19 @@ export async function getPlayerProfile(id: string, filters: { seasonId?: string;
     : filters.period === '90d' ? Date.now() - 90 * 86400000 : null
   const stats = seasonStats.filter((stat) => (filters.round === undefined || stat.match?.round_number === filters.round)
     && (cutoff === null || new Date(stat.match?.scheduled_at ?? 0).getTime() >= cutoff))
+
+  // Matches where this player was the official MVP (migration 039). Optional:
+  // the profile still works if the column is unavailable.
+  const matchIds = seasonStats.map((stat) => stat.match_id)
+  const mvpRows = matchIds.length
+    ? await optionalData<{ id: string; mvp_player_id: string | null }[]>(
+      supabase.from('matches').select('id,mvp_player_id').in('id', matchIds) as unknown as PromiseLike<{ data: { id: string; mvp_player_id: string | null }[] | null }>)
+    : null
+  const mvpMatchIds = (mvpRows ?? []).filter((row) => row.mvp_player_id === id).map((row) => row.id)
+
   return {
     player, season: season ? { id: season.id, name: season.name } : null,
     seasons: seasons.map(({ id: seasonKey, name }) => ({ id: seasonKey, name })),
-    seasonStats, stats,
+    seasonStats, stats, mvpMatchIds,
   }
 }

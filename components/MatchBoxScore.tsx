@@ -51,7 +51,7 @@ const COLUMNS: Column[] = [
 ]
 
 /** « 2/5 » avec, dessous, une barre qui montre la part de tirs réussis. */
-function Ratio({ made, attempted }: { made: number; attempted: number }) {
+export function ShotRatio({ made, attempted }: { made: number; attempted: number }) {
   const share = attempted > 0 ? Math.round((made / attempted) * 100) : 0
   return (
     <span className={`ml-auto grid w-12 gap-1 ${attempted ? '' : 'text-[var(--ink-soft)]'}`} title={attempted ? `${share} % de réussite` : 'Aucun tir tenté'}>
@@ -65,7 +65,7 @@ function Ratio({ made, attempted }: { made: number; attempted: number }) {
 
 function Cell({ column, values }: { column: Column; values: BoxScoreTotal }) {
   return column.kind === 'ratio'
-    ? <Ratio made={values[column.made]} attempted={values[column.attempted]} />
+    ? <ShotRatio made={values[column.made]} attempted={values[column.attempted]} />
     : <>{values[column.key]}</>
 }
 
