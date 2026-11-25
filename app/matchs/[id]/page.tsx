@@ -4,6 +4,7 @@ import PublicNav from '@/components/PublicNav'
 import CompositionBoard from '@/components/CompositionBoard'
 import MatchCard from '@/components/MatchCard'
 import MatchStatsSheet from '@/components/MatchStatsSheet'
+import TeamStatsDuel from '@/components/TeamStatsDuel'
 import TeamLogo from '@/components/TeamLogo'
 import { getMatchById, type MatchRow, type Team } from '@/lib/data/public'
 import { formatMatchDate, shortDate } from '@/lib/format'
@@ -12,7 +13,7 @@ export default async function MatchDetailPage({ params }: { params: Promise<{ id
   const { id } = await params
   const result = await getMatchById(id)
   if (!result) notFound()
-  const { match, playerStats, lineups, compositionPublished, coachName, standings, teamHistory, mvpPlayerId } = result
+  const { match, teamStats, playerStats, lineups, compositionPublished, coachName, standings, teamHistory, mvpPlayerId } = result
   const isEsiMatch = match.home_team.is_esi || match.away_team.is_esi
   const lineupVisible = compositionPublished || match.status === 'termine'
   const esiTeam = match.home_team.is_esi ? match.home_team : match.away_team
@@ -32,8 +33,9 @@ export default async function MatchDetailPage({ params }: { params: Promise<{ id
         </Link>
         <MatchCard match={match} large />
 
-        {rankStats && playerStats.length > 0 && <MatchStatsSheet stats={playerStats} mvpPlayerId={mvpPlayerId} />}
-        {rankStats && !playerStats.length && <p className="rounded-xl border border-[var(--line)] bg-[var(--surface)] p-5 text-sm text-[var(--ink-soft)]">Les statistiques détaillées de ce match seront publiées après validation.</p>}
+        {rankStats && playerStats.length > 0 && <MatchStatsSheet stats={playerStats} mvpPlayerId={mvpPlayerId} roundNumber={match.round_number} />}
+        {rankStats && teamStats.length > 0 && <TeamStatsDuel homeTeam={match.home_team} awayTeam={match.away_team} homeScore={match.home_score} awayScore={match.away_score} stats={teamStats} />}
+        {rankStats && !playerStats.length && !teamStats.length && <p className="rounded-xl border border-[var(--line)] bg-[var(--surface)] p-5 text-sm text-[var(--ink-soft)]">Les statistiques détaillées de ce match seront publiées après validation.</p>}
 
         {isEsiMatch && !(rankStats && !starters.length) && <section id="composition" aria-label="Composition ESI" className="scroll-mt-20 sm:scroll-mt-28">
           {!lineupVisible ? <div className="rounded-xl border border-[var(--line)] bg-[var(--surface)] p-6 text-center">
@@ -51,25 +53,23 @@ export default async function MatchDetailPage({ params }: { params: Promise<{ id
           /> : <p className="rounded-xl border border-[var(--line)] bg-[var(--surface)] p-5 text-sm text-[var(--ink-soft)]">Composition en attente de validation.</p>}
         </section>}
 
-        <section aria-labelledby="match-standings-title" className="rounded-xl border border-[var(--line)] bg-[var(--surface)] p-4 sm:p-5">
-          <div className="mb-3 flex items-end justify-between gap-3">
-            <div>
-              <p className="text-xs font-bold uppercase tracking-[0.16em] text-brand">Saison du match</p>
-              <h2 id="match-standings-title" className="font-display text-3xl text-brand">Classement</h2>
-            </div>
-            <Link href="/classement" className="shrink-0 text-sm font-semibold text-brand underline underline-offset-4">Classement complet</Link>
-          </div>
-          {standings.length ? <div className="overflow-x-auto">
-            <table className="w-full min-w-[560px] text-sm">
-              <thead className="text-left text-xs uppercase tracking-wide text-[var(--ink-soft)]"><tr>
-                <th className="px-2 py-2">Rang</th><th className="px-2 py-2">Équipe</th><th className="px-2 py-2">MJ</th><th className="px-2 py-2">V</th><th className="px-2 py-2">D</th><th className="px-2 py-2">Pts</th><th className="px-2 py-2">Diff.</th>
+        <section aria-labelledby="match-standings-title" className="min-w-0 rounded-xl border border-[var(--line)] bg-[var(--surface)] p-4 sm:p-5">
+          <h2 id="match-standings-title" className="mb-3 font-display text-3xl text-brand">Classement</h2>
+          {standings.length ? <div className="overflow-x-auto overscroll-x-contain" role="region" aria-label="Classement, défilement horizontal" tabIndex={0}>
+            <table className="w-full min-w-[480px] border-separate border-spacing-0 text-sm tabular-nums">
+              <thead className="text-xs uppercase tracking-wide text-[var(--ink-soft)]"><tr>
+                <th scope="col" className="sticky left-0 z-10 w-10 bg-[var(--surface)] px-2 py-2 text-left">Rang</th>
+                <th scope="col" className="sticky left-10 z-10 bg-[var(--surface)] px-2 py-2 text-left shadow-[1px_0_0_var(--line)]">Équipe</th>
+                <th scope="col" className="px-2 py-2 text-right">MJ</th><th scope="col" className="px-2 py-2 text-right">V</th><th scope="col" className="px-2 py-2 text-right">D</th><th scope="col" className="px-2 py-2 text-right">Pts</th><th scope="col" className="px-2 py-2 text-right">Diff.</th>
               </tr></thead>
               <tbody>{standings.map((row) => {
                 const featured = row.team_id === match.home_team.id || row.team_id === match.away_team.id
-                return <tr key={row.team_id} className={`border-t border-[var(--line)] ${featured ? 'bg-[var(--gold-500)]/10 font-bold' : ''}`}>
-                  <td className="px-2 py-2 tabular-nums">{row.rank}</td>
-                  <td className="px-2 py-2"><Link href={`/equipes/${row.team_id}`} className="flex w-fit items-center gap-2 rounded hover:underline"><TeamLogo team={row.team} size={28} /><span>{row.team.is_esi ? 'ESI' : row.team.name}</span></Link></td>
-                  <td className="px-2 py-2 tabular-nums">{row.played}</td><td className="px-2 py-2 tabular-nums">{row.won}</td><td className="px-2 py-2 tabular-nums">{row.lost}</td><td className="px-2 py-2 tabular-nums">{row.ranking_points}</td><td className="px-2 py-2 tabular-nums">{row.difference > 0 ? `+${row.difference}` : row.difference}</td>
+                // Opaque background (also on the fixed columns) so numbers never show through while scrolling.
+                const cell = `border-t border-[var(--line)] px-2 py-2 ${featured ? 'bg-[color-mix(in_oklch,var(--gold-500)_12%,var(--surface))] font-bold' : 'bg-[var(--surface)]'}`
+                return <tr key={row.team_id}>
+                  <td className={`${cell} sticky left-0 z-10 w-10`}>{row.rank}</td>
+                  <th scope="row" className={`${cell} sticky left-10 z-10 text-left font-semibold shadow-[1px_0_0_var(--line)]`}><Link href={`/equipes/${row.team_id}`} className="flex w-fit items-center gap-2 rounded hover:underline"><TeamLogo team={row.team} size={28} /><span className="whitespace-nowrap">{row.team.is_esi ? 'ESI' : row.team.name}</span></Link></th>
+                  <td className={`${cell} text-right`}>{row.played}</td><td className={`${cell} text-right`}>{row.won}</td><td className={`${cell} text-right`}>{row.lost}</td><td className={`${cell} text-right`}>{row.ranking_points}</td><td className={`${cell} text-right`}>{row.difference > 0 ? `+${row.difference}` : row.difference}</td>
                 </tr>
               })}</tbody>
             </table>

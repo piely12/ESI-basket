@@ -65,6 +65,8 @@ export type PlayerSeasonStat = TeamSeasonStat & {
   player: Player
 }
 
+export type MatchTeamStat = TeamSeasonStat & { id: string }
+
 export type PublicMatchPlayerStat = {
   id: string
   player_id: string
@@ -177,7 +179,7 @@ export async function getMatchById(id: string) {
   const esiTeam = matchRow.home_team.is_esi ? matchRow.home_team : matchRow.away_team
   const [teamStats, playerStats, workflow, coach, mvp] = await Promise.all([
     optionalData(supabase.from('match_team_stats')
-      .select('id, match_id, team_id, points, rebounds, assists, fg_made, fg_attempted, three_made, three_attempted, ft_made, ft_attempted, published_at, created_at')
+      .select('id, match_id, team_id, points, rebounds, assists, steals, blocks, turnovers, personal_fouls, fg_made, fg_attempted, three_made, three_attempted, ft_made, ft_attempted, published_at, created_at')
       .eq('match_id', id).not('published_at', 'is', null)),
     optionalData(supabase.from('match_player_stats')
       .select('id,match_id,player_id,minutes_played,points,rebounds,rebounds_defensive,rebounds_offensive,personal_fouls,assists,steals,blocks,turnovers,fg_made,fg_attempted,three_made,three_attempted,ft_made,ft_attempted,plus_minus,evaluation,published_at,created_at,updated_at,player:players(id,first_name,last_name,jersey_number,position)')
@@ -209,7 +211,7 @@ export async function getMatchById(id: string) {
 
   return {
     match: matchRow,
-    teamStats: teamStats ?? [],
+    teamStats: (teamStats ?? []) as unknown as MatchTeamStat[],
     playerStats: (playerStats ?? []) as unknown as PublicMatchPlayerStat[],
     lineups: (lineups ?? []) as unknown as LineupRow[],
     standings,
