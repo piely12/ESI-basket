@@ -75,6 +75,15 @@ export type PublicMatchPlayerStat = {
   rebounds_offensive: number | null
   personal_fouls: number | null
   assists: number | null
+  steals: number | null
+  blocks: number | null
+  turnovers: number | null
+  fg_made: number | null
+  fg_attempted: number | null
+  three_made: number | null
+  three_attempted: number | null
+  ft_made: number | null
+  ft_attempted: number | null
   player: Pick<Player, 'id' | 'first_name' | 'last_name' | 'jersey_number' | 'position'>
 }
 
@@ -166,7 +175,7 @@ export async function getMatchById(id: string) {
 
   const matchRow = match as unknown as MatchRow
   const esiTeam = matchRow.home_team.is_esi ? matchRow.home_team : matchRow.away_team
-  const [teamStats, playerStats, workflow, coach] = await Promise.all([
+  const [teamStats, playerStats, workflow, coach, mvp] = await Promise.all([
     optionalData(supabase.from('match_team_stats')
       .select('id, match_id, team_id, points, rebounds, assists, fg_made, fg_attempted, three_made, three_attempted, ft_made, ft_attempted, published_at, created_at')
       .eq('match_id', id).not('published_at', 'is', null)),
@@ -175,6 +184,8 @@ export async function getMatchById(id: string) {
       .eq('match_id', id).not('published_at', 'is', null)),
     optionalData<{ status: string }>(supabase.from('match_composition_public_status').select('status').eq('match_id', id).eq('team_id', esiTeam.id).maybeSingle() as unknown as PromiseLike<{ data: { status: string } | null }>),
     optionalData<{ first_name: string; last_name: string }>(supabase.from('public_esi_coaches').select('first_name,last_name').eq('team_id', esiTeam.id).order('last_name').limit(1).maybeSingle() as unknown as PromiseLike<{ data: { first_name: string; last_name: string } | null }>),
+    // Official MVP (migration 039). Read on its own so the page still works before the column exists.
+    optionalData<{ mvp_player_id: string | null }>(supabase.from('matches').select('mvp_player_id').eq('id', id).maybeSingle() as unknown as PromiseLike<{ data: { mvp_player_id: string | null } | null }>),
   ])
   const lineups = workflow && ['publiee','verrouillee'].includes(workflow.status)
     ? await optionalData(supabase.from('match_lineups').select('is_starter,court_slot,player:players(id,first_name,last_name,jersey_number,position,photo_url,team_id)').eq('match_id', id))
@@ -208,6 +219,7 @@ export async function getMatchById(id: string) {
     ],
     compositionPublished: Boolean(workflow && ['publiee', 'verrouillee'].includes(workflow.status)),
     coachName: coach ? `${coach.first_name} ${coach.last_name}`.trim() : null,
+    mvpPlayerId: mvp?.mvp_player_id ?? null,
   }
 }
 
