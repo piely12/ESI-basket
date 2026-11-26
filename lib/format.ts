@@ -27,3 +27,8 @@ export function pct(made: number, attempted: number): string {
 export function initials(first: string, last: string): string {
   return `${first[0] ?? ''}${last[0] ?? ''}`.toUpperCase()
 }
+
+/** « KOCLA ALEX » devient « Kocla Alex ». */
+export function nameCase(value: string): string {
+  return value.toLowerCase().replace(/(^|[\s-])(\p{L})/gu, (_, separator: string, letter: string) => separator + letter.toUpperCase())
+}

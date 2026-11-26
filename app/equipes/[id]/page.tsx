@@ -4,6 +4,7 @@ import PublicNav from '@/components/PublicNav'
 import TeamBanner from '@/components/TeamBanner'
 import MatchCard from '@/components/MatchCard'
 import EmptyState from '@/components/ui/EmptyState'
+import EsiSeasonReview from '@/components/EsiSeasonReview'
 import { getStandings, getTeamPageData } from '@/lib/data/public'
 
 function StatValue({ value }: { value: number | null }) {
@@ -21,9 +22,12 @@ export default async function TeamPage({ params, searchParams }: {
   const allowedMetrics = ['points', 'rebounds', 'assists', 'steals', 'blocks', 'fieldGoalPct'] as const
   const metric = allowedMetrics.find((value) => value === query.metric) ?? 'points'
   const mode = query.mode === 'total' ? 'total' : 'average'
-  const data = await getTeamPageData(id, { seasonId: query.season, round, period })
+  let data = await getTeamPageData(id, { seasonId: query.season, round, period })
   if (!data) notFound()
+  // La page de l'ESI montre toute la saison : on ignore un ancien filtre de journée.
+  if (data.team.is_esi && round !== undefined) data = (await getTeamPageData(id, { seasonId: query.season })) ?? data
   const standings = await getStandings(data.season?.id)
+  if (data.team.is_esi) return <EsiSeasonReview data={data} standings={standings} />
 
   const row = standings.find((item) => item.team_id === id)
   const { team, season, seasons, matches, seasonCompletedMatches, completedMatches, upcomingMatches, players, playerStats, teamStats } = data
