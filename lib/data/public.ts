@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { buildRadar, type RadarData, type RadarRow } from '@/lib/stats/player-radar'
 
 export type Team = { id: string; name: string; city: string | null; logo_url: string | null; is_esi: boolean }
 export type MatchRow = {
@@ -441,10 +442,67 @@ export async function getPublishedNews(limit = 9): Promise<PublishedNews[]> {
   return (data ?? []) as PublishedNews[]
 }
 
+/** Un match terminé de l'ESI dans la saison : sert à choisir une journée sur la fiche joueur. */
+export type SeasonJourney = {
+  matchId: string
+  round: number | null
+  scheduledAt: string
+  opponent: string
+  esiScore: number | null
+  opponentScore: number | null
+}
+
+type JourneySource = {
+  id: string
+  scheduled_at: string
+  round_number: number | null
+  home_score: number | null
+  away_score: number | null
+  home_team: { name: string; is_esi: boolean }
+  away_team: { name: string; is_esi: boolean }
+}
+
+function toJourney(match: JourneySource): SeasonJourney | null {
+  const esiHome = match.home_team.is_esi
+  if (!esiHome && !match.away_team.is_esi) return null
+  const opponent = esiHome ? match.away_team : match.home_team
+  return {
+    matchId: match.id,
+    round: match.round_number,
+    scheduledAt: match.scheduled_at,
+    opponent: opponent.is_esi ? 'ESI' : opponent.name,
+    esiScore: esiHome ? match.home_score : match.away_score,
+    opponentScore: esiHome ? match.away_score : match.home_score,
+  }
+}
+
+/** Matchs terminés de l'ESI dans la saison. Facultatif : la fiche marche sans. */
+async function getEsiJourneys(supabase: Awaited<ReturnType<typeof createClient>>, seasonId: string): Promise<SeasonJourney[]> {
+  const rows = await optionalData<MatchRow[]>(
+    supabase.from('matches').select(MATCH_SELECT).eq('season_id', seasonId).eq('status', 'termine') as unknown as PromiseLike<{ data: MatchRow[] | null }>)
+  return (rows ?? []).flatMap((match) => toJourney(match) ?? [])
+}
+
+/** Données du radar « profil face à l'équipe ». Renvoie null si elles ne sont pas lisibles. */
+async function getRadar(supabase: Awaited<ReturnType<typeof createClient>>, playerId: string, teamId: string | null, matchIds: string[]): Promise<RadarData | null> {
+  if (!teamId || !matchIds.length) return null
+  try {
+    const { data: roster } = await supabase.from('players').select('id').eq('team_id', teamId)
+    const playerIds = (roster ?? []).map((row: { id: string }) => row.id)
+    if (playerIds.length < 2) return null
+    const { data: rows } = await supabase.from('match_player_stats')
+      .select('player_id,match_id,points,rebounds,assists,steals,blocks,fg_made,fg_attempted')
+      .in('match_id', matchIds).in('player_id', playerIds).not('published_at', 'is', null)
+    return buildRadar(playerId, (rows ?? []) as RadarRow[])
+  } catch {
+    return null
+  }
+}
+
 export async function getPlayerProfile(id: string, filters: { seasonId?: string; round?: number; period?: 'all' | '30d' | '90d' } = {}) {
   const supabase = await createClient()
   const [{ data: player }, { data: seasonRows }, { data: allStats }] = await Promise.all([
-    supabase.from('players').select('id, first_name, last_name, jersey_number, position, photo_url, status').eq('id', id).maybeSingle(),
+    supabase.from('players').select('id, first_name, last_name, jersey_number, position, photo_url, status, team_id').eq('id', id).maybeSingle(),
     supabase.from('seasons').select('id,name,is_current').order('starts_on', { ascending: false }),
     supabase.from('match_player_stats')
       .select('id,match_id,minutes_played,points,rebounds,rebounds_defensive,rebounds_offensive,assists,steals,blocks,turnovers,personal_fouls,fg_made,fg_attempted,three_made,three_attempted,ft_made,ft_attempted,published_at,match:matches(id,scheduled_at,status,home_score,away_score,round_number,season_id,home_team:teams!matches_home_team_id_fkey(id,name,is_esi),away_team:teams!matches_away_team_id_fkey(id,name,is_esi))')
@@ -476,9 +534,18 @@ export async function getPlayerProfile(id: string, filters: { seasonId?: string;
     : null
   const mvpMatchIds = (mvpRows ?? []).filter((row) => row.mvp_player_id === id).map((row) => row.id)
 
+  // Journées de la saison : les matchs terminés de l'ESI, plus ceux où le joueur a une ligne de stats.
+  const journeyById = new Map<string, SeasonJourney>()
+  const addJourney = (journey: SeasonJourney | null) => { if (journey && !journeyById.has(journey.matchId)) journeyById.set(journey.matchId, journey) }
+  seasonStats.forEach((stat) => addJourney(toJourney(stat.match)))
+  if (season) (await getEsiJourneys(supabase, season.id)).forEach(addJourney)
+  const journeys = [...journeyById.values()].sort((a, b) =>
+    (a.round ?? Number.MAX_SAFE_INTEGER) - (b.round ?? Number.MAX_SAFE_INTEGER) || a.scheduledAt.localeCompare(b.scheduledAt))
+  const radar = await getRadar(supabase, id, (player as { team_id?: string | null }).team_id ?? null, journeys.map((journey) => journey.matchId))
+
   return {
     player, season: season ? { id: season.id, name: season.name } : null,
     seasons: seasons.map(({ id: seasonKey, name }) => ({ id: seasonKey, name })),
-    seasonStats, stats, mvpMatchIds,
+    seasonStats, stats, mvpMatchIds, journeys, radar,
   }
 }

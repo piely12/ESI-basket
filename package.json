@@ -9,6 +9,7 @@
     "lint": "eslint",
     "test:rate-limit": "node --experimental-strip-types --test scripts/rate-limit.test.mjs",
     "test:match-reminder": "node --experimental-strip-types --test scripts/match-reminder.test.mjs",
+    "test:player-stats": "node --experimental-strip-types --test scripts/player-stats.test.mjs",
     "test:stats-manual": "node --experimental-strip-types --test scripts/manual-stats-validation.test.mjs",
     "cleanup:news-storage": "node --env-file-if-exists=.env.local scripts/remove-news-storage.mjs"
   },
