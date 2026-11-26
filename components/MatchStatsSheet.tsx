@@ -72,17 +72,16 @@ export default function MatchStatsSheet({ stats, mvpPlayerId, roundNumber }: { s
         </Link> : <Link href={`/equipe/${mvp.player_id}`} className="flex items-center gap-3 rounded-xl border border-[var(--gold-500)]/50 bg-[var(--gold-500)]/10 px-4 py-3 transition hover:border-[var(--gold-500)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--gold-500)]">
           <span className="shrink-0 rounded-md bg-gold px-2 pb-0.5 pt-1 font-display text-lg leading-none text-gold-foreground">MVP</span>
           <span className="min-w-0 flex-1">
-            <span className="block truncate font-bold text-[var(--ink)]">{fullName(mvp)}</span>
+            <span className="block truncate font-bold text-[var(--ink)] underline decoration-[1.5px] underline-offset-4">{fullName(mvp)}</span>
             <span className="block text-sm text-[var(--ink-soft)]">{mvpLine}</span>
           </span>
-          <span aria-hidden="true" className="text-[var(--ink-soft)]">›</span>
         </Link>}
       </section>}
 
       <section aria-labelledby="match-performance-title" className="grid min-w-0 gap-3">
         <div className="flex items-end justify-between gap-3">
           <h2 id="match-performance-title" className="font-display text-3xl text-brand">Performance</h2>
-          <span className="pb-1 text-xs font-semibold text-[var(--ink-soft)] sm:hidden">Glisse pour voir tout →</span>
+          <span className="pb-1 text-xs font-semibold text-[var(--ink-soft)] sm:hidden">Glisse pour voir tout</span>
         </div>
         <div className="min-w-0 rounded-xl border border-[var(--line)] bg-[var(--surface)] p-3 sm:p-4">
           <MatchBoxScore rows={rows} total={total} />

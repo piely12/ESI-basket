@@ -77,9 +77,9 @@ export default function MatchBoxScore({ rows, total }: { rows: BoxScoreRow[]; to
             {rows.map((row) => (
               <tr key={row.id}>
                 <th scope="row" className={`${STICKY} w-40 max-w-40 border-t border-[var(--line)] py-2.5 pr-3 text-left font-bold`}>
-                  <Link href={`/equipe/${row.playerId}`} className="flex min-w-0 items-center gap-1.5 rounded hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--gold-500)]">
+                  <Link href={`/equipe/${row.playerId}`} className="flex min-w-0 items-center gap-1.5 rounded focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--gold-500)]">
                     <span className="w-5 shrink-0 text-xs font-semibold text-[var(--ink-soft)]">{row.jersey ?? '–'}</span>
-                    <span className="min-w-0 break-words leading-tight">{row.name}</span>
+                    <span className="min-w-0 break-words leading-tight underline decoration-[1.5px] underline-offset-4">{row.name}</span>
                     {row.isMvp && <span className="shrink-0 rounded bg-gold px-1 py-0.5 text-[9px] font-extrabold leading-none text-gold-foreground">MVP</span>}
                   </Link>
                 </th>

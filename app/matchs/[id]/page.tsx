@@ -38,7 +38,7 @@ export default async function MatchDetailPage({ params }: { params: Promise<{ id
     <>
       <PublicNav />
       <main className="mx-auto max-w-6xl space-y-5 px-3 pb-28 pt-3 sm:px-5 sm:pt-4">
-        <Link href="/matchs" className="inline-flex min-h-9 items-center gap-2 rounded text-sm font-semibold text-brand hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--gold-deep)]">
+        <Link href="/matchs" className="inline-flex min-h-9 items-center gap-2 rounded text-sm font-semibold text-brand underline decoration-[1.5px] underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--gold-deep)]">
           Retour au calendrier
         </Link>
         <MatchCard match={match} large />
@@ -79,7 +79,7 @@ export default async function MatchDetailPage({ params }: { params: Promise<{ id
                 const cell = `border-t border-[var(--line)] px-2 py-2 ${featured ? 'bg-[color-mix(in_oklch,var(--gold-500)_12%,var(--surface))] font-bold' : 'bg-[var(--surface)]'}`
                 return <tr key={row.team_id}>
                   <td className={`${cell} sticky left-0 z-10 w-10`}>{row.rank}</td>
-                  <th scope="row" className={`${cell} sticky left-10 z-10 text-left font-semibold shadow-[1px_0_0_var(--line)]`}><Link href={`/equipes/${row.team_id}`} className="flex w-fit items-center gap-2 rounded hover:underline"><TeamLogo team={row.team} size={28} /><span className="whitespace-nowrap">{row.team.is_esi ? 'ESI' : row.team.name}</span></Link></th>
+                  <th scope="row" className={`${cell} sticky left-10 z-10 text-left font-semibold shadow-[1px_0_0_var(--line)]`}><Link href={`/equipes/${row.team_id}`} className="flex w-fit items-center gap-2 rounded"><TeamLogo team={row.team} size={28} /><span className="whitespace-nowrap underline decoration-[1.5px] underline-offset-4">{row.team.is_esi ? 'ESI' : row.team.name}</span></Link></th>
                   <td className={`${cell} text-right`}>{row.played}</td><td className={`${cell} text-right`}>{row.won}</td><td className={`${cell} text-right`}>{row.lost}</td><td className={`${cell} text-right`}>{row.ranking_points}</td><td className={`${cell} text-right`}>{row.difference > 0 ? `+${row.difference}` : row.difference}</td>
                 </tr>
               })}</tbody>

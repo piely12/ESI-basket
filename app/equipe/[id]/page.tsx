@@ -28,7 +28,7 @@ export default async function PlayerPage({ params, searchParams }: {
     <>
       <PublicNav />
       <main className="mx-auto max-w-3xl space-y-4 px-4 pb-28 pt-5 sm:px-6">
-        <Link href="/equipe" className="inline-flex min-h-10 items-center gap-1 rounded text-sm font-semibold text-brand focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--gold-deep)]">‹ Effectif</Link>
+        <Link href="/equipe" className="inline-flex min-h-10 items-center gap-1 rounded text-sm font-semibold text-brand underline decoration-[1.5px] underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--gold-deep)]">Effectif</Link>
         <PlayerCardVisual player={player} />
 
         <div className="flex justify-start">

@@ -263,7 +263,7 @@ export default function PlayerStatsExplorer({ playerName, entries, journeys, mvp
             <h2 id="match-others-title" className={sectionTitle}>Autres statistiques</h2>
             <StatList rows={others(line, String)} />
           </section>
-          <Link href={`/matchs/${journey.matchId}`} className={matchLink}>Voir le match complet →</Link>
+          <Link href={`/matchs/${journey.matchId}`} className={matchLink}>Voir le match complet</Link>
         </>
       )}
 
@@ -274,7 +274,7 @@ export default function PlayerStatsExplorer({ playerName, entries, journeys, mvp
             <p className="mt-1 text-sm text-[var(--ink-soft)]">Il n’a pas de statistiques pour cette journée.</p>
           </div>
           <ScorePoster journey={journey} title={title} />
-          <Link href={`/matchs/${journey.matchId}`} className={matchLink}>Voir le match complet →</Link>
+          <Link href={`/matchs/${journey.matchId}`} className={matchLink}>Voir le match complet</Link>
         </>
       )}
     </div>

@@ -52,7 +52,7 @@ export default function StandingsView({ rows }: { rows: StandingRow[] }) {
                 <td className="px-3 py-3.5 sm:px-4">
                   <span className="flex min-w-0 items-center gap-2">
                     <TeamLogo team={row.team} size={28} className="h-7 w-7 shrink-0" />
-                    <span className="truncate font-semibold">{isEsi ? 'ESI' : row.team.name}</span>
+                    <span className="truncate font-semibold underline decoration-[1.5px] underline-offset-4">{isEsi ? 'ESI' : row.team.name}</span>
                   </span>
                 </td>
                 <td className="px-3 py-3.5 text-center tabular-nums sm:px-4">{row.played}</td>

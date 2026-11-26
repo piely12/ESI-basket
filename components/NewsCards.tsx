@@ -16,7 +16,7 @@ export default function NewsCards({ items }: { items: PublishedNews[] }) {
             </span>
             <h3 className="mt-4 line-clamp-2 text-xl font-semibold leading-snug text-brand">{item.title}</h3>
             <p className="mt-2 line-clamp-3 text-base leading-relaxed text-muted-foreground">{item.excerpt || item.body}</p>
-            {item.body && <span className="mt-auto pt-3 text-sm font-bold text-brand">Lire l’article →</span>}
+            {item.body && <span className="mt-auto pt-3 text-sm font-bold text-brand"><span className="underline decoration-[1.5px] underline-offset-4">Lire l’article</span></span>}
           </>
         )
         const cardClass = 'theme-card flex min-h-[230px] min-w-0 flex-col rounded-xl border border-border bg-card p-5'
