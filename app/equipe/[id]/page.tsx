@@ -4,9 +4,7 @@ import PublicNav from '@/components/PublicNav'
 import PlayerCardVisual from '@/components/PlayerCardVisual'
 import PlayerStatsExplorer from '@/components/PlayerStatsExplorer'
 import SeasonSelect from '@/components/SeasonSelect'
-import { playerCardInfo } from '@/lib/data/player-card'
 import { getPlayerProfile } from '@/lib/data/public'
-import { nameCase } from '@/lib/format'
 import { toLine } from '@/lib/stats/player-stats'
 
 export default async function PlayerPage({ params, searchParams }: {
@@ -16,7 +14,7 @@ export default async function PlayerPage({ params, searchParams }: {
   const [{ id }, query] = await Promise.all([params, searchParams])
   const result = await getPlayerProfile(id, { seasonId: query.season })
   if (!result) notFound()
-  const { player, season, seasons, stats, mvpMatchIds, journeys, radar } = result
+  const { player, season, seasons, stats, mvpMatchIds, journeys } = result
 
   // Un match compte comme joué dès que le joueur a une ligne de stats,
   // même sans minutes saisies sur la feuille de match.
@@ -35,11 +33,9 @@ export default async function PlayerPage({ params, searchParams }: {
 
         <PlayerStatsExplorer
           key={season?.id ?? 'sans-saison'}
-          playerName={nameCase(playerCardInfo(player).first_name)}
           entries={entries}
           journeys={journeys}
           mvpMatchIds={mvpMatchIds}
-          radar={radar}
         />
       </main>
     </>

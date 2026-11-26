@@ -3,7 +3,6 @@
 import Link from 'next/link'
 import { useState } from 'react'
 import type { SeasonJourney } from '@/lib/data/public'
-import type { RadarData } from '@/lib/stats/player-radar'
 import { formatAverage, percentOf, sumLines, type StatLine } from '@/lib/stats/player-stats'
 
 /*
@@ -13,11 +12,9 @@ import { formatAverage, percentOf, sumLines, type StatLine } from '@/lib/stats/p
  */
 
 type Props = {
-  playerName: string
   entries: { matchId: string; line: StatLine }[]
   journeys: SeasonJourney[]
   mvpMatchIds: string[]
-  radar: RadarData | null
 }
 
 const sectionTitle = 'font-display text-3xl leading-none text-brand'
@@ -74,54 +71,6 @@ function StatList({ rows }: { rows: { label: string; value: string }[] }) {
   )
 }
 
-const RADAR = { cx: 163, cy: 120, r: 90, angles: [-90, -18, 54, 126, 198] }
-const radarPoint = (axis: number, share: number) => {
-  const angle = (RADAR.angles[axis] * Math.PI) / 180
-  return [RADAR.cx + RADAR.r * share * Math.cos(angle), RADAR.cy + RADAR.r * share * Math.sin(angle)] as const
-}
-const radarPolygon = (shares: number[]) => shares.map((share, axis) => radarPoint(axis, share).map((value) => value.toFixed(1)).join(',')).join(' ')
-// Position du texte de chaque axe : [x, y, ancrage]
-const RADAR_LABEL_POSITIONS: [number, number, 'middle' | 'start' | 'end'][] = [[163, 17, 'middle'], [262, 90, 'start'], [226, 214, 'start'], [100, 214, 'end'], [64, 90, 'end']]
-
-function RadarChart({ radar, playerName }: { radar: RadarData; playerName: string }) {
-  return (
-    <section aria-labelledby="radar-title" className="grid gap-2.5">
-      <h2 id="radar-title" className={sectionTitle}>Profil face à l’équipe</h2>
-      <p className="-mt-1 text-sm text-[var(--ink-soft)]">Chaque axe va de 0 à la meilleure valeur de l’équipe.</p>
-      <div className={`${card} !p-2`}>
-        <svg viewBox="0 0 326 232" className="w-full" role="img"
-          aria-label={`Profil de ${playerName} comparé à la moyenne de l’équipe sur les points, rebonds, passes, défense et tirs`}>
-          <g fill="none" stroke="var(--line)" strokeWidth="1">
-            {[1, 2 / 3, 1 / 3].map((ring) => <polygon key={ring} points={radarPolygon(radar.labels.map(() => ring))} />)}
-            {radar.labels.map((label, axis) => {
-              const [x, y] = radarPoint(axis, 1)
-              return <line key={label} x1={RADAR.cx} y1={RADAR.cy} x2={x} y2={y} />
-            })}
-          </g>
-          <polygon points={radarPolygon(radar.team)} fill="none" stroke="var(--ink-soft)" strokeWidth="2" strokeDasharray="5 4" />
-          <polygon points={radarPolygon(radar.player)} fill="var(--gold-500)" fillOpacity="0.38" stroke="var(--gold-500)" strokeWidth="3" strokeLinejoin="round" />
-          <g fill="var(--gold-500)" stroke="var(--surface)" strokeWidth="2">
-            {radar.player.map((share, axis) => {
-              const [x, y] = radarPoint(axis, share)
-              return <circle key={axis} cx={x} cy={y} r="5" />
-            })}
-          </g>
-          <g fontSize="13" fontWeight="700" fill="var(--ink)">
-            {radar.labels.map((label, axis) => {
-              const [x, y, anchor] = RADAR_LABEL_POSITIONS[axis]
-              return <text key={label} x={x} y={y} textAnchor={anchor}>{label}</text>
-            })}
-          </g>
-        </svg>
-        <div className="flex flex-wrap justify-center gap-x-5 gap-y-1 pb-2 text-sm font-bold">
-          <span className="inline-flex items-center gap-2"><i className="h-2.5 w-[18px] rounded-sm bg-[var(--gold-500)]" aria-hidden="true" />{playerName}</span>
-          <span className="inline-flex items-center gap-2 text-[var(--ink-soft)]"><i className="w-[18px] border-t-2 border-dashed border-[var(--ink-soft)]" aria-hidden="true" />Moyenne de l’équipe</span>
-        </div>
-      </div>
-    </section>
-  )
-}
-
 function ScorePoster({ journey, title }: { journey: SeasonJourney; title: string }) {
   const hasScore = journey.esiScore !== null && journey.opponentScore !== null
   const won = hasScore && journey.esiScore! > journey.opponentScore!
@@ -148,7 +97,7 @@ function ScorePoster({ journey, title }: { journey: SeasonJourney; title: string
 
 const matchLink = 'inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-maroon-panel px-4 font-bold text-on-brand focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--gold-500)]'
 
-export default function PlayerStatsExplorer({ playerName, entries, journeys, mvpMatchIds, radar }: Props) {
+export default function PlayerStatsExplorer({ entries, journeys, mvpMatchIds }: Props) {
   const [selected, setSelected] = useState<string>('avg')
   const lineByMatch = new Map(entries.map((entry) => [entry.matchId, entry.line]))
   const played = entries.length
@@ -230,7 +179,6 @@ export default function PlayerStatsExplorer({ playerName, entries, journeys, mvp
             <h2 id="shoot-title" className={sectionTitle}>Efficacité aux tirs</h2>
             <ShootingRows rows={shooting(total)} />
           </section>
-          {radar && <RadarChart radar={radar} playerName={playerName} />}
           <section aria-labelledby="others-title" className="grid gap-2.5">
             <h2 id="others-title" className={sectionTitle}>Autres moyennes</h2>
             <StatList rows={others(total, perGame)} />

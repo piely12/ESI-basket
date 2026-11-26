@@ -1,5 +1,4 @@
 import { createClient } from '@/lib/supabase/server'
-import { buildRadar, type RadarData, type RadarRow } from '@/lib/stats/player-radar'
 
 export type Team = { id: string; name: string; city: string | null; logo_url: string | null; is_esi: boolean }
 export type MatchRow = {
@@ -485,21 +484,6 @@ async function getEsiJourneys(supabase: Awaited<ReturnType<typeof createClient>>
   return (rows ?? []).flatMap((match) => toJourney(match) ?? [])
 }
 
-/** Données du radar « profil face à l'équipe ». Renvoie null si elles ne sont pas lisibles. */
-async function getRadar(supabase: Awaited<ReturnType<typeof createClient>>, playerId: string, teamId: string | null, matchIds: string[]): Promise<RadarData | null> {
-  if (!teamId || !matchIds.length) return null
-  try {
-    const { data: roster } = await supabase.from('players').select('id').eq('team_id', teamId)
-    const playerIds = (roster ?? []).map((row: { id: string }) => row.id)
-    if (playerIds.length < 2) return null
-    const { data: rows } = await supabase.from('match_player_stats')
-      .select('player_id,match_id,points,rebounds,assists,steals,blocks,fg_made,fg_attempted')
-      .in('match_id', matchIds).in('player_id', playerIds).not('published_at', 'is', null)
-    return buildRadar(playerId, (rows ?? []) as RadarRow[])
-  } catch {
-    return null
-  }
-}
 
 export async function getPlayerProfile(id: string, filters: { seasonId?: string; round?: number; period?: 'all' | '30d' | '90d' } = {}) {
   const supabase = await createClient()
@@ -543,11 +527,10 @@ export async function getPlayerProfile(id: string, filters: { seasonId?: string;
   if (season) (await getEsiJourneys(supabase, season.id)).forEach(addJourney)
   const journeys = [...journeyById.values()].sort((a, b) =>
     (a.round ?? Number.MAX_SAFE_INTEGER) - (b.round ?? Number.MAX_SAFE_INTEGER) || a.scheduledAt.localeCompare(b.scheduledAt))
-  const radar = await getRadar(supabase, id, (player as { team_id?: string | null }).team_id ?? null, journeys.map((journey) => journey.matchId))
 
   return {
     player, season: season ? { id: season.id, name: season.name } : null,
     seasons: seasons.map(({ id: seasonKey, name }) => ({ id: seasonKey, name })),
-    seasonStats, stats, mvpMatchIds, journeys, radar,
+    seasonStats, stats, mvpMatchIds, journeys,
   }
 }
