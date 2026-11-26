@@ -25,6 +25,11 @@ export const CARD_HEIGHT = 780
 // cache d'un an (immutable), le paramètre ?v= force les téléphones à recharger la nouvelle image.
 export const CARD_VERSION = 4
 
+/** Visage du joueur (recadré sur sa carte), ou null s'il n'a pas encore de carte. */
+export function playerFace(jerseyNumber: number | null) {
+  return jerseyNumber !== null && CARD_FILES[jerseyNumber] ? `/visages/visage_${jerseyNumber}.webp` : null
+}
+
 export function playerCardImage(jerseyNumber: number | null) {
   const file = jerseyNumber === null ? undefined : CARD_FILES[jerseyNumber]
   if (!file) return null

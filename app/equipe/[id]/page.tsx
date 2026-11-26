@@ -6,10 +6,8 @@ import PlayerStatsExplorer from '@/components/PlayerStatsExplorer'
 import SeasonSelect from '@/components/SeasonSelect'
 import { playerCardInfo } from '@/lib/data/player-card'
 import { getPlayerProfile } from '@/lib/data/public'
+import { nameCase } from '@/lib/format'
 import { toLine } from '@/lib/stats/player-stats'
-
-// « AMON » devient « Amon » pour la légende du radar.
-const nameCase = (value: string) => value.toLowerCase().replace(/(^|[\s-])(\p{L})/gu, (_, sep: string, letter: string) => sep + letter.toUpperCase())
 
 export default async function PlayerPage({ params, searchParams }: {
   params: Promise<{ id: string }>

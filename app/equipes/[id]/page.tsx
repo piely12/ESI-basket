@@ -4,6 +4,7 @@ import PublicNav from '@/components/PublicNav'
 import TeamBanner from '@/components/TeamBanner'
 import MatchCard from '@/components/MatchCard'
 import EmptyState from '@/components/ui/EmptyState'
+import EsiSeasonReview from '@/components/EsiSeasonReview'
 import { getStandings, getTeamPageData } from '@/lib/data/public'
 
 function StatValue({ value }: { value: number | null }) {
@@ -18,6 +19,7 @@ export default async function TeamPage({ params, searchParams }: {
   const data = await getTeamPageData(id, { seasonId: query.season })
   if (!data) notFound()
   const standings = await getStandings(data.season?.id)
+  if (data.team.is_esi) return <EsiSeasonReview data={data} standings={standings} />
 
   const row = standings.find((item) => item.team_id === id)
   const { team, season, seasonCompletedMatches, completedMatches, upcomingMatches, players, playerStats, teamStats } = data

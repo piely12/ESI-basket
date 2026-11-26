@@ -412,6 +412,8 @@ export async function getTeamPageData(id: string, filters: { seasonId?: string; 
   }
 }
 
+export type TeamPageData = NonNullable<Awaited<ReturnType<typeof getTeamPageData>>>
+
 export async function getRoster(): Promise<Player[]> {
   const supabase = await createClient()
   const { data: esi } = await supabase.from('teams').select('id').eq('is_esi', true).maybeSingle()
