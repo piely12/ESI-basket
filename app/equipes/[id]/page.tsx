@@ -12,23 +12,16 @@ function StatValue({ value }: { value: number | null }) {
 
 export default async function TeamPage({ params, searchParams }: {
   params: Promise<{ id: string }>
-  searchParams: Promise<{ season?: string; round?: string; metric?: string; mode?: string }>
+  searchParams: Promise<{ season?: string }>
 }) {
   const [{ id }, query] = await Promise.all([params, searchParams])
-  const roundValue = query.round ? Number(query.round) : undefined
-  const round = Number.isInteger(roundValue) && roundValue! > 0 && roundValue! <= 99 ? roundValue : undefined
-  const period = 'all'
-  const allowedMetrics = ['points', 'rebounds', 'assists', 'steals', 'blocks', 'fieldGoalPct'] as const
-  const metric = allowedMetrics.find((value) => value === query.metric) ?? 'points'
-  const mode = query.mode === 'total' ? 'total' : 'average'
-  const data = await getTeamPageData(id, { seasonId: query.season, round, period })
+  const data = await getTeamPageData(id, { seasonId: query.season })
   if (!data) notFound()
   const standings = await getStandings(data.season?.id)
 
   const row = standings.find((item) => item.team_id === id)
-  const { team, season, seasons, matches, seasonCompletedMatches, completedMatches, upcomingMatches, players, playerStats, teamStats } = data
+  const { team, season, seasonCompletedMatches, completedMatches, upcomingMatches, players, playerStats, teamStats } = data
   const teamBannerId = team.is_esi ? 'esi' : team.name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z]/g, '')
-  const rounds = [...new Set(matches.map((match) => match.round_number).filter((value): value is number => value !== null))].sort((a, b) => a - b)
   const played = completedMatches.length
   const wins = completedMatches.filter((match) => team.id === match.home_team.id
     ? match.home_score! > match.away_score!
@@ -65,7 +58,8 @@ export default async function TeamPage({ params, searchParams }: {
 
   const playerRows = players.map((player) => {
     const stats = playerStats.filter((stat) => stat.player_id === player.id)
-    const appearances = stats.filter((stat) => Number(stat.minutes_played ?? 0) > 0).length
+    // Un match compte comme joué dès qu'il y a une ligne de stats (les minutes ne sont pas relevées).
+    const appearances = stats.length
     const sum = (key: 'points' | 'rebounds' | 'assists' | 'steals' | 'blocks' | 'turnovers' | 'personal_fouls' | 'fg_made' | 'fg_attempted' | 'three_made' | 'three_attempted' | 'ft_made' | 'ft_attempted') => {
       const values = stats.map((stat) => stat[key]).filter((value): value is number => value !== null)
       return values.length === stats.length && values.length ? values.reduce((total, value) => total + value, 0) : null
@@ -101,10 +95,7 @@ export default async function TeamPage({ params, searchParams }: {
       threePointPct: pct(threesMade, threesAttempted), freeThrowPct: pct(freeThrowsMade, freeThrowsAttempted),
     }
   })
-  const totalMetric = { points: 'pointsTotal', rebounds: 'reboundsTotal', assists: 'assistsTotal', steals: 'stealsTotal', blocks: 'blocksTotal' } as const
-  const averageMetric = { points: 'pointsPerGame', rebounds: 'reboundsPerGame', assists: 'assistsPerGame', steals: 'stealsPerGame', blocks: 'blocksPerGame' } as const
-  const rankMetric = metric === 'fieldGoalPct' ? 'fieldGoalPct' : mode === 'total' ? totalMetric[metric] : averageMetric[metric]
-  playerRows.sort((a, b) => (b[rankMetric] ?? -1) - (a[rankMetric] ?? -1))
+  playerRows.sort((a, b) => (b.pointsPerGame ?? -1) - (a.pointsPerGame ?? -1))
 
   const teamStat = (key: 'rebounds' | 'assists' | 'steals' | 'blocks' | 'turnovers' | 'personal_fouls') => {
     if (!played || teamStats.length < played || teamStats.some((stat) => stat[key] === null)) return null
@@ -118,45 +109,14 @@ export default async function TeamPage({ params, searchParams }: {
     <>
       <PublicNav />
       <main className="mx-auto max-w-screen-xl space-y-7 px-4 pb-28 pt-7 sm:px-6 lg:px-10">
-        <Link href="/classement" className="inline-flex min-h-10 items-center gap-2 rounded font-semibold text-brand focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--gold-deep)]">
+        <Link href="/classement" className="inline-flex min-h-10 items-center gap-2 rounded font-semibold text-brand underline decoration-[1.5px] underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--gold-deep)]">
           Retour au classement
         </Link>
 
         <TeamBanner team={teamBannerId} season={season?.name ?? '2026-2027'} />
 
-        <form method="get" className="grid gap-3 rounded-xl border border-[var(--line)] bg-[var(--surface)] p-4 sm:grid-cols-2 lg:grid-cols-4 lg:items-end">
-          <label className="grid gap-1 text-xs font-bold uppercase tracking-wide text-[var(--ink-soft)]">Saison
-            <select name="season" defaultValue={season?.id ?? ''} className="min-h-11 rounded-lg border border-[var(--line)] bg-[var(--paper)] px-3 text-sm font-semibold normal-case tracking-normal text-[var(--ink)]">
-              {seasons.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
-            </select>
-          </label>
-          <label className="grid gap-1 text-xs font-bold uppercase tracking-wide text-[var(--ink-soft)]">Journée
-            <select name="round" defaultValue={query.round ?? ''} className="min-h-11 rounded-lg border border-[var(--line)] bg-[var(--paper)] px-3 text-sm font-semibold normal-case tracking-normal text-[var(--ink)]">
-              <option value="">Toutes les journées</option>{rounds.map((value) => <option key={value} value={value}>Journée {value}</option>)}
-            </select>
-          </label>
-          {team.is_esi && <>
-            <label className="grid gap-1 text-xs font-bold uppercase tracking-wide text-[var(--ink-soft)]">Classement par
-              <select name="metric" defaultValue={metric} className="min-h-11 rounded-lg border border-[var(--line)] bg-[var(--paper)] px-3 text-sm font-semibold normal-case tracking-normal text-[var(--ink)]">
-                <option value="points">Points</option><option value="rebounds">Rebonds</option>
-                <option value="assists">Passes</option><option value="steals">Interceptions</option>
-                <option value="blocks">Contres</option><option value="fieldGoalPct">Réussite aux tirs</option>
-              </select>
-            </label>
-            <label className="grid gap-1 text-xs font-bold uppercase tracking-wide text-[var(--ink-soft)]">Valeurs affichées
-              <select name="mode" defaultValue={mode} className="min-h-11 rounded-lg border border-[var(--line)] bg-[var(--paper)] px-3 text-sm font-semibold normal-case tracking-normal text-[var(--ink)]">
-                <option value="average">Moyennes par match joué</option><option value="total">Cumul de la période</option>
-              </select>
-            </label>
-          </>}
-          <div className="flex gap-2">
-            <button type="submit" className="min-h-11 flex-1 rounded-lg bg-maroon-panel px-4 text-sm font-bold text-on-brand">Appliquer</button>
-            <Link href={`/equipes/${id}`} className="inline-flex min-h-11 items-center justify-center rounded-lg border border-[var(--line)] px-4 text-sm font-semibold text-brand">Réinitialiser</Link>
-          </div>
-        </form>
-
-        <section aria-label={round !== undefined || period !== 'all' ? 'Bilan de la sélection' : 'Bilan de la saison'} className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7">
-          <h2 className="col-span-full font-display text-2xl text-brand">{round !== undefined || period !== 'all' ? 'Bilan de la sélection' : 'Bilan de la saison'}</h2>
+        <section aria-label="Bilan de la saison" className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7">
+          <h2 className="col-span-full font-display text-2xl text-brand">Bilan de la saison</h2>
           {[
             ['Classement', row ? `${row.rank}${row.rank === 1 ? 'er' : 'e'}` : '—'],
             ['Matchs joués', played], ['Victoires · défaites', `${wins} · ${losses}`],
@@ -205,19 +165,14 @@ export default async function TeamPage({ params, searchParams }: {
             <div className="overflow-x-auto rounded-xl border border-[var(--line)] bg-[var(--surface)]">
               <table className="w-full min-w-[760px] text-sm">
                 <thead className="bg-[var(--line)]/35 text-left text-xs uppercase text-[var(--ink-soft)]"><tr>
-                  {['Joueur', 'MJ', mode === 'total' ? 'PTS' : 'PTS / MJ', mode === 'total' ? 'REB' : 'REB / MJ', mode === 'total' ? 'AST' : 'AST / MJ', mode === 'total' ? 'INT' : 'INT / MJ', mode === 'total' ? 'CTR' : 'CTR / MJ', mode === 'total' ? 'BP' : 'BP / MJ', mode === 'total' ? 'Fautes' : 'Fautes / MJ', 'Tirs', '2PT', '3PT', 'LF'].map((heading) => <th key={heading} className="px-3 py-3">{heading}</th>)}
+                  {['Joueur', 'MJ', 'PTS / MJ', 'REB / MJ', 'AST / MJ', 'INT / MJ', 'CTR / MJ', 'BP / MJ', 'Fautes / MJ', 'Tirs', '2PT', '3PT', 'LF'].map((heading) => <th key={heading} className="px-3 py-3">{heading}</th>)}
                 </tr></thead>
                 <tbody>{playerRows.map((row) => <tr key={row.player.id} className="border-t border-[var(--line)]">
-                  <td className="px-3 py-3"><Link href={`/equipe/${row.player.id}`} className="font-semibold text-brand hover:underline">{row.player.first_name} {row.player.last_name}</Link></td>
+                  <td className="px-3 py-3"><Link href={`/equipe/${row.player.id}`} className="font-semibold text-brand underline decoration-[1.5px] underline-offset-4">{row.player.first_name} {row.player.last_name}</Link></td>
                   <td className="px-3 py-3 tabular-nums">{row.appearances}</td>
                   {[
-                    mode === 'total' ? row.pointsTotal : row.pointsPerGame,
-                    mode === 'total' ? row.reboundsTotal : row.reboundsPerGame,
-                    mode === 'total' ? row.assistsTotal : row.assistsPerGame,
-                    mode === 'total' ? row.stealsTotal : row.stealsPerGame,
-                    mode === 'total' ? row.blocksTotal : row.blocksPerGame,
-                    mode === 'total' ? row.turnoversTotal : row.turnoversPerGame,
-                    mode === 'total' ? row.personalFoulsTotal : row.personalFoulsPerGame,
+                    row.pointsPerGame, row.reboundsPerGame, row.assistsPerGame, row.stealsPerGame,
+                    row.blocksPerGame, row.turnoversPerGame, row.personalFoulsPerGame,
                   ].map((value, index) => <td key={index} className="px-3 py-3 tabular-nums">{value === null ? '—' : value.toFixed(1)}</td>)}
                   <td className="px-3 py-3 tabular-nums">{row.fieldGoalPct === null ? '—' : `${row.fieldGoalPct.toFixed(1)}%`}</td>
                   {[row.twoPointPct, row.threePointPct, row.freeThrowPct].map((value, index) => <td key={index} className="px-3 py-3 tabular-nums">{value === null ? '—' : `${value.toFixed(1)}%`}</td>)}
