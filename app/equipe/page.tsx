@@ -7,7 +7,7 @@ import StaffGrid from './StaffGrid'
 const staff = [
   { name: 'SAIH PIELY', role: 'Coach principal', photo: '/staff/saih-piely.webp', photoLarge: '/staff/saih-piely-grand.webp' },
   { name: 'N’GUESSAN DANIEL-ANGE', role: 'Coach adjoint', photo: '/staff/nguessan-daniel-ange.webp', photoLarge: '/staff/nguessan-daniel-ange-grand.webp' },
-  { name: 'MELEDJE ELMIRA', role: 'Statisticienne', photo: '/staff/meledje-elmira.webp', photoLarge: '/staff/meledje-elmira-grand.webp' },
+  { name: 'MELEDJE ELMIRA', role: 'Statisticienne', photo: '/staff/meledje-elmira.webp?v=2', photoLarge: '/staff/meledje-elmira-grand.webp?v=2' },
   { name: 'KPANGBE NOURA', role: 'Vidéaste', photo: '/staff/kpangbe-noura.webp', photoLarge: '/staff/kpangbe-noura-grand.webp' },
 ]
 
