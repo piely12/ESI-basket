@@ -724,3 +724,9 @@ html[data-splash-enabled="true"]:not([data-splash-seen="true"]) .lions-splash { 
   32% { transform: rotate(-6deg); }
   40% { transform: rotate(3deg); }
 }
+
+/* Légende en panneau qui monte du bas de l'écran. */
+.legend-sheet { animation: legend-sheet-up 280ms cubic-bezier(.2, .8, .2, 1); }
+.legend-backdrop { animation: legend-fade-in 200ms ease; }
+@keyframes legend-sheet-up { from { transform: translateY(100%); } }
+@keyframes legend-fade-in { from { opacity: 0; } }

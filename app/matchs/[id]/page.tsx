@@ -5,9 +5,19 @@ import CompositionBoard from '@/components/CompositionBoard'
 import MatchCard from '@/components/MatchCard'
 import MatchStatsSheet from '@/components/MatchStatsSheet'
 import TeamStatsDuel from '@/components/TeamStatsDuel'
+import StatLegend from '@/components/StatLegend'
 import TeamLogo from '@/components/TeamLogo'
 import { getMatchById, type MatchRow, type Team } from '@/lib/data/public'
 import { formatMatchDate, shortDate } from '@/lib/format'
+
+const STANDINGS_LEGEND = [
+  ['Rang', 'Position au classement'],
+  ['MJ', 'Matchs joués'],
+  ['V', 'Victoires'],
+  ['D', 'Défaites'],
+  ['Pts', 'Points de classement'],
+  ['Diff.', 'Points marqués moins points encaissés'],
+] as const
 
 export default async function MatchDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -75,6 +85,7 @@ export default async function MatchDetailPage({ params }: { params: Promise<{ id
               })}</tbody>
             </table>
           </div> : <p className="text-sm text-[var(--ink-soft)]">Le classement apparaîtra après l’enregistrement des premiers résultats.</p>}
+          {standings.length > 0 && <StatLegend title="Légende du classement" className="mt-2" items={STANDINGS_LEGEND} />}
         </section>
 
         <section aria-label="Historique des deux équipes" className="grid gap-5 lg:grid-cols-2">

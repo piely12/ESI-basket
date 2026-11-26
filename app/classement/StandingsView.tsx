@@ -5,6 +5,7 @@ import type { KeyboardEvent, ReactNode } from 'react'
 import type { StandingRow } from '@/lib/data/public'
 import TeamLogo from '@/components/TeamLogo'
 import EmptyState from '@/components/ui/EmptyState'
+import StatLegend from '@/components/StatLegend'
 
 const columns = ['Rang', 'Équipe', 'MJ', 'V', 'D', 'PM', 'PE', 'Diff.', 'PTS']
 
@@ -73,14 +74,11 @@ export default function StandingsView({ rows }: { rows: StandingRow[] }) {
       <span className="inline-flex items-center gap-2"><span className="size-[7px] rounded-full bg-muted-foreground/50" aria-hidden="true" />Places 5 à 8 : hors qualification</span>
     </div>
 
-    <InfoCard title="Légende">
-      <dl className="grid grid-cols-2 gap-x-5 gap-y-3 text-sm sm:grid-cols-3 lg:grid-cols-5">
-        {[
-          ['MJ', 'Matchs joués'], ['V', 'Victoires'], ['D', 'Défaites'], ['PM', 'Points marqués'],
-          ['PE', 'Points encaissés'], ['Diff.', 'PM − PE'], ['PTS', 'Points de classement'],
-        ].map(([abbr, definition]) => <div key={abbr}><dt className="font-bold text-foreground">{abbr}</dt><dd className="text-muted-foreground">{definition}</dd></div>)}
-      </dl>
-    </InfoCard>
+    <StatLegend title="Légende du classement" className="px-1" items={[
+      ['Rang', 'Position au classement'], ['MJ', 'Matchs joués'], ['V', 'Victoires'], ['D', 'Défaites'],
+      ['PM', 'Points marqués'], ['PE', 'Points encaissés'], ['Diff.', 'Points marqués moins points encaissés'],
+      ['PTS', 'Points de classement'],
+    ]} />
 
     <InfoCard title="Règles du championnat">
       <ul className="space-y-3 text-sm text-foreground">

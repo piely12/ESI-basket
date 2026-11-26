@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import MatchBoxScore, { type BoxScoreRow, type BoxScoreTotal } from '@/components/MatchBoxScore'
+import MatchBoxScore, { type BoxScoreRow, type BoxScoreValues } from '@/components/MatchBoxScore'
 import type { PublicMatchPlayerStat } from '@/lib/data/public'
 import { MVP_HEIGHT, MVP_WIDTH, mvpPoster } from '@/lib/data/mvp-images'
 
@@ -17,22 +17,23 @@ export default function MatchStatsSheet({ stats, mvpPlayerId, roundNumber }: { s
   const sorted = [...stats].sort((a, b) => n(b.points) - n(a.points)
     || (n(b.rebounds) + n(b.assists)) - (n(a.rebounds) + n(a.assists)))
 
-  // The database stores all field goals (2 + 3 pts); the sheet shows 2 pts separately.
-  const values = (stat: PublicMatchPlayerStat): BoxScoreTotal => ({
-    pf: n(stat.personal_fouls),
-    twoA: n(stat.fg_attempted) - n(stat.three_attempted),
-    twoM: n(stat.fg_made) - n(stat.three_made),
-    threeA: n(stat.three_attempted),
-    threeM: n(stat.three_made),
-    ftA: n(stat.ft_attempted),
-    ftM: n(stat.ft_made),
-    rd: n(stat.rebounds_defensive),
-    ro: n(stat.rebounds_offensive),
+  // FG counts every field goal (2 and 3 pts), as stored in the database.
+  const values = (stat: PublicMatchPlayerStat): BoxScoreValues => ({
+    pts: n(stat.points),
+    reb: n(stat.rebounds),
     ast: n(stat.assists),
     stl: n(stat.steals),
     blk: n(stat.blocks),
+    pf: n(stat.personal_fouls),
     tov: n(stat.turnovers),
-    pts: n(stat.points),
+    oreb: n(stat.rebounds_offensive),
+    dreb: n(stat.rebounds_defensive),
+    fgM: n(stat.fg_made),
+    fgA: n(stat.fg_attempted),
+    ftM: n(stat.ft_made),
+    ftA: n(stat.ft_attempted),
+    threeM: n(stat.three_made),
+    threeA: n(stat.three_attempted),
   })
 
   const rows: BoxScoreRow[] = sorted.map((stat) => ({
@@ -44,11 +45,12 @@ export default function MatchStatsSheet({ stats, mvpPlayerId, roundNumber }: { s
     ...values(stat),
   }))
 
-  const total = rows.reduce<BoxScoreTotal>((sum, row) => {
+  const empty: BoxScoreValues = { pts: 0, reb: 0, ast: 0, stl: 0, blk: 0, pf: 0, tov: 0, oreb: 0, dreb: 0, fgM: 0, fgA: 0, ftM: 0, ftA: 0, threeM: 0, threeA: 0 }
+  const total = rows.reduce<BoxScoreValues>((sum, row) => {
     const next = { ...sum }
-    for (const key of Object.keys(sum) as (keyof BoxScoreTotal)[]) next[key] = sum[key] + row[key]
+    for (const key of Object.keys(sum) as (keyof BoxScoreValues)[]) next[key] = sum[key] + row[key]
     return next
-  }, { pf: 0, twoA: 0, twoM: 0, threeA: 0, threeM: 0, ftA: 0, ftM: 0, rd: 0, ro: 0, ast: 0, stl: 0, blk: 0, tov: 0, pts: 0 })
+  }, empty)
 
   const mvp = sorted.find((stat) => stat.player_id === mvpPlayerId)
   const mvpLine = mvp ? [
