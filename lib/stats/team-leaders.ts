@@ -32,18 +32,23 @@ export type LeaderPlayer = {
   id: string
   name: string
   position: string
+  /** Visage du joueur (chemin d'image) ou null : on affiche alors ses initiales. */
+  face: string | null
   games: number
   average: Record<AverageKey, number>
   shooting: Record<ShootingKey, Shooting>
 }
 
 /** Résume les lignes de stats d'un joueur. Renvoie null s'il n'a joué aucun match. */
-export function buildLeaderPlayer(info: { id: string; name: string; position: string }, lines: readonly StatLine[]): LeaderPlayer | null {
+export function buildLeaderPlayer(info: { id: string; name: string; position: string; face?: string | null }, lines: readonly StatLine[]): LeaderPlayer | null {
   const games = lines.length
   if (!games) return null
   const sum = (pick: (line: StatLine) => number) => lines.reduce((total, line) => total + pick(line), 0)
   return {
-    ...info,
+    id: info.id,
+    name: info.name,
+    position: info.position,
+    face: info.face ?? null,
     games,
     average: {
       points: sum((line) => line.points) / games,

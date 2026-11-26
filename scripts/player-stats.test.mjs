@@ -103,6 +103,8 @@ test('a leader summary averages match lines and skips players without a match', 
   const lines = [toLine(raw({ points: 14, fg_made: 5, fg_attempted: 11, three_made: 1, three_attempted: 3 })), toLine(raw({ points: 9, fg_made: 3, fg_attempted: 8, three_made: 1, three_attempted: 3 }))]
   const summary = buildLeaderPlayer({ id: 'a', name: 'Amon', position: 'Meneur' }, lines)
   assert.equal(summary.games, 2)
+  assert.equal(summary.face, null)
+  assert.equal(buildLeaderPlayer({ id: 'c', name: 'Kocla', position: 'Pivot', face: '/visages/visage_9.webp' }, lines).face, '/visages/visage_9.webp')
   assert.equal(summary.average.points, 11.5)
   assert.deepEqual(summary.shooting.twoPoints, { made: 6, attempted: 13 })
   assert.equal(buildLeaderPlayer({ id: 'b', name: 'Bench', position: 'Ailier' }, []), null)

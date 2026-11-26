@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import Link from 'next/link'
 import { useEffect, useRef, useState } from 'react'
 import { formatAverage, percentOf } from '@/lib/stats/player-stats'
@@ -90,7 +91,9 @@ export default function TeamLeaders({ players }: { players: LeaderPlayer[] }) {
               <li key={row.player.id} className="border-t border-[var(--line)] first:border-t-0">
                 <Link href={`/equipe/${row.player.id}`} className="flex items-center gap-3 py-3.5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--gold-500)]">
                   <span className={`w-7 flex-none text-center font-display text-4xl leading-none tabular-nums ${first ? 'text-[var(--gold-deep)]' : 'text-[var(--ink-soft)]'}`}>{index + 1}</span>
-                  <span className={`grid size-12 flex-none place-items-center rounded-full bg-maroon-panel font-display text-xl text-[var(--gold-500)] ${first ? 'ring-[3px] ring-[var(--gold-500)]' : ''}`} aria-hidden="true">{initials(row.player.name)}</span>
+                  {row.player.face
+                    ? <Image src={row.player.face} alt="" width={96} height={96} unoptimized className={`size-12 flex-none rounded-full bg-maroon-panel object-cover ${first ? 'ring-[3px] ring-[var(--gold-500)]' : ''}`} />
+                    : <span className={`grid size-12 flex-none place-items-center rounded-full bg-maroon-panel font-display text-xl text-[var(--gold-500)] ${first ? 'ring-[3px] ring-[var(--gold-500)]' : ''}`} aria-hidden="true">{initials(row.player.name)}</span>}
                   <span className="min-w-0 flex-1">
                     <span className="block truncate font-bold">{row.player.name}</span>
                     <span className="block truncate text-sm text-[var(--ink-soft)]">{row.player.position}</span>

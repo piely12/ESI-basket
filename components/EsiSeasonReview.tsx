@@ -7,6 +7,7 @@ import TeamLogo from '@/components/TeamLogo'
 import EmptyState from '@/components/ui/EmptyState'
 import { nameCase } from '@/lib/format'
 import { playerCardInfo } from '@/lib/data/player-card'
+import { playerFace } from '@/lib/data/player-card-images'
 import type { MatchRow, StandingRow, Team, TeamPageData } from '@/lib/data/public'
 import { formatAverage, toLine } from '@/lib/stats/player-stats'
 import { marginChart, signed } from '@/lib/stats/season-review'
@@ -55,7 +56,7 @@ export default function EsiSeasonReview({ data, standings }: { data: TeamPageDat
   const leaders = players.flatMap((player) => {
     const info = playerCardInfo(player)
     const lines = playerStats.filter((stat) => stat.player_id === player.id).map(toLine)
-    return buildLeaderPlayer({ id: player.id, name: nameCase(`${info.first_name} ${info.last_name}`), position: info.position ?? '' }, lines) ?? []
+    return buildLeaderPlayer({ id: player.id, name: nameCase(`${info.first_name} ${info.last_name}`), position: info.position ?? '', face: playerFace(player.jersey_number) }, lines) ?? []
   }) satisfies LeaderPlayer[]
 
   return (
