@@ -14,7 +14,7 @@ import { marginChart, signed } from '@/lib/stats/season-review'
 import { buildLeaderPlayer, type LeaderPlayer } from '@/lib/stats/team-leaders'
 
 /*
- * Page de l'ESI : bannière, bilan, forme récente, écart de points, leaders filtrables,
+ * Page de l'ESI : bannière, bilan, écart de points, leaders filtrables,
  * classement complet puis historique des matchs.
  */
 
@@ -50,7 +50,6 @@ export default function EsiSeasonReview({ data, standings }: { data: TeamPageDat
   const pointsAgainst = results.reduce((total, result) => total + result.theirs, 0)
   const perMatch = (value: number) => (played ? formatAverage(value / played) : '—')
   const row = standings.find((item) => item.team_id === team.id)
-  const form = results.slice(-5)
   const chart = marginChart(results.map((result) => result.mine - result.theirs))
 
   const leaders = players.flatMap((player) => {
@@ -91,19 +90,6 @@ export default function EsiSeasonReview({ data, standings }: { data: TeamPageDat
                 ))}
               </dl>
               <p className="mt-2 text-xs opacity-75">Moyennes par match</p>
-            </section>
-
-            <section aria-labelledby="form-title" className="grid gap-2.5">
-              <h2 id="form-title" className={sectionTitle}>Forme récente</h2>
-              <div className={`${card} flex justify-around gap-1`}>
-                {form.map((result) => (
-                  <Link key={result.match.id} href={`/matchs/${result.match.id}`} className="grid min-w-0 flex-1 justify-items-center gap-1 text-center focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--gold-500)]">
-                    <span className={`grid size-11 place-items-center rounded-full text-base font-extrabold ${badge(result.won)}`}><span className="sr-only">{result.won ? 'Victoire' : 'Défaite'} </span>{result.won ? 'V' : 'D'}</span>
-                    <span className="font-display text-xl leading-none text-brand">{result.label}</span>
-                    <span className="max-w-full truncate text-xs font-bold text-[var(--ink-soft)]">{result.opponent}</span>
-                  </Link>
-                ))}
-              </div>
             </section>
 
             <section aria-labelledby="margin-title" className="grid gap-2.5">

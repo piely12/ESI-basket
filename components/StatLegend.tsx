@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useId, useRef, useState, type PointerEvent } from 'react'
+import { useCallback, useEffect, useId, useRef, useState, type PointerEvent, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 
 /*
@@ -13,10 +13,12 @@ import { createPortal } from 'react-dom'
 const CLOSE_DISTANCE = 90
 const CLOSE_DURATION = 220
 
-export default function StatLegend({ title, items, className = '' }: {
+export default function StatLegend({ title, items, className = '', children }: {
   title: string
   items: readonly (readonly [string, string])[]
   className?: string
+  /** Contenu affiché sous les abréviations (par exemple les règles du championnat). */
+  children?: ReactNode
 }) {
   const [open, setOpen] = useState(false)
   const [closing, setClosing] = useState(false)
@@ -94,7 +96,8 @@ export default function StatLegend({ title, items, className = '' }: {
               </button>
               <h2 id={titleId} className="text-2xl font-bold">{title}</h2>
             </div>
-            <dl className="grid overflow-y-auto overscroll-contain px-6 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
+            <div className="overflow-y-auto overscroll-contain px-6 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
+            <dl className="grid">
               {items.map(([abbr, definition]) => (
                 <div key={abbr} className="grid grid-cols-[4.25rem_minmax(0,1fr)] items-baseline gap-3 py-2.5">
                   <dt className="text-[15px] font-semibold uppercase text-[var(--ink-soft)]">{abbr}</dt>
@@ -102,6 +105,8 @@ export default function StatLegend({ title, items, className = '' }: {
                 </div>
               ))}
             </dl>
+            {children}
+            </div>
           </div>
         </div>,
         document.body,

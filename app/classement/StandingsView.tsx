@@ -78,36 +78,30 @@ export default function StandingsView({ rows }: { rows: StandingRow[] }) {
       ['Rang', 'Position au classement'], ['MJ', 'Matchs joués'], ['V', 'Victoires'], ['D', 'Défaites'],
       ['PM', 'Points marqués'], ['PE', 'Points encaissés'], ['Diff.', 'Points marqués moins points encaissés'],
       ['PTS', 'Points de classement'],
-    ]} />
-
-    <InfoCard title="Règles du championnat">
-      <ul className="space-y-3 text-sm text-foreground">
-        <Rule icon={<UsersIcon />}><span>La ligue comprend 8 équipes. Chaque équipe dispute 7 matchs.</span></Rule>
-        <Rule icon={<TrophyIcon />}><span>Les 4 premières se qualifient pour les demi-finales.</span></Rule>
-        <Rule icon={<ScaleIcon />}>
-          <div>
-            <p>En cas d&apos;égalité de points, les équipes sont départagées dans cet ordre :</p>
-            <ol className="mt-2 flex flex-wrap gap-2">
-              <li className="rounded-full bg-muted px-3 py-1"><span className="mr-1 font-bold text-gold">1</span>Goal average</li>
-              <li className="rounded-full bg-muted px-3 py-1"><span className="mr-1 font-bold text-gold">2</span>Confrontation directe</li>
-            </ol>
-            <p className="mt-2 text-muted-foreground">Goal average : points marqués moins points encaissés.</p>
+    ]}>
+      <section aria-labelledby="rules-title" className="mt-4 border-t border-[var(--line)] pt-5">
+        <h3 id="rules-title" className="mb-4 text-lg font-bold">Règles du championnat</h3>
+          <ul className="space-y-3 text-sm text-foreground">
+            <Rule icon={<UsersIcon />}><span>La ligue comprend 8 équipes. Chaque équipe dispute 7 matchs.</span></Rule>
+            <Rule icon={<TrophyIcon />}><span>Les 4 premières se qualifient pour les demi-finales.</span></Rule>
+            <Rule icon={<ScaleIcon />}>
+              <div>
+                <p>En cas d&apos;égalité de points, les équipes sont départagées dans cet ordre :</p>
+                <ol className="mt-2 flex flex-wrap gap-2">
+                  <li className="rounded-full bg-muted px-3 py-1"><span className="mr-1 font-bold text-gold">1</span>Goal average</li>
+                  <li className="rounded-full bg-muted px-3 py-1"><span className="mr-1 font-bold text-gold">2</span>Confrontation directe</li>
+                </ol>
+                <p className="mt-2 text-muted-foreground">Goal average : points marqués moins points encaissés.</p>
+              </div>
+            </Rule>
+          </ul>
+          <div className="mt-4 flex items-start gap-3 rounded-xl border border-border bg-muted p-3 text-sm text-muted-foreground">
+            <InfoIcon />
+            <p>Les places restent provisoires tant que la saison régulière n&apos;est pas terminée.</p>
           </div>
-        </Rule>
-      </ul>
-      <div className="mt-4 flex items-start gap-3 rounded-xl border border-border bg-muted p-3 text-sm text-muted-foreground">
-        <InfoIcon />
-        <p>Les places restent provisoires tant que la saison régulière n&apos;est pas terminée.</p>
-      </div>
-    </InfoCard>
+      </section>
+    </StatLegend>
   </div>
-}
-
-function InfoCard({ title, children }: { title: string; children: ReactNode }) {
-  return <section className="rounded-2xl border border-border bg-card p-4 sm:p-5">
-    <h2 className="mb-4 text-[11px] font-bold uppercase tracking-widest text-gold-deep">{title}</h2>
-    {children}
-  </section>
 }
 
 function Rule({ icon, children }: { icon: ReactNode; children: ReactNode }) {
