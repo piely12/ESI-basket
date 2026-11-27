@@ -1,5 +1,6 @@
 import 'server-only'
 import { createHmac, randomInt, timingSafeEqual } from 'node:crypto'
+import { serverEnv } from '@/lib/env'
 
 export const OTP_TTL_MINUTES = 10
 export const OTP_MAX_ATTEMPTS = 5
@@ -8,7 +9,7 @@ export const OTP_WINDOW_MINUTES = 15         // ...par fenêtre de 15 min
 const RESET_TOKEN_TTL_MS = 10 * 60 * 1000
 
 function pepper(): string {
-  const p = process.env.OTP_PEPPER
+  const p = serverEnv('OTP_PEPPER')
   if (!p || p.length < 16) throw new Error('OTP_PEPPER manquant ou trop court dans .env.local')
   return p
 }

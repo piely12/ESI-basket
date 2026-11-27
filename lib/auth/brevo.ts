@@ -1,6 +1,7 @@
 import 'server-only'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { consumeRateLimit, rlKey } from '@/lib/security'
+import { serverEnv } from '@/lib/env'
 
 export const BREVO_DAILY_APP_LIMIT = 270
 export const BREVO_DAILY_WARNING_LIMIT = 240
@@ -21,15 +22,15 @@ function escapeHtml(value: string) {
 
 export async function sendOtpEmail(to: string, code: string, ttlMinutes: number) {
   await reserveDailyEmail()
-  const apiKey = process.env.BREVO_API_KEY
-  const senderEmail = process.env.BREVO_SENDER_EMAIL
+  const apiKey = serverEnv('BREVO_API_KEY')
+  const senderEmail = serverEnv('BREVO_SENDER_EMAIL')
   if (!apiKey || !senderEmail) throw new Error('BREVO_API_KEY / BREVO_SENDER_EMAIL manquants')
 
   const res = await fetch('https://api.brevo.com/v3/smtp/email', {
     method: 'POST',
     headers: { 'api-key': apiKey, 'content-type': 'application/json', accept: 'application/json' },
     body: JSON.stringify({
-      sender: { name: process.env.BREVO_SENDER_NAME || 'The Lions of ESI', email: senderEmail },
+      sender: { name: serverEnv('BREVO_SENDER_NAME') || 'The Lions of ESI', email: senderEmail },
       to: [{ email: to }],
       subject: `Votre code de vérification : ${code}`,
       htmlContent: `
@@ -49,14 +50,14 @@ export async function sendOtpEmail(to: string, code: string, ttlMinutes: number)
 
 export async function sendFirstLoginOtpEmail(to: string, code: string, ttlMinutes: number) {
   await reserveDailyEmail()
-  const apiKey = process.env.BREVO_API_KEY
-  const senderEmail = process.env.BREVO_SENDER_EMAIL
+  const apiKey = serverEnv('BREVO_API_KEY')
+  const senderEmail = serverEnv('BREVO_SENDER_EMAIL')
   if (!apiKey || !senderEmail) throw new Error('Configuration e-mail indisponible')
   const res = await fetch('https://api.brevo.com/v3/smtp/email', {
     method: 'POST',
     headers: { 'api-key': apiKey, 'content-type': 'application/json', accept: 'application/json' },
     body: JSON.stringify({
-      sender: { name: process.env.BREVO_SENDER_NAME || 'The Lions of ESI', email: senderEmail },
+      sender: { name: serverEnv('BREVO_SENDER_NAME') || 'The Lions of ESI', email: senderEmail },
       to: [{ email: to }],
       subject: 'Code de première connexion · The Lions of ESI',
       htmlContent: `<div style="font-family:Arial,sans-serif;max-width:480px;margin:auto;padding:24px"><h2 style="color:#6e0f22">The Lions of ESI</h2><p>Voici le code nécessaire pour choisir votre mot de passe personnel :</p><p style="font-size:34px;letter-spacing:8px;font-weight:bold;margin:20px 0">${code}</p><p>Ce code expire dans ${ttlMinutes} minutes et ne peut être utilisé qu’une seule fois.</p><p style="color:#666;font-size:13px">Si vous n’êtes pas à l’origine de cette connexion, ignorez cet e-mail et contactez le coach.</p></div>`,
@@ -69,8 +70,8 @@ export async function sendFirstLoginOtpEmail(to: string, code: string, ttlMinute
 
 export async function sendAdminLoginAlert(to: string, details: { ip: string; userAgent: string }) {
   await reserveDailyEmail()
-  const apiKey = process.env.BREVO_API_KEY
-  const senderEmail = process.env.BREVO_SENDER_EMAIL
+  const apiKey = serverEnv('BREVO_API_KEY')
+  const senderEmail = serverEnv('BREVO_SENDER_EMAIL')
   if (!apiKey || !senderEmail) throw new Error('Configuration e-mail indisponible')
 
   const occurredAt = new Date().toISOString()
@@ -80,7 +81,7 @@ export async function sendAdminLoginAlert(to: string, details: { ip: string; use
     method: 'POST',
     headers: { 'api-key': apiKey, 'content-type': 'application/json', accept: 'application/json' },
     body: JSON.stringify({
-      sender: { name: process.env.BREVO_SENDER_NAME || 'The Lions of ESI', email: senderEmail },
+      sender: { name: serverEnv('BREVO_SENDER_NAME') || 'The Lions of ESI', email: senderEmail },
       to: [{ email: to }],
       subject: 'Connexion à votre espace administrateur ESI',
       textContent: `Une connexion à votre espace administrateur The Lions of ESI a eu lieu le ${occurredAt} (UTC). Adresse IP : ${details.ip}. Navigateur : ${details.userAgent || 'Inconnu'}. Si vous n’êtes pas à l’origine de cette connexion, changez immédiatement votre mot de passe et contactez le staff.`,
@@ -93,8 +94,8 @@ export async function sendAdminLoginAlert(to: string, details: { ip: string; use
 }
 
 export async function sendAccountReadyEmail(to: string, firstName: string, code: string) {
-  const apiKey = process.env.BREVO_API_KEY
-  const senderEmail = process.env.BREVO_SENDER_EMAIL
+  const apiKey = serverEnv('BREVO_API_KEY')
+  const senderEmail = serverEnv('BREVO_SENDER_EMAIL')
   if (!apiKey || !senderEmail) throw new Error('Configuration e-mail indisponible')
   if (!/^\d{6}$/.test(code)) throw new Error('Code d’invitation invalide')
 
@@ -123,7 +124,7 @@ export async function sendAccountReadyEmail(to: string, firstName: string, code:
     method: 'POST',
     headers: { 'api-key': apiKey, 'content-type': 'application/json', accept: 'application/json' },
     body: JSON.stringify({
-      sender: { name: process.env.BREVO_SENDER_NAME || 'The Lions of ESI', email: senderEmail },
+      sender: { name: serverEnv('BREVO_SENDER_NAME') || 'The Lions of ESI', email: senderEmail },
       to: [{ email: to }],
       subject: 'Votre accès à The Lions of ESI',
       textContent: 'Bonjour ' + recipientName + ', votre accès à The Lions of ESI est prêt. Votre code d’activation est ' + code + '. Ouvrez ' + inviteUrl.toString() + ', saisissez ce code puis choisissez votre mot de passe. Le code expire après 10 minutes et ne peut être utilisé qu’une seule fois. Si vous n’êtes pas à l’origine de cette demande, ignorez ce message.',
