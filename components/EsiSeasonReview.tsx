@@ -121,11 +121,11 @@ export default function EsiSeasonReview({ data, standings }: { data: TeamPageDat
         <section aria-labelledby="standings-title" className="grid gap-2.5">
           <h2 id="standings-title" className={sectionTitle}>Classement complet</h2>
           {standings.length ? (
-            <div className="overflow-x-auto rounded-xl border border-[var(--line)] bg-[var(--surface)]">
-              <table className="w-full border-collapse text-sm">
+            <div className="overflow-x-auto overscroll-x-contain rounded-xl border border-[var(--line)] bg-[var(--surface)]" role="region" aria-label="Classement complet, défilement horizontal" tabIndex={0}>
+              <table className="w-full min-w-[420px] border-separate border-spacing-0 text-sm">
                 <thead className="bg-[var(--neutral-bg)] text-[11px] font-bold uppercase tracking-[0.04em] text-[var(--ink-soft)]">
                   <tr>
-                    <th scope="col" className="px-3 py-2.5 text-left">Équipe</th>
+                    <th scope="col" className="sticky left-0 z-10 bg-[var(--neutral-bg)] px-3 py-2.5 text-left shadow-[1px_0_0_var(--line)]">Équipe</th>
                     {['Joués', 'Gagnés', 'Perdus', 'Écart', 'Points'].map((heading) => <th key={heading} scope="col" className={`px-1.5 py-2.5 text-right sm:px-2 ${heading === 'Joués' ? 'hidden sm:table-cell' : ''}`}>{heading}</th>)}
                   </tr>
                 </thead>
@@ -134,11 +134,11 @@ export default function EsiSeasonReview({ data, standings }: { data: TeamPageDat
                     const mine = item.team_id === team.id
                     const difference = item.points_for - item.points_against
                     return (
-                      <tr key={item.team_id} className={`border-t border-[var(--line)] tabular-nums ${mine ? 'bg-[var(--gold-soft)] font-bold' : ''}`}>
-                        <td className="px-3 py-3">
+                      <tr key={item.team_id} className={`tabular-nums [&>td]:border-t [&>td]:border-[var(--line)] ${mine ? 'font-bold [&>td]:bg-[color-mix(in_oklch,var(--gold-500)_16%,var(--surface))]' : '[&>td]:bg-[var(--surface)]'}`}>
+                        <td className="sticky left-0 z-10 px-3 py-3 shadow-[1px_0_0_var(--line)]">
                           <Link href={`/equipes/${item.team_id}`} className="flex min-w-0 items-center gap-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--gold-500)]">
                             <span className={`w-5 flex-none font-bold ${mine ? 'text-[var(--gold-deep)]' : 'text-[var(--ink-soft)]'}`}>{item.rank}</span>
-                            <TeamLogo team={item.team} size={24} className="size-6 shrink-0 max-[375px]:hidden" />
+                            <TeamLogo team={item.team} size={24} className="size-6 shrink-0" />
                             <span className="truncate">{teamLabel(item.team)}</span>
                           </Link>
                         </td>
