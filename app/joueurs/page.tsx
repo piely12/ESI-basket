@@ -107,7 +107,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ n
   const playerId = profile.person_id
   const [playerResult, rosterResult, notificationResult] = await Promise.all([
     supabase.from('players').select('id,team_id,first_name,last_name,jersey_number,position,status,photo_url')
-      .eq('id', playerId).eq('user_id', user.id).maybeSingle(),
+      .eq('id', playerId).maybeSingle(),
     supabase.from('match_rosters').select('match_id,is_called_up,response,validated_at')
       .eq('player_id', playerId).eq('is_called_up', true),
     supabase.from('notifications').select('id,title,body,href,read_at,created_at', { count: 'exact' })
