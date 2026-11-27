@@ -48,3 +48,35 @@ export function buildMatchReminderPayload(matches: ReminderMatch[]) {
     url: matchReminderUrl(matches[0]),
   }
 }
+
+/*
+ * Convocation d'un joueur (notification dans l'app et sur le téléphone).
+ * Le texte est le même que celui écrit par la base (migration 041) :
+ * « Vous êtes convoqué(e) pour le match contre [Équipe] à [heure]. »
+ */
+
+export type ConvocationEvent = 'selection_officielle' | 'selection_modifiee' | 'selection_retiree'
+
+export type ConvocationMatch = {
+  id: string
+  scheduledAt: string
+  kickoffConfirmed: boolean
+  opponent: string | null
+  location: string | null
+}
+
+const DATE_FORMAT = new Intl.DateTimeFormat('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: TIME_ZONE })
+
+export function convocationMessage(event: ConvocationEvent, match: ConvocationMatch) {
+  const opponent = match.opponent?.trim() || 'leur adversaire'
+  const details = `${DATE_FORMAT.format(new Date(match.scheduledAt))} · ${match.location?.trim() || 'Lieu à confirmer'}`
+  const removed = event === 'selection_retiree'
+  const sentence = removed
+    ? `La composition pour ESI contre ${opponent} a été mise à jour. Vous ne faites plus partie des 12 joueurs retenus.`
+    : `Vous êtes convoqué(e) pour le match contre ${opponent}${match.kickoffConfirmed ? ` à ${formatMatchTime(match.scheduledAt)}` : ''}.`
+  return {
+    title: removed ? 'Mise à jour de la sélection' : 'Convocation',
+    body: `${sentence} ${details}`.slice(0, 900),
+    url: `/matchs/${encodeURIComponent(match.id)}`,
+  }
+}

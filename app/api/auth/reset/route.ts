@@ -2,12 +2,13 @@ import { type NextRequest } from 'next/server'
 import { z } from 'zod'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { verifyResetToken } from '@/lib/auth/otp'
-import { validateNewPassword } from '@/lib/validation'
+import { normalizePseudo, pseudoKey, validateNewPassword, validatePseudo } from '@/lib/validation'
 import { json, assertSameOrigin, clientIp, clientUserAgent, rlKey, consumeRateLimit, audit } from '@/lib/security'
 
 const requestSchema = z.object({
   resetToken: z.string().min(1).max(2048),
   password: z.string().min(1).max(256),
+  pseudo: z.string().max(64).optional(),
 }).strict()
 
 export async function POST(request: NextRequest) {
@@ -52,6 +53,20 @@ export async function POST(request: NextRequest) {
     : linkedStaff ? `${linkedStaff.first_name} ${linkedStaff.last_name}` : undefined
   const passwordError = validateNewPassword(parsedInput.data.password, authResult.user.email ?? undefined, name)
   if (passwordError) return json({ error: passwordError }, 400)
+
+  // Pseudo d'un joueur : enregistré AVANT de consommer le code, pour qu'un pseudo déjà pris ne le brûle pas.
+  let pseudo: string | null = null
+  if (linkedPlayer && parsedInput.data.pseudo !== undefined) {
+    pseudo = normalizePseudo(parsedInput.data.pseudo)
+    const pseudoProblem = validatePseudo(pseudo)
+    if (pseudoProblem) return json({ error: pseudoProblem }, 400)
+    const { data: owner, error: ownerError } = await admin.from('player_pseudos').select('user_id').ilike('pseudo', pseudoKey(pseudo).replace(/[\\%_]/g, '\\$&')).maybeSingle()
+    if (ownerError) return json({ error: 'Pseudo indisponible pour le moment. Réessayez.' }, 503)
+    if (owner && owner.user_id !== reset.userId) return json({ error: 'Ce pseudo est déjà pris.' }, 409)
+    const { error: pseudoError } = await admin.from('player_pseudos').upsert(
+      { user_id: reset.userId, pseudo, updated_at: new Date().toISOString() }, { onConflict: 'user_id' })
+    if (pseudoError) return json({ error: pseudoError.code === '23505' ? 'Ce pseudo est déjà pris.' : 'Pseudo indisponible pour le moment. Réessayez.' }, pseudoError.code === '23505' ? 409 : 503)
+  }
 
   const { data: consumed, error: consumeError } = await admin
     .from('otp_codes')

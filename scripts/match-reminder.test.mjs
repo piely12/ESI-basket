@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import {
   buildMatchReminderPayload,
+  convocationMessage,
   formatMatchTime,
   withArticle,
 } from '../lib/push/match-reminder.ts'
@@ -36,4 +37,28 @@ test('deux matchs le même jour, ou adversaire inconnu', () => {
   ])
   assert.equal(payload.body, 'Les Lions affrontent l’ESTP à 16h · Les Lions affrontent leur adversaire à 18h30')
   assert.equal(payload.url, '/matchs/a#composition')
+})
+
+const match = { id: 'm-1', scheduledAt: '2026-11-28T18:30:00Z', kickoffConfirmed: true, opponent: 'ESTP', location: 'Gymnase du Sud' }
+
+test('la convocation suit la phrase demandée par le club', () => {
+  const message = convocationMessage('selection_officielle', match)
+  assert.equal(message.title, 'Convocation')
+  assert.equal(message.body, 'Vous êtes convoqué(e) pour le match contre ESTP à 18h30. 28/11/2026 · Gymnase du Sud')
+  assert.equal(message.url, '/matchs/m-1')
+})
+
+test('une modification de sélection garde le même texte de convocation', () => {
+  assert.match(convocationMessage('selection_modifiee', match).body, /^Vous êtes convoqué\(e\) pour le match contre ESTP à 18h30\./)
+})
+
+test('sans heure confirmée, la phrase ne promet pas d’horaire', () => {
+  const body = convocationMessage('selection_officielle', { ...match, kickoffConfirmed: false, location: null }).body
+  assert.equal(body, 'Vous êtes convoqué(e) pour le match contre ESTP. 28/11/2026 · Lieu à confirmer')
+})
+
+test('un joueur retiré de la sélection est prévenu autrement', () => {
+  const message = convocationMessage('selection_retiree', match)
+  assert.equal(message.title, 'Mise à jour de la sélection')
+  assert.match(message.body, /ne faites plus partie des 12 joueurs retenus/)
 })

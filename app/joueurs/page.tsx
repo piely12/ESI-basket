@@ -1,5 +1,4 @@
 import Link from 'next/link'
-import { revalidatePath } from 'next/cache'
 import EmptyState from '@/components/ui/EmptyState'
 import { requireAnyRole } from '@/lib/auth/requireUser'
 
@@ -41,25 +40,6 @@ type StatRow = {
   published_at: string | null
 }
 
-type NotificationRow = {
-  id: string
-  title: string
-  body: string
-  href: string | null
-  read_at: string | null
-  created_at: string
-}
-
-async function markNotificationAsRead(formData: FormData) {
-  'use server'
-  const id = String(formData.get('notification_id') ?? '')
-  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id)) return
-  const { supabase, user } = await requireAnyRole(['joueur'])
-  await supabase.from('notifications').update({ read_at: new Date().toISOString() })
-    .eq('id', id).eq('user_id', user.id).is('read_at', null)
-  revalidatePath('/joueurs')
-}
-
 const dateTime = (value: string) => new Intl.DateTimeFormat('fr-FR', {
   weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit',
   timeZone: 'Africa/Abidjan',
@@ -86,11 +66,7 @@ function MatchTitle({ match, teamId }: { match: MatchRow; teamId: string }) {
   )
 }
 
-export default async function Page({ searchParams }: { searchParams: Promise<{ notification_page?: string }> }) {
-  const query = await searchParams
-  const requestedPage = Number(query.notification_page ?? '1')
-  const notificationPage = Number.isInteger(requestedPage) && requestedPage > 0 ? requestedPage : 1
-  const notificationsPerPage = 50
+export default async function Page() {
   const { supabase, user, profile } = await requireAnyRole(['joueur', 'admin'])
 
   if (profile.role !== 'joueur') {
@@ -105,17 +81,14 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ n
   }
 
   const playerId = profile.person_id
-  const [playerResult, rosterResult, notificationResult] = await Promise.all([
+  const [playerResult, rosterResult] = await Promise.all([
     supabase.from('players').select('id,team_id,first_name,last_name,jersey_number,position,status,photo_url')
       .eq('id', playerId).eq('user_id', user.id).maybeSingle(),
     supabase.from('match_rosters').select('match_id,is_called_up,response,validated_at')
       .eq('player_id', playerId).eq('is_called_up', true),
-    supabase.from('notifications').select('id,title,body,href,read_at,created_at', { count: 'exact' })
-      .eq('user_id', user.id).order('created_at', { ascending: false })
-      .range((notificationPage - 1) * notificationsPerPage, notificationPage * notificationsPerPage - 1),
   ])
 
-  if (playerResult.error || rosterResult.error || notificationResult.error) {
+  if (playerResult.error || rosterResult.error) {
     return <main className="mx-auto max-w-5xl px-4 py-8 sm:px-6">
       <p role="alert" className="rounded-xl border border-[var(--line)] bg-[var(--surface)] p-5 text-sm text-[var(--ink)]">Impossible de charger ton espace. Actualise la page puis réessaie.</p>
     </main>
@@ -160,12 +133,9 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ n
     points: sum.points + numberValue(row.points), rebounds: sum.rebounds + numberValue(row.rebounds),
     assists: sum.assists + numberValue(row.assists), games: sum.games + 1,
   }), { points: 0, rebounds: 0, assists: 0, games: 0 })
-  const notifications = (notificationResult.data ?? []) as NotificationRow[]
-  const notificationCount = notificationResult.count ?? 0
-  const notificationPages = Math.max(1, Math.ceil(notificationCount / notificationsPerPage))
   const statusLabel = player.status === 'actif' ? 'Disponible' : player.status === 'blesse' ? 'Indisponible' : 'Suspendu'
 
-  return <main className="mx-auto max-w-5xl space-y-6 px-4 pb-24 pt-8 sm:px-6">
+  return <main className="mx-auto max-w-5xl space-y-6 px-4 pt-6 sm:px-6">
     <header className="overflow-hidden rounded-2xl bg-maroon-panel p-6 text-on-brand sm:p-8">
       <p className="text-xs font-bold uppercase tracking-[0.2em] text-[var(--gold-500)]">Espace joueur · suivi personnel</p>
       <div className="mt-3 flex flex-wrap items-end justify-between gap-4">
@@ -217,23 +187,6 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ n
           </article>
         })}
       </div>}
-    </section>
-
-    <section className="space-y-3" aria-labelledby="notifications-title">
-      <div className="flex items-end justify-between gap-3"><div><p className="text-xs font-bold uppercase tracking-[0.16em] text-brand">Infos équipe</p><h2 id="notifications-title" className="font-display text-3xl text-brand">Notifications</h2></div>{notifications.some((item) => !item.read_at) && <span className="rounded-full bg-maroon-panel px-3 py-1 text-xs font-bold text-on-brand">{notifications.filter((item) => !item.read_at).length} non lue{notifications.filter((item) => !item.read_at).length === 1 ? '' : 's'}</span>}</div>
-      {notifications.length === 0 ? <div className="rounded-xl border border-dashed border-[var(--line)] bg-[var(--surface)] p-5 text-sm text-[var(--ink-soft)]">{notificationCount === 0 ? 'Tu es à jour. Les notifications du staff apparaîtront ici.' : 'Aucune notification sur cette page.'} {notificationCount > 0 && <Link href="/joueurs#notifications-title" className="font-semibold text-brand underline underline-offset-2">Voir les plus récentes</Link>}</div> : <ul className="space-y-2">
-        {notifications.map((notification) => <li key={notification.id} className="rounded-xl border border-[var(--line)] bg-[var(--surface)] p-4">
-          <div className="flex items-start justify-between gap-3"><h3 className="font-semibold text-[var(--ink)]">{notification.title}</h3><time className="shrink-0 text-xs text-[var(--ink-soft)]" dateTime={notification.created_at}>{dateOnly(notification.created_at)}</time></div>
-          <p className="mt-1 text-sm text-[var(--ink-soft)]">{notification.body}</p>
-          {notification.href?.startsWith('/') && !notification.href.startsWith('//') && <Link href={notification.href} className="mt-2 inline-flex min-h-9 items-center text-sm font-semibold text-brand underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--gold-deep)]">Ouvrir</Link>}
-          {!notification.read_at && <><span className="ml-3 inline-flex rounded-full bg-[var(--gold-500)]/20 px-2 py-1 text-[10px] font-bold uppercase text-brand">Nouveau</span><form action={markNotificationAsRead} className="mt-2"><input type="hidden" name="notification_id" value={notification.id} /><button type="submit" className="inline-flex min-h-9 items-center rounded-md border border-[var(--line)] px-3 text-xs font-bold text-brand hover:bg-[var(--paper)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--gold-deep)]">Marquer comme lue</button></form></>}
-        </li>)}
-      </ul>}
-      {notificationPages > 1 && <nav aria-label="Pages de notifications" className="flex items-center justify-between gap-3">
-        {notificationPage > 1 ? <Link href={`/joueurs?notification_page=${notificationPage - 1}#notifications-title`} className="inline-flex min-h-10 items-center rounded-lg border border-[var(--line)] px-3 text-sm font-semibold text-brand">Plus récentes</Link> : <span />}
-        <span className="text-xs text-[var(--ink-soft)]">Page {notificationPage} sur {notificationPages}</span>
-        {notificationPage < notificationPages ? <Link href={`/joueurs?notification_page=${notificationPage + 1}#notifications-title`} className="inline-flex min-h-10 items-center rounded-lg border border-[var(--line)] px-3 text-sm font-semibold text-brand">Plus anciennes</Link> : <span />}
-      </nav>}
     </section>
   </main>
 }

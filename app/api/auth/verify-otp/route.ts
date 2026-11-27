@@ -67,5 +67,12 @@ export async function POST(request: NextRequest) {
   }
 
   await audit(admin, 'otp_verification_succeeded', userId, { ip, userAgent: clientUserAgent(request) })
-  return json({ ok: true, resetToken: signResetToken(otp.id, userId) })
+  // Un joueur sans pseudo (première connexion) devra en choisir un avant d'entrer dans l'app.
+  // Si la migration 041 n'est pas appliquée, la requête échoue : on ne demande alors pas de pseudo.
+  const [{ data: player }, { data: pseudo, error: pseudoError }] = await Promise.all([
+    admin.from('players').select('id').eq('user_id', userId).maybeSingle(),
+    admin.from('player_pseudos').select('user_id').eq('user_id', userId).maybeSingle(),
+  ])
+  const needsPseudo = Boolean(player) && !pseudoError && !pseudo
+  return json({ ok: true, resetToken: signResetToken(otp.id, userId), needsPseudo })
 }

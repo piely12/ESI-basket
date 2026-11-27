@@ -74,8 +74,8 @@ export async function currentSubscription() {
   return (await registration?.pushManager.getSubscription()) ?? null
 }
 
-export async function saveSubscription(subscription: PushSubscription) {
-  return fetch('/api/push/subscriptions', {
+export async function saveSubscription(subscription: PushSubscription, url = '/api/push/subscriptions') {
+  return fetch(url, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify(subscription.toJSON()),
@@ -87,7 +87,9 @@ export async function saveSubscription(subscription: PushSubscription) {
  * Firefox require), subscribes this device and registers it on the server.
  * Timeouts are thrown as `Error('subscribe-timeout' | 'sw-timeout')`.
  */
-export async function enableMatchNotifications(): Promise<EnableResult> {
+export type EnableOptions = { saveUrl?: string; welcomeBody?: string; clickUrl?: string }
+
+export async function enableMatchNotifications(options: EnableOptions = {}): Promise<EnableResult> {
   const permission = Notification.permission === 'granted' ? 'granted' : await Notification.requestPermission()
   if (permission === 'denied') return { ok: false, reason: 'denied' }
   if (permission !== 'granted') return { ok: false, reason: 'dismissed' }
@@ -109,7 +111,7 @@ export async function enableMatchNotifications(): Promise<EnableResult> {
     'subscribe-timeout',
   )
 
-  const saved = await saveSubscription(subscription).catch(() => null)
+  const saved = await saveSubscription(subscription, options.saveUrl).catch(() => null)
   if (!saved?.ok) {
     await subscription.unsubscribe().catch(() => false)
     if (saved?.status === 429) return { ok: false, reason: 'rate-limited' }
@@ -122,11 +124,11 @@ export async function enableMatchNotifications(): Promise<EnableResult> {
   try { sessionStorage.setItem(PUSH_SYNC_KEY, '1') } catch { /* Storage unavailable. */ }
 
   await registration.showNotification('Notifications activées 🏀', {
-    body: 'Rappel à 11h chaque jour de match.',
+    body: options.welcomeBody ?? 'Rappel à 11h chaque jour de match.',
     icon: '/icons/esi-192.png',
     badge: '/icons/esi-192.png',
     tag: 'lions-welcome',
-    data: { url: '/matchs' },
+    data: { url: options.clickUrl ?? '/matchs' },
   }).catch(() => undefined)
   return { ok: true, registration }
 }

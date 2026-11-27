@@ -1,12 +1,14 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import { after } from 'next/server'
 import { randomBytes } from 'node:crypto'
 import { redirect } from 'next/navigation'
 import { z } from 'zod'
 import { requireAnyRole, requireRole } from '@/lib/auth/requireUser'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { sendAccountReadyEmail } from '@/lib/auth/brevo'
+import { deliverConvocationPushes } from '@/lib/push/convocation-delivery'
 import { generateOtp, hashOtp, OTP_TTL_MINUTES } from '@/lib/auth/otp'
 import { audit } from '@/lib/security'
 import { checkConnectedActionLimit } from '@/lib/security/action-rate-limit'
@@ -263,6 +265,8 @@ export async function publishMatchComposition(matchId: string, teamId: string): 
   revalidatePath('/matchs')
   revalidatePath('/matchs/' + match.id)
   revalidatePath('/joueurs')
+  // Convocation sur le téléphone des joueurs, sans retarder la réponse au coach.
+  after(() => deliverConvocationPushes(matchId, teamId))
   return { ok: true, status: String(data ?? 'publiee') }
 }
 
