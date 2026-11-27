@@ -115,9 +115,16 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ n
       .range((notificationPage - 1) * notificationsPerPage, notificationPage * notificationsPerPage - 1),
   ])
 
-  if (playerResult.error || rosterResult.error || notificationResult.error) {
+  // Which read failed and its database error code (codes are not secret), so
+  // a screenshot of the message is enough to know what to fix.
+  const failures = ([['fiche', playerResult.error], ['convocations', rosterResult.error], ['notifications', notificationResult.error]] as const)
+    .filter(([, error]) => error)
+    .map(([source, error]) => `${source} · ${error!.code || 'erreur'}`)
+  if (failures.length) {
+    console.error('[joueurs] Lecture refusée', failures.join(', '), [playerResult.error, rosterResult.error, notificationResult.error].map((error) => error?.message).filter(Boolean))
     return <main className="mx-auto max-w-5xl px-4 py-8 sm:px-6">
       <p role="alert" className="rounded-xl border border-[var(--line)] bg-[var(--surface)] p-5 text-sm text-[var(--ink)]">Impossible de charger ton espace. Actualise la page puis réessaie.</p>
+      <p className="mt-2 px-1 text-xs text-[var(--ink-soft)]">Détail : {failures.join(', ')}</p>
     </main>
   }
 
