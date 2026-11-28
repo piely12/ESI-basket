@@ -3,13 +3,10 @@ import 'server-only'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { sendWebPush } from '@/lib/push/webpush'
 import { vapidPublicKey } from '@/lib/push/config'
-import { formatMatchTime, withArticle } from '@/lib/push/match-reminder'
+import { formatMatchTime } from '@/lib/push/match-reminder'
 
 type CompositionNotification = { id: string; user_id: string | null; event_type: string }
 
-const dayLabel = (iso: string) => new Intl.DateTimeFormat('fr-FR', {
-  weekday: 'long', day: 'numeric', month: 'long', timeZone: 'Africa/Abidjan',
-}).format(new Date(iso))
 
 /**
  * Envoie en push les convocations créées par la publication d'une composition,
@@ -28,6 +25,8 @@ export async function pushConvocations(matchId: string, teamId: string) {
       .select('id,user_id,event_type')
       .eq('match_id', matchId).eq('team_id', teamId)
       .eq('status', 'envoyee').is('pushed_at', null).not('user_id', 'is', null)
+      // Only selected players are notified, never those left out.
+      .in('event_type', ['selection_officielle', 'selection_modifiee'])
     if (error) throw error
     if (!pending?.length) return
 
@@ -38,8 +37,6 @@ export async function pushConvocations(matchId: string, teamId: string) {
     const home = Array.isArray(match.home) ? match.home[0] : match.home
     const away = Array.isArray(match.away) ? match.away[0] : match.away
     const opponent = (match.home_team_id === teamId ? away?.name : home?.name) ?? 'l’adversaire'
-    const when = dayLabel(match.scheduled_at) + (match.kickoff_confirmed ? ` à ${formatMatchTime(match.scheduled_at)}` : '')
-    const convocation = `Vous êtes convoqué(e) pour le match contre ${withArticle(opponent)}${match.kickoff_confirmed ? ` à ${formatMatchTime(match.scheduled_at)}` : ''}.`
     const url = `/matchs/${encodeURIComponent(matchId)}#composition`
 
     for (const notification of pending as CompositionNotification[]) {
@@ -49,10 +46,7 @@ export async function pushConvocations(matchId: string, teamId: string) {
         .eq('id', notification.id).is('pushed_at', null).select('id').maybeSingle()
       if (!claimed || !notification.user_id) continue
 
-      const removed = notification.event_type === 'selection_retiree'
-      const payload = JSON.stringify(removed
-        ? { title: 'Mise à jour de la sélection', body: `Tu ne fais plus partie des 12 contre ${withArticle(opponent)}, ${when}.`, url }
-        : { title: 'Convocation 🦁', body: `${convocation} ${dayLabel(match.scheduled_at)}.`, url })
+      const payload = JSON.stringify({ title: 'Convocation', body: `Vous êtes convoqué pour le match contre ${opponent}${match.kickoff_confirmed ? ` à ${formatMatchTime(match.scheduled_at)}` : ''}.`, url })
 
       const { data: devices } = await admin.from('match_reminder_subscriptions')
         .select('id,endpoint,p256dh,auth').eq('user_id', notification.user_id)
