@@ -1,14 +1,13 @@
 'use client'
 
-import { PASSWORD_MIN } from '@/lib/validation'
+import { PASSWORD_MIN, PASSWORD_RULES } from '@/lib/validation'
 
 /** Rules the server enforces (validateNewPassword), shown as a checklist. */
 export function passwordRules(password: string, email?: string) {
   const compact = password.toLowerCase().replace(/[^a-z0-9]/g, '')
   const local = (email ?? '').split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, '')
   return [
-    { label: `${PASSWORD_MIN} caractères minimum`, ok: [...password].length >= PASSWORD_MIN },
-    { label: 'Lettres et chiffres', ok: /\p{L}/u.test(password) && /\d/.test(password) },
+    ...PASSWORD_RULES.map((rule) => ({ label: rule.label, ok: rule.test(password) })),
     { label: 'Sans ton adresse e-mail', ok: password.length > 0 && !(local.length >= 4 && compact.includes(local)) },
   ]
 }
