@@ -1,0 +1,38 @@
+# Test de charge k6, lancé à la main depuis l'onglet Actions de GitHub.
+# Les serveurs de GitHub ont un gros débit : les mesures reflètent le site,
+# pas la connexion de la personne qui lance le test.
+name: Test de charge k6
+
+on:
+  workflow_dispatch:
+    inputs:
+      scenario:
+        description: "smoke = 10 visiteurs 1 min · semaine = pic d'un jour de match (5000/semaine) · pic = 1000 simultanés"
+        type: choice
+        options: [smoke, semaine, pic]
+        default: smoke
+      base_url:
+        description: Adresse du site à tester
+        default: https://esi-basket-murex.vercel.app
+
+permissions:
+  contents: read
+
+jobs:
+  k6:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: grafana/setup-k6-action@v1
+      - name: Lancer le scénario ${{ inputs.scenario }}
+        env:
+          SCENARIO: ${{ inputs.scenario }}
+          BASE_URL: ${{ inputs.base_url }}
+        run: k6 run --summary-export=summary.json scripts/k6/load-test.js
+      - name: Garder le résumé
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: k6-${{ inputs.scenario }}
+          path: summary.json

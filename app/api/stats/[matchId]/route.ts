@@ -1,4 +1,5 @@
-import { revalidatePath } from 'next/cache'
+// Also refreshes the public data cache (lib/data/public.ts).
+import { revalidatePath } from '@/lib/data/revalidate'
 import { NextResponse } from 'next/server'
 import { getCurrentUserProfile } from '@/lib/auth/roles'
 import { manualStatsActionSchema } from '@/lib/stats/manual-schema'

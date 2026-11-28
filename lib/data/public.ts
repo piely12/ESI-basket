@@ -1,4 +1,6 @@
-import { createClient } from '@/lib/supabase/server'
+import { unstable_cache } from 'next/cache'
+import { createPublicClient } from '@/lib/supabase/public'
+import { PUBLIC_DATA_TAG } from '@/lib/data/revalidate'
 
 export type Team = { id: string; name: string; city: string | null; logo_url: string | null; is_esi: boolean }
 export type MatchRow = {
@@ -130,30 +132,32 @@ async function optionalData<T>(query: PromiseLike<{ data: T | null }>): Promise<
   }
 }
 
-export async function getNextMatch(): Promise<MatchRow | null> {
-  const supabase = await createClient()
-  const { data } = await supabase
+async function loadNextMatch(): Promise<MatchRow | null> {
+  const supabase = createPublicClient()
+  const { data, error } = await supabase
     .from('matches').select(MATCH_SELECT)
     .in('status', ['programme', 'a_venir', 'jour_j', 'en_cours'])
     .order('scheduled_at', { ascending: true }).limit(100)
+  if (error) throw error
   const matches = (data as unknown as MatchRow[]) ?? []
   return matches.find((match) => match.home_team.is_esi || match.away_team.is_esi) ?? null
 }
 
-export async function getLastResult(): Promise<MatchRow | null> {
-  const supabase = await createClient()
-  const { data } = await supabase
+async function loadLastResult(): Promise<MatchRow | null> {
+  const supabase = createPublicClient()
+  const { data, error } = await supabase
     .from('matches').select(MATCH_SELECT)
     .eq('status', 'termine')
     .order('scheduled_at', { ascending: false }).limit(100)
+  if (error) throw error
   const matches = (data as unknown as MatchRow[]) ?? []
   return matches.find((match) => match.home_team.is_esi || match.away_team.is_esi) ?? null
 }
 
 export const MATCHES_PAGE_SIZE = 40
 
-export async function getMatchesPage(offset = 0, limit = MATCHES_PAGE_SIZE): Promise<{ matches: MatchRow[]; hasMore: boolean }> {
-  const supabase = await createClient()
+async function loadMatchesPage(offset = 0, limit = MATCHES_PAGE_SIZE): Promise<{ matches: MatchRow[]; hasMore: boolean }> {
+  const supabase = createPublicClient()
   const { data, error } = await supabase
     .from('matches').select(MATCH_SELECT)
     .order('scheduled_at', { ascending: true })
@@ -169,10 +173,11 @@ export type LineupRow = {
   player: { id: string; first_name: string; last_name: string; jersey_number: number | null; position: string | null; photo_url: string | null; team_id: string }
 }
 
-export async function getMatchById(id: string) {
-  const supabase = await createClient()
-  const { data: match } = await supabase
+async function loadMatchById(id: string) {
+  const supabase = createPublicClient()
+  const { data: match, error: matchError } = await supabase
     .from('matches').select(MATCH_SELECT).eq('id', id).maybeSingle()
+  if (matchError) throw matchError
   if (!match) return null
 
   const matchRow = match as unknown as MatchRow
@@ -225,11 +230,12 @@ export async function getMatchById(id: string) {
   }
 }
 
-export async function getStandings(seasonId?: string): Promise<StandingRow[]> {
-  const supabase = await createClient()
+async function loadStandings(seasonId?: string): Promise<StandingRow[]> {
+  const supabase = createPublicClient()
   const teamQuery = supabase.from('teams').select('id,name,city,logo_url,is_esi').order('name')
   const seasonQuery = supabase.from('seasons').select('id,name').eq('is_current', true).maybeSingle()
-  const [{ data: teams }, { data: currentSeason }] = await Promise.all([teamQuery, seasonQuery])
+  const [{ data: teams, error: teamsError }, { data: currentSeason, error: seasonError }] = await Promise.all([teamQuery, seasonQuery])
+  if (teamsError || seasonError) throw teamsError ?? seasonError
   const { data: selectedSeason } = seasonId
     ? await supabase.from('seasons').select('id,name').eq('id', seasonId).maybeSingle()
     : { data: currentSeason }
@@ -258,6 +264,7 @@ export async function getStandings(seasonId?: string): Promise<StandingRow[]> {
       .not('home_score', 'is', null)
       .not('away_score', 'is', null)
 
+    if (response.error) throw response.error
     results = (response.data ?? []) as typeof results
 
     for (const result of results) {
@@ -340,18 +347,20 @@ export async function getStandings(seasonId?: string): Promise<StandingRow[]> {
   })
 }
 
-export async function getTeams(): Promise<Team[]> {
-  const supabase = await createClient()
-  const { data } = await supabase.from('teams').select('id,name,city,logo_url,is_esi').order('name')
+async function loadTeams(): Promise<Team[]> {
+  const supabase = createPublicClient()
+  const { data, error } = await supabase.from('teams').select('id,name,city,logo_url,is_esi').order('name')
+  if (error) throw error
   return (data as Team[] | null) ?? []
 }
 
-export async function getTeamPageData(id: string, filters: { seasonId?: string; round?: number; period?: 'all' | '30d' | '90d' } = {}) {
-  const supabase = await createClient()
-  const [{ data: team }, { data: seasons }] = await Promise.all([
+async function loadTeamPageData(id: string, filters: { seasonId?: string; round?: number; period?: 'all' | '30d' | '90d' } = {}) {
+  const supabase = createPublicClient()
+  const [{ data: team, error: teamError }, { data: seasons, error: seasonsError }] = await Promise.all([
     supabase.from('teams').select('id,name,city,logo_url,is_esi').eq('id', id).maybeSingle(),
     supabase.from('seasons').select('id,name,is_current,starts_on,ends_on').order('starts_on', { ascending: false }),
   ])
+  if (teamError || seasonsError) throw teamError ?? seasonsError
   if (!team) return null
   const seasonList = seasons ?? []
   const season = seasonList.find((item) => item.id === filters.seasonId)
@@ -411,16 +420,18 @@ export async function getTeamPageData(id: string, filters: { seasonId?: string; 
   }
 }
 
-export type TeamPageData = NonNullable<Awaited<ReturnType<typeof getTeamPageData>>>
+export type TeamPageData = NonNullable<Awaited<ReturnType<typeof loadTeamPageData>>>
 
-export async function getRoster(): Promise<Player[]> {
-  const supabase = await createClient()
-  const { data: esi } = await supabase.from('teams').select('id').eq('is_esi', true).maybeSingle()
+async function loadRoster(): Promise<Player[]> {
+  const supabase = createPublicClient()
+  const { data: esi, error: esiError } = await supabase.from('teams').select('id').eq('is_esi', true).maybeSingle()
+  if (esiError) throw esiError
   if (!esi) return []
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('players').select('id, first_name, last_name, jersey_number, position, photo_url, status')
     .eq('team_id', esi.id)
     .order('jersey_number', { ascending: true })
+  if (error) throw error
   return data ?? []
 }
 
@@ -434,12 +445,15 @@ export type PublishedNews = {
   published_at: string | null
 }
 
-export async function getPublishedNews(limit = 9): Promise<PublishedNews[]> {
-  const supabase = await createClient()
-  const { data } = await supabase.from('news')
+async function loadPublishedNews(limit = 9): Promise<PublishedNews[]> {
+  const supabase = createPublicClient()
+  const { data, error } = await supabase.from('news')
     .select('id,title,excerpt,body,category,cover_url,published_at')
     .eq('is_published', true).not('published_at', 'is', null)
     .order('published_at', { ascending: false }).limit(Math.min(Math.max(limit, 1), 30))
+  // No news table (PGRST205): the site shows its fallback news, cached like any result.
+  if (error?.code === 'PGRST205') return []
+  if (error) throw error
   return (data ?? []) as PublishedNews[]
 }
 
@@ -478,16 +492,16 @@ function toJourney(match: JourneySource): SeasonJourney | null {
 }
 
 /** Matchs terminés de l'ESI dans la saison. Facultatif : la fiche marche sans. */
-async function getEsiJourneys(supabase: Awaited<ReturnType<typeof createClient>>, seasonId: string): Promise<SeasonJourney[]> {
+async function getEsiJourneys(supabase: ReturnType<typeof createPublicClient>, seasonId: string): Promise<SeasonJourney[]> {
   const rows = await optionalData<MatchRow[]>(
     supabase.from('matches').select(MATCH_SELECT).eq('season_id', seasonId).eq('status', 'termine') as unknown as PromiseLike<{ data: MatchRow[] | null }>)
   return (rows ?? []).flatMap((match) => toJourney(match) ?? [])
 }
 
 
-export async function getPlayerProfile(id: string, filters: { seasonId?: string; round?: number; period?: 'all' | '30d' | '90d' } = {}) {
-  const supabase = await createClient()
-  const [{ data: player }, { data: seasonRows }, { data: allStats }] = await Promise.all([
+async function loadPlayerProfile(id: string, filters: { seasonId?: string; round?: number; period?: 'all' | '30d' | '90d' } = {}) {
+  const supabase = createPublicClient()
+  const [{ data: player, error: playerError }, { data: seasonRows }, { data: allStats }] = await Promise.all([
     supabase.from('players').select('id, first_name, last_name, jersey_number, position, photo_url, status, team_id').eq('id', id).maybeSingle(),
     supabase.from('seasons').select('id,name,is_current').order('starts_on', { ascending: false }),
     supabase.from('match_player_stats')
@@ -495,6 +509,7 @@ export async function getPlayerProfile(id: string, filters: { seasonId?: string;
       .eq('player_id', id).not('published_at', 'is', null)
       .order('created_at', { ascending: false }),
   ])
+  if (playerError) throw playerError
   if (!player) return null
   const seasons = seasonRows ?? []
   const season = seasons.find((item) => item.id === filters.seasonId)
@@ -534,3 +549,35 @@ export async function getPlayerProfile(id: string, filters: { seasonId?: string;
     seasonStats, stats, mvpMatchIds, journeys,
   }
 }
+
+/*
+ * Public reads are cached for 60 s and shared by every visitor: with 10 or
+ * 1000 visitors the database sees about the same number of queries. A staff
+ * change refreshes them at once (revalidatePublicData). A failed read is never
+ * cached: the page falls back to its empty state, as before.
+ */
+const PUBLIC_REVALIDATE_SECONDS = 60
+
+function cachedRead<A extends unknown[], R>(name: string, load: (...args: A) => Promise<R>, fallback: { value: R } | null) {
+  const cached = unstable_cache(load, ['public-data', name], { revalidate: PUBLIC_REVALIDATE_SECONDS, tags: [PUBLIC_DATA_TAG] })
+  return async (...args: A): Promise<R> => {
+    try {
+      return await cached(...args)
+    } catch (error) {
+      if (!fallback) throw error
+      console.error(`[public-data] ${name} unavailable`, error instanceof Error ? error.message : (error as { code?: string })?.code ?? 'unknown')
+      return fallback.value
+    }
+  }
+}
+
+export const getNextMatch = cachedRead('next-match', loadNextMatch, { value: null })
+export const getLastResult = cachedRead('last-result', loadLastResult, { value: null })
+export const getMatchesPage = cachedRead('matches-page', loadMatchesPage, null)
+export const getMatchById = cachedRead('match', loadMatchById, { value: null })
+export const getStandings = cachedRead('standings', loadStandings, { value: [] })
+export const getTeams = cachedRead('teams', loadTeams, { value: [] })
+export const getTeamPageData = cachedRead('team-page', loadTeamPageData, { value: null })
+export const getRoster = cachedRead('roster', loadRoster, { value: [] })
+export const getPublishedNews = cachedRead('news', loadPublishedNews, { value: [] })
+export const getPlayerProfile = cachedRead('player-profile', loadPlayerProfile, { value: null })

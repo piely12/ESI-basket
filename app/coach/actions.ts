@@ -1,6 +1,7 @@
 'use server'
 
-import { revalidatePath } from 'next/cache'
+// Also refreshes the public data cache (lib/data/public.ts).
+import { revalidatePath } from '@/lib/data/revalidate'
 import { after } from 'next/server'
 import { pushConvocations } from '@/lib/push/convocations'
 import { randomBytes } from 'node:crypto'
