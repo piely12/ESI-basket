@@ -9,6 +9,7 @@ const staff = [
   { name: 'N’GUESSAN DANIEL-ANGE', role: 'Coach adjoint', photo: '/staff/nguessan-daniel-ange.webp', photoLarge: '/staff/nguessan-daniel-ange-grand.webp' },
   { name: 'MELEDJE ELMIRA', role: 'Statisticienne', photo: '/staff/meledje-elmira.webp?v=2', photoLarge: '/staff/meledje-elmira-grand.webp?v=2' },
   { name: 'KPANGBE NOURA', role: 'Vidéaste', photo: '/staff/kpangbe-noura.webp', photoLarge: '/staff/kpangbe-noura-grand.webp' },
+  { name: 'MEITE ANNE-SAPHIRA', role: 'Infographe', photo: '/staff/meite-anne-saphira.webp', photoLarge: '/staff/meite-anne-saphira-grand.webp' },
 ]
 
 export default async function EquipePage() {
