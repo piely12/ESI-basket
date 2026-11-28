@@ -27,7 +27,7 @@ export default async function AssistantCoachHomePage() {
       <div className={styles.sectionHead}><div><p className={styles.eyebrow}>Calendrier</p><h2 id="matches-heading" className={styles.cardTitle}>Matchs existants</h2></div></div>
       {matches.length === 0 ? <div className={styles.card}><h3 className={styles.cardTitle}>Aucun match</h3><p className={styles.subtitle}>Le calendrier ESI ne contient aucun match.</p></div> : <div className={styles.matchList}>
         {matches.map((match) => <article className={styles.matchCard} key={match.id}>
-          <div className={styles.matchMeta}><time dateTime={match.scheduled_at}>{new Date(match.scheduled_at).toLocaleString('fr-FR', { dateStyle: 'medium', ...(match.kickoff_confirmed ? { hour: '2-digit' as const, minute: '2-digit' as const } : {}), timeZone: 'Africa/Abidjan' })}</time><span>{match.location || 'Lieu à confirmer'}</span></div>
+          <div className={styles.matchMeta}><time dateTime={match.scheduled_at}>{new Date(match.scheduled_at).toLocaleString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric', ...(match.kickoff_confirmed ? { hour: '2-digit' as const, minute: '2-digit' as const } : {}), timeZone: 'Africa/Abidjan' })}</time><span>{match.location || 'Lieu à confirmer'}</span></div>
           <div className={styles.teams}><strong>{match.home_team.name}</strong><span className={styles.vs}>VS</span><strong>{match.away_team.name}</strong></div>
           <p className={styles.help}>Composition : {workflows.get(match.id) ?? 'à préparer'}</p>
           <Link className={styles.button} href={'/adjoint/matchs/' + match.id}>Ouvrir la composition</Link>
