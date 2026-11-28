@@ -39,6 +39,7 @@ export async function pushConvocations(matchId: string, teamId: string) {
     const away = Array.isArray(match.away) ? match.away[0] : match.away
     const opponent = (match.home_team_id === teamId ? away?.name : home?.name) ?? 'l’adversaire'
     const when = dayLabel(match.scheduled_at) + (match.kickoff_confirmed ? ` à ${formatMatchTime(match.scheduled_at)}` : '')
+    const convocation = `Vous êtes convoqué(e) pour le match contre ${withArticle(opponent)}${match.kickoff_confirmed ? ` à ${formatMatchTime(match.scheduled_at)}` : ''}.`
     const url = `/matchs/${encodeURIComponent(matchId)}#composition`
 
     for (const notification of pending as CompositionNotification[]) {
@@ -51,7 +52,7 @@ export async function pushConvocations(matchId: string, teamId: string) {
       const removed = notification.event_type === 'selection_retiree'
       const payload = JSON.stringify(removed
         ? { title: 'Mise à jour de la sélection', body: `Tu ne fais plus partie des 12 contre ${withArticle(opponent)}, ${when}.`, url }
-        : { title: 'Tu es convoqué ! 🦁', body: `Les Lions affrontent ${withArticle(opponent)} ${when}. Touche pour voir la composition.`, url })
+        : { title: 'Convocation 🦁', body: `${convocation} ${dayLabel(match.scheduled_at)}.`, url })
 
       const { data: devices } = await admin.from('match_reminder_subscriptions')
         .select('id,endpoint,p256dh,auth').eq('user_id', notification.user_id)
