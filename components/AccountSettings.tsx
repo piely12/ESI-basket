@@ -17,19 +17,8 @@ export default function AccountSettings() {
   const [feedback, setFeedback] = useState<{ tone: 'ok' | 'error'; text: string } | null>(null)
   const [leaving, setLeaving] = useState(false)
 
-  if (account === undefined) {
-    return <section id="mon-compte" aria-busy="true" aria-label="Mon compte" className="settings-card theme-card min-h-[92px] scroll-mt-24 rounded-lg border border-[var(--line)] bg-[var(--surface)] p-4" />
-  }
-
-  if (!account.authenticated) {
-    return <section id="mon-compte" className="settings-card theme-card flex scroll-mt-24 flex-wrap items-center gap-3.5 rounded-lg border border-[var(--line)] bg-[var(--surface)] p-4" aria-labelledby="account-title">
-      <div className="min-w-0 flex-1">
-        <h2 id="account-title" className="settings-card-title">Compte joueur ou staff</h2>
-        <p className="settings-card-description mt-1">Connecte-toi pour recevoir tes convocations et personnaliser l’application.</p>
-      </div>
-      <Link href="/login" className="inline-flex min-h-11 items-center rounded-xl bg-primary px-5 font-semibold text-primary-foreground hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring">Se connecter</Link>
-    </section>
-  }
+  // Visiteurs : rien. Joueurs et staff se connectent par le lien /login.
+  if (!account?.authenticated) return null
 
   const current = nickname ?? account.nickname ?? ''
   const fullName = displayName(`${account.firstName} ${account.lastName}`.trim())

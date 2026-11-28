@@ -7,10 +7,6 @@ import EmptyState from '@/components/ui/EmptyState'
 import EsiSeasonReview from '@/components/EsiSeasonReview'
 import { getStandings, getTeamPageData } from '@/lib/data/public'
 
-function StatValue({ value }: { value: number | null }) {
-  return <>{value === null ? '—' : value.toLocaleString('fr-FR', { maximumFractionDigits: 1 })}</>
-}
-
 export default async function TeamPage({ params, searchParams }: {
   params: Promise<{ id: string }>
   searchParams: Promise<{ season?: string }>
@@ -22,7 +18,7 @@ export default async function TeamPage({ params, searchParams }: {
   if (data.team.is_esi) return <EsiSeasonReview data={data} standings={standings} />
 
   const row = standings.find((item) => item.team_id === id)
-  const { team, season, seasonCompletedMatches, completedMatches, upcomingMatches, players, playerStats, teamStats } = data
+  const { team, season, seasonCompletedMatches, completedMatches, upcomingMatches, players, playerStats } = data
   const teamBannerId = team.is_esi ? 'esi' : team.name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z]/g, '')
   const played = completedMatches.length
   const wins = completedMatches.filter((match) => team.id === match.home_team.id
@@ -44,19 +40,6 @@ export default async function TeamPage({ params, searchParams }: {
       currentStreak += 1
     }
   }
-  const completeTeamStatTotal = (key: 'fg_made' | 'fg_attempted' | 'three_made' | 'three_attempted' | 'ft_made' | 'ft_attempted') => {
-    if (!played || teamStats.length < played || teamStats.some((stat) => stat[key] === null)) return null
-    return teamStats.reduce((sum, stat) => sum + (stat[key] ?? 0), 0)
-  }
-  const teamFgMade = completeTeamStatTotal('fg_made')
-  const teamFgAttempted = completeTeamStatTotal('fg_attempted')
-  const teamThreeMade = completeTeamStatTotal('three_made')
-  const teamThreeAttempted = completeTeamStatTotal('three_attempted')
-  const teamFtMade = completeTeamStatTotal('ft_made')
-  const teamFtAttempted = completeTeamStatTotal('ft_attempted')
-  const teamTwoMade = teamFgMade === null || teamThreeMade === null ? null : teamFgMade - teamThreeMade
-  const teamTwoAttempted = teamFgAttempted === null || teamThreeAttempted === null ? null : teamFgAttempted - teamThreeAttempted
-  const teamPct = (made: number | null, attempted: number | null) => made === null || !attempted ? '—' : `${(made / attempted * 100).toFixed(1)}%`
 
   const playerRows = players.map((player) => {
     const stats = playerStats.filter((stat) => stat.player_id === player.id)
@@ -99,13 +82,6 @@ export default async function TeamPage({ params, searchParams }: {
   })
   playerRows.sort((a, b) => (b.pointsPerGame ?? -1) - (a.pointsPerGame ?? -1))
 
-  const teamStat = (key: 'rebounds' | 'assists' | 'steals' | 'blocks' | 'turnovers' | 'personal_fouls') => {
-    if (!played || teamStats.length < played || teamStats.some((stat) => stat[key] === null)) return null
-    return teamStats.reduce((total, stat) => total + (stat[key] ?? 0), 0)
-  }
-  const teamStatsIncomplete = teamStats.length < played || teamStats.some((stat) => [
-    stat.rebounds, stat.assists, stat.steals, stat.blocks, stat.turnovers, stat.personal_fouls,
-  ].some((value) => value === null))
 
   return (
     <>
@@ -147,18 +123,13 @@ export default async function TeamPage({ params, searchParams }: {
 
         <section>
           <h2 className="mb-3 font-display text-3xl text-brand">Statistiques collectives</h2>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-            {[
-              ['Rebonds totaux', teamStat('rebounds')], ['Passes totales', teamStat('assists')], ['Interceptions', teamStat('steals')],
-              ['Contres', teamStat('blocks')], ['Balles perdues', teamStat('turnovers')], ['Fautes', teamStat('personal_fouls')],
-              ['Tirs réussis', teamPct(teamFgMade, teamFgAttempted)], ['Tirs à 2 points', teamPct(teamTwoMade, teamTwoAttempted)],
-              ['Tirs à 3 points', teamPct(teamThreeMade, teamThreeAttempted)], ['Lancers francs', teamPct(teamFtMade, teamFtAttempted)],
-            ].map(([label, value]) => <div key={label} className="rounded-xl border border-[var(--line)] bg-[var(--surface)] p-4">
-              <p className="font-display text-2xl text-brand">{typeof value === 'number' ? <StatValue value={value} /> : value}</p>
-              <p className="mt-1 text-[10px] font-bold uppercase tracking-wide text-[var(--ink-soft)] sm:text-xs">{label}</p>
-            </div>)}
+          <div className="flex items-start gap-3 rounded-xl border border-dashed border-[var(--line)] bg-[var(--surface)] p-5">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="mt-0.5 shrink-0 text-brand"><path d="M3 3v18h18" /><path d="m7 15 4-4 3 3 5-6" /></svg>
+            <div>
+              <p className="font-semibold text-[var(--ink)]">Pas encore disponible</p>
+              <p className="mt-1 text-sm text-[var(--ink-soft)]">Les statistiques collectives de {team.name} ne sont pas encore disponibles. Retrouve en attendant son bilan et ses résultats ci-dessus.</p>
+            </div>
           </div>
-          {teamStatsIncomplete && <p className="mt-2 text-xs text-[var(--ink-soft)]">Certaines statistiques collectives ne sont pas encore publiées pour tous les matchs de la période affichée.</p>}
         </section>
 
         {team.is_esi && <>
