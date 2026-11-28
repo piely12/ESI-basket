@@ -5,6 +5,7 @@ import PublicNav from '@/components/PublicNav'
 import PageTitle from '@/components/PageTitle'
 import MatchNotificationsSetting from '@/components/MatchNotificationsSetting'
 import PwaSettings from '@/components/PwaSettings'
+import AccountSettings from '@/components/AccountSettings'
 
 type ThemeMode = 'light' | 'dark'
 
@@ -77,6 +78,8 @@ export default function ReglagesPage() {
     <PublicNav />
     <main className="reference-page-shell page-title-page mx-auto max-w-5xl space-y-4 px-4 pb-28 pt-8 sm:px-5">
       <PageTitle title="Réglages" subtitle="Personnalisez votre expérience" />
+
+      <AccountSettings />
 
       <section className="settings-card theme-card flex items-center gap-3.5 rounded-lg border border-[var(--line)] bg-[var(--surface)] p-4" aria-label="Mode sombre">
         <div className="min-w-0 flex-1">

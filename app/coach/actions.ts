@@ -1,6 +1,8 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import { after } from 'next/server'
+import { pushConvocations } from '@/lib/push/convocations'
 import { randomBytes } from 'node:crypto'
 import { redirect } from 'next/navigation'
 import { z } from 'zod'
@@ -262,6 +264,7 @@ export async function publishMatchComposition(matchId: string, teamId: string): 
   revalidatePath('/coach/matchs/' + match.id)
   revalidatePath('/matchs')
   revalidatePath('/matchs/' + match.id)
+  after(() => pushConvocations(matchId, teamId))
   revalidatePath('/joueurs')
   return { ok: true, status: String(data ?? 'publiee') }
 }

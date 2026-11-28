@@ -2,7 +2,7 @@ import { type NextRequest } from 'next/server'
 import { z } from 'zod'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { getCurrentUserProfile, HOME_SITE, isSingleSessionRole } from '@/lib/auth/roles'
+import { getCurrentUserProfile, homePath, isSingleSessionRole } from '@/lib/auth/roles'
 import { hashFirstLoginOtp, safeEqualHex } from '@/lib/auth/otp'
 import { assertSameOrigin, audit, clientIp, clientUserAgent, isLimited, json, recordHit, rlKey } from '@/lib/security'
 import { validateNewPassword } from '@/lib/validation'
@@ -81,5 +81,5 @@ export async function POST(request: NextRequest) {
     }
   }
   await audit(admin, 'first_login_password_changed', user.id, { ip, userAgent, metadata: { role: profile.role } })
-  return json({ ok: true, redirect: `/${HOME_SITE[profile.role]}` })
+  return json({ ok: true, redirect: homePath(profile.role) })
 }

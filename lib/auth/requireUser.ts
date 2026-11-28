@@ -3,7 +3,7 @@ import 'server-only'
 import { redirect } from 'next/navigation'
 import type { User } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/server'
-import { getCurrentUserProfile, HOME_SITE, type AppRole, type CurrentUserProfile } from '@/lib/auth/roles'
+import { getCurrentUserProfile, homePath, type AppRole, type CurrentUserProfile } from '@/lib/auth/roles'
 
 export type AuthenticatedContext = {
   user: User
@@ -30,7 +30,7 @@ export async function requireUser(options: { allowPasswordChange?: boolean } = {
   if (state.must_change_password) {
     if (!options.allowPasswordChange) redirect('/premiere-connexion')
   } else if (options.allowPasswordChange) {
-    redirect(`/${HOME_SITE[profile.role]}`)
+    redirect(homePath(profile.role))
   }
 
   return { user, profile, mustChangePassword: state.must_change_password, supabase }

@@ -3,15 +3,10 @@
 import { useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import PasswordField from '@/components/PasswordField'
+import AuthShell, { AuthError, AuthSubmit } from '@/components/auth/AuthShell'
+import PasswordStrength, { passwordRules } from '@/components/auth/PasswordStrength'
 
-const RULES = [
-  { label: '8 caractères minimum', test: (value: string) => [...value].length >= 8 },
-  { label: 'Une majuscule', test: (value: string) => /[A-Z]/.test(value) },
-  { label: 'Une minuscule', test: (value: string) => /[a-z]/.test(value) },
-  { label: 'Un chiffre', test: (value: string) => /\d/.test(value) },
-  { label: 'Un symbole', test: (value: string) => /[^A-Za-z0-9]/.test(value) },
-  { label: '72 caractères maximum', test: (value: string) => [...value].length <= 72 && new TextEncoder().encode(value).length <= 72 },
-]
+const DESTINATION = /^\/(|coach|adjoint|stats|joueurs|admin)$/
 
 export default function FirstLoginForm() {
   const router = useRouter()
@@ -21,14 +16,14 @@ export default function FirstLoginForm() {
   const [confirmation, setConfirmation] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
-  const strength = password ? RULES.filter((rule) => rule.test(password)).length : 0
+  const mismatch = confirmation.length > 0 && confirmation !== password
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
     if (submitted.current) return
-    if (!/^\d{6}$/.test(otp)) { setError('Code invalide ou expiré.'); return }
-    if (strength !== RULES.length) { setError('Mot de passe trop faible.'); return }
-    if (password !== confirmation) { setError('Les mots de passe ne correspondent pas.'); return }
+    if (!/^\d{6}$/.test(otp)) { setError('Saisis les 6 chiffres du code reçu par e-mail.'); return }
+    if (!passwordRules(password).every((rule) => rule.ok)) { setError('Ton mot de passe ne respecte pas encore toutes les règles.'); return }
+    if (password !== confirmation) { setError('Les deux mots de passe ne correspondent pas.'); return }
     submitted.current = true
     setLoading(true)
     setError('')
@@ -39,54 +34,54 @@ export default function FirstLoginForm() {
       })
       const result = await response.json().catch(() => ({}))
       if (!response.ok) {
-        setOtp(''); setPassword(''); setConfirmation('')
-        setError(result.error === 'Mot de passe trop faible.' ? result.error : 'Code invalide ou expiré.')
+        setOtp('')
+        setError(typeof result.error === 'string' ? result.error : 'Code invalide ou expiré.')
         submitted.current = false
         setLoading(false)
         return
       }
       setOtp(''); setPassword(''); setConfirmation('')
       const redirectPath = result.redirect
-      if (typeof redirectPath !== 'string' || !/^\/(coach|adjoint|stats|joueurs|admin)$/.test(redirectPath)) {
-        router.replace('/login')
-        return
-      }
+      if (typeof redirectPath !== 'string' || !DESTINATION.test(redirectPath)) { router.replace('/login'); return }
       router.replace(redirectPath)
+      router.refresh()
     } catch {
-      setError('Connexion impossible. Réessayez.')
+      setError('Connexion impossible. Vérifie ta connexion internet.')
       submitted.current = false
       setLoading(false)
     }
   }
 
-  return <main className="mx-auto mt-12 w-full max-w-md px-4 pb-12 sm:mt-20">
-    <section className="rounded-2xl border border-[var(--line)] bg-[var(--surface)] p-6 shadow-sm sm:p-8">
-      <p className="text-xs font-bold uppercase tracking-[0.2em] text-brand">The Lions of ESI</p>
-      <h1 className="mt-2 font-display text-4xl text-brand">Première connexion</h1>
-      <p className="mb-6 mt-2 text-sm text-[var(--ink-soft)]">Saisissez le code reçu par e-mail et choisissez votre mot de passe personnel.</p>
+  return <AuthShell
+    title="Bienvenue chez les Lions"
+    subtitle="Dernière étape : saisis le code reçu par e-mail, puis choisis ton mot de passe personnel."
+    steps={{ labels: ['Invitation', 'Code', 'Mot de passe'], current: otp.length === 6 ? 2 : 1 }}
+  >
+    <form method="post" onSubmit={handleSubmit} noValidate className="flex flex-col gap-4">
+      <div className="flex flex-col gap-1.5">
+        <label htmlFor="otp" className="auth-label">Code à 6 chiffres</label>
+        <input id="otp" name="otp" type="text" inputMode="numeric" autoComplete="one-time-code" autoFocus
+          pattern="[0-9]{6}" maxLength={6} required value={otp} placeholder="••••••"
+          onChange={(event) => { setOtp(event.target.value.replace(/\D/g, '').slice(0, 6)); setError('') }}
+          aria-describedby="otp-hint first-login-error"
+          className="auth-input auth-code w-full" />
+        <p id="otp-hint" className="auth-hint">Valable 10 minutes. Pense à regarder dans les spams.</p>
+      </div>
 
-      <form method="post" onSubmit={handleSubmit} noValidate className="flex flex-col gap-4">
-        <div className="flex flex-col gap-1">
-          <label htmlFor="otp" className="text-sm font-medium text-[var(--ink)]">Code à 6 chiffres</label>
-          <input id="otp" name="otp" type="text" inputMode="numeric" autoComplete="one-time-code"
-            pattern="[0-9]{6}" maxLength={6} required value={otp}
-            onChange={(event) => setOtp(event.target.value.replace(/\D/g, '').slice(0, 6))}
-            aria-describedby={error ? 'first-login-error' : undefined}
-            className="min-h-12 w-full rounded-xl border border-[var(--line)] bg-[var(--surface)] px-3 text-center text-xl tracking-[0.35em] outline-none focus:border-[var(--gold-deep)] focus:ring-2 focus:ring-[var(--gold-500)]/30" />
-        </div>
-        <PasswordField id="new-password" label="Nouveau mot de passe" value={password} onChange={setPassword} autoComplete="new-password" maxLength={72} />
-        <ul className="-mt-2 grid grid-cols-2 gap-1 text-xs text-[var(--ink-soft)]" aria-label="Règles du mot de passe">
-          {RULES.map((rule) => <li key={rule.label} aria-live="polite" className={rule.test(password) ? 'font-semibold text-success' : ''}>{rule.test(password) ? '✓ ' : '• '}{rule.label}</li>)}
-        </ul>
-        <div className="h-1.5 overflow-hidden rounded-full bg-[var(--line)]" role="progressbar" aria-label="Robustesse du mot de passe" aria-valuemin={0} aria-valuemax={RULES.length} aria-valuenow={strength}>
-          <div className="h-full bg-[var(--gold-deep)] transition-[width]" style={{ width: `${(strength / RULES.length) * 100}%` }} />
-        </div>
-        <PasswordField id="confirmation" label="Confirmer le mot de passe" value={confirmation} onChange={setConfirmation} autoComplete="new-password" maxLength={72} />
-        <p id="first-login-error" role="alert" aria-live="polite" className="min-h-5 text-sm text-danger">{error}</p>
-        <button type="submit" disabled={loading} className="min-h-12 rounded-xl bg-maroon-panel px-4 font-semibold text-on-brand hover:bg-[var(--maroon-700)] disabled:cursor-wait disabled:bg-[var(--ink-soft)]">
-          {loading ? 'Enregistrement…' : 'Valider'}
-        </button>
-      </form>
-    </section>
-  </main>
+      <PasswordField id="new-password" label="Nouveau mot de passe" value={password} onChange={(value) => { setPassword(value); setError('') }}
+        autoComplete="new-password" maxLength={72} describedBy="password-strength" />
+      <PasswordStrength id="password-strength" password={password} />
+
+      <div className="flex flex-col gap-1.5">
+        <PasswordField id="confirmation" label="Confirmer le mot de passe" value={confirmation} onChange={(value) => { setConfirmation(value); setError('') }}
+          autoComplete="new-password" maxLength={72} invalid={mismatch} describedBy="confirmation-hint" />
+        <p id="confirmation-hint" className={`auth-hint ${mismatch ? 'text-danger' : ''}`} aria-live="polite">
+          {mismatch ? 'Les deux mots de passe ne correspondent pas.' : confirmation && confirmation === password ? '✓ Les mots de passe correspondent.' : ''}
+        </p>
+      </div>
+
+      <AuthError id="first-login-error" message={error || null} />
+      <AuthSubmit loading={loading} loadingLabel="Enregistrement…">Valider et entrer</AuthSubmit>
+    </form>
+  </AuthShell>
 }

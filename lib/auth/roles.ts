@@ -12,6 +12,12 @@ export const HOME_SITE: Record<AppRole, Site> = {
   joueur: 'joueurs',
 }
 
+// Page ouverte après connexion. Un joueur retrouve l’interface publique,
+// personnalisée (pseudo, convocations) ; le staff ouvre son espace.
+export function homePath(role: AppRole): string {
+  return role === 'joueur' ? '/' : `/${HOME_SITE[role]}`
+}
+
 // Routes auxquelles un rôle a accès. L'admin (coach principal) accède à tout.
 export function allowedSites(role: AppRole): Site[] {
   if (role === 'admin') return ['admin', 'coach', 'stats', 'joueurs']

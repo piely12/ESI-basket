@@ -3,7 +3,9 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import PasswordField from '@/components/PasswordField'
-import { EMAIL_MAX, isValidEmail, normalizeEmail, validateNewPassword, PASSWORD_MIN } from '@/lib/validation'
+import AuthShell, { AuthError, AuthSubmit } from '@/components/auth/AuthShell'
+import PasswordStrength, { passwordRules } from '@/components/auth/PasswordStrength'
+import { EMAIL_MAX, isValidEmail, normalizeEmail, validateNewPassword } from '@/lib/validation'
 
 type Step = 'email' | 'code' | 'password' | 'done'
 
@@ -14,6 +16,16 @@ async function post(url: string, body: unknown) {
     body: JSON.stringify(body),
   })
   return { ok: res.ok, data: await res.json().catch(() => ({})) }
+}
+
+function EmailInput({ id, value, onChange, autoFocus }: { id: string; value: string; onChange: (value: string) => void; autoFocus?: boolean }) {
+  return <div className="flex flex-col gap-1.5">
+    <label htmlFor={id} className="auth-label">Adresse e-mail</label>
+    <input id={id} name="email" type="email" inputMode="email" autoComplete="username"
+      autoCapitalize="none" autoCorrect="off" spellCheck={false} maxLength={EMAIL_MAX} required autoFocus={autoFocus}
+      value={value} onChange={(event) => onChange(event.target.value)} placeholder="prenom.nom@gmail.com"
+      aria-describedby="form-error" className="auth-input w-full" />
+  </div>
 }
 
 export default function MotDePasseOublie() {
@@ -41,122 +53,124 @@ export default function MotDePasseOublie() {
     if (loading) return
     setLoading(true)
     setError(null)
-    try { await fn() } catch { setError('Erreur réseau. Réessayez.') }
+    try { await fn() } catch { setError('Erreur réseau. Vérifie ta connexion et réessaie.') }
     setLoading(false)
   }
 
-  const sendEmail = (e: React.FormEvent) => { e.preventDefault(); run(async () => {
+  const sendEmail = (e: React.FormEvent) => { e.preventDefault(); void run(async () => {
     const clean = normalizeEmail(email)
-    if (!isValidEmail(clean)) return setError('Entrez une adresse e-mail valide.')
+    if (!isValidEmail(clean)) return setError('Entre une adresse e-mail valide.')
     const r = await post('/api/auth/forgot', { email: clean })
-    if (!r.ok) return setError(r.data.error ?? 'Erreur.')
+    if (!r.ok) return setError(r.data.error ?? 'Envoi impossible. Réessaie.')
     setEmail(clean)
     setStep('code')
   }) }
 
-  const checkCode = (e: React.FormEvent) => { e.preventDefault(); run(async () => {
+  const checkCode = (e: React.FormEvent) => { e.preventDefault(); void run(async () => {
     const clean = normalizeEmail(email)
-    if (!isValidEmail(clean)) return setError('Entrez une adresse e-mail valide.')
+    if (!isValidEmail(clean)) return setError('Entre l’adresse e-mail qui a reçu le code.')
+    if (!/^\d{6}$/.test(code)) return setError('Saisis les 6 chiffres du code.')
     setEmail(clean)
     const r = await post('/api/auth/verify-otp', { email: clean, code })
-    if (!r.ok) { setCode(''); return setError(r.data.error ?? 'Code invalide.') }
+    if (!r.ok) { setCode(''); return setError(r.data.error ?? 'Code invalide ou expiré.') }
     setResetToken(r.data.resetToken)
     setStep('password')
   }) }
 
-  const savePassword = (e: React.FormEvent) => { e.preventDefault(); run(async () => {
+  const savePassword = (e: React.FormEvent) => { e.preventDefault(); void run(async () => {
+    if (!passwordRules(password, email).every((rule) => rule.ok)) return setError('Ton mot de passe ne respecte pas encore toutes les règles.')
     const problem = validateNewPassword(password, email)
     if (problem) return setError(problem)
     if (password !== confirm) return setError('Les deux mots de passe ne correspondent pas.')
     const r = await post('/api/auth/reset', { resetToken, password })
-    if (!r.ok) return setError(r.data.error ?? 'Erreur.')
+    if (!r.ok) return setError(r.data.error ?? 'Enregistrement impossible. Réessaie.')
     setPassword(''); setConfirm(''); setResetToken('')
     setStep('done')
   }) }
 
-  const errorBox = (
-    <p id="form-error" role="alert" aria-live="polite" className="min-h-5 text-sm text-danger">{error}</p>
-  )
-  const btn = 'rounded bg-maroon-panel p-2 text-on-brand disabled:opacity-60'
+  const labels = invitationMode ? ['Code', 'Mot de passe'] : ['E-mail', 'Code', 'Mot de passe']
+  const order: Step[] = invitationMode ? ['code', 'password'] : ['email', 'code', 'password']
+  const steps = step === 'done' ? undefined : { labels, current: Math.max(0, order.indexOf(step)) }
+  const mismatch = confirm.length > 0 && confirm !== password
 
-  return (
-    <main className="mx-auto mt-16 max-w-sm p-6">
-      <h1 className="text-2xl font-bold text-brand">Mot de passe oublié</h1>
+  const title = step === 'done'
+    ? (invitationMode ? 'Compte activé' : 'Mot de passe modifié')
+    : invitationMode ? 'Activer mon compte' : 'Mot de passe oublié'
+  const subtitle = step === 'email'
+    ? 'Entre ton adresse e-mail : tu recevras un code à 6 chiffres pour choisir un nouveau mot de passe.'
+    : step === 'code'
+      ? (invitationMode
+        ? 'Saisis ton adresse e-mail et le code reçu dans l’e-mail d’invitation des Lions.'
+        : <>Si un compte existe pour <b>{email}</b>, un code vient d’être envoyé. Il est valable 10 minutes.</>)
+      : step === 'password'
+        ? 'Choisis un mot de passe que tu n’utilises nulle part ailleurs.'
+        : undefined
 
-      {step === 'email' && (
-        <form onSubmit={sendEmail} noValidate className="mt-6 flex flex-col gap-4">
-          <p className="text-sm text-neutral-600">Entrez votre e-mail : nous vous envoyons un code à 6 chiffres.</p>
-          <div className="flex flex-col gap-1">
-            <label htmlFor="email" className="text-sm font-medium">Adresse e-mail</label>
-            <input id="email" name="email" type="email" inputMode="email" autoComplete="username"
-              autoCapitalize="none" spellCheck={false} maxLength={EMAIL_MAX} required
-              value={email} onChange={(e) => setEmail(e.target.value)}
-              aria-describedby="form-error" className="rounded border p-2" />
-          </div>
-          {errorBox}
-          <button className={btn} disabled={loading}>{loading ? 'Envoi…' : 'Recevoir le code'}</button>
-        </form>
-      )}
+  return <AuthShell
+    title={title}
+    subtitle={subtitle}
+    steps={steps}
+    footer={step !== 'done' && <Link href="/login" className="auth-link">Retour à la connexion</Link>}
+  >
+    {step === 'email' && (
+      <form onSubmit={sendEmail} noValidate className="flex flex-col gap-4">
+        <EmailInput id="email" value={email} onChange={(value) => { setEmail(value); setError(null) }} autoFocus />
+        <AuthError id="form-error" message={error} />
+        <AuthSubmit loading={loading} loadingLabel="Envoi…">Recevoir le code</AuthSubmit>
+        <button type="button" className="auth-link self-center" onClick={() => { setError(null); setInvitationMode(true); setStep('code') }}>
+          J’ai déjà un code d’invitation
+        </button>
+      </form>
+    )}
 
-      {step === 'code' && (
-        <form onSubmit={checkCode} noValidate className="mt-6 flex flex-col gap-4">
-          <p className="text-sm text-neutral-600">
-            {invitationMode
-              ? <>Saisissez le code à 6 chiffres indiqué dans votre e-mail d’invitation pour choisir votre mot de passe. Il expire après 10 minutes.</>
-              : <>Si un compte existe pour <b>{email}</b>, un code vient d&apos;être envoyé. Il est valable 10 minutes.</>}
-          </p>
-          {invitationMode && (
-            <div className="flex flex-col gap-1">
-              <label htmlFor="invitation-email" className="text-sm font-medium">Adresse e-mail de l’invitation</label>
-              <input id="invitation-email" name="email" type="email" inputMode="email" autoComplete="username"
-                autoCapitalize="none" spellCheck={false} maxLength={EMAIL_MAX} required
-                value={email} onChange={(e) => setEmail(e.target.value)}
-                aria-describedby="form-error" className="rounded border p-2" />
-            </div>
-          )}
-          <div className="flex flex-col gap-1">
-            <label htmlFor="code" className="text-sm font-medium">Code à 6 chiffres</label>
-            <input id="code" name="code" inputMode="numeric" pattern="[0-9]*" maxLength={6}
-              autoComplete="one-time-code" placeholder="000000" required
-              value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))}
-              aria-describedby="form-error"
-              className="rounded border p-2 text-center text-2xl tracking-[0.5em]" />
-          </div>
-          {errorBox}
-          <button className={btn} disabled={loading || code.length !== 6}>
-            {loading ? 'Vérification…' : 'Valider le code'}
-          </button>
-          <button type="button" className="text-sm underline"
-            onClick={() => { setCode(''); setError(null); setInvitationMode(false); setStep('email') }}>
-            Renvoyer un code
-          </button>
-        </form>
-      )}
-
-      {step === 'password' && (
-        <form onSubmit={savePassword} noValidate className="mt-6 flex flex-col gap-4">
-          <p className="text-sm text-neutral-600" id="pw-rules">
-            Choisissez un nouveau mot de passe : {PASSWORD_MIN} caractères minimum. Évitez les mots de passe courants et vos informations personnelles.
-          </p>
-          <PasswordField id="new-password" label="Nouveau mot de passe" value={password}
-            onChange={setPassword} autoComplete="new-password" describedBy="pw-rules form-error" />
-          <PasswordField id="confirm-password" label="Confirmer le mot de passe" value={confirm}
-            onChange={setConfirm} autoComplete="new-password" describedBy="form-error" />
-          {errorBox}
-          <button className={btn} disabled={loading}>{loading ? 'Enregistrement…' : 'Enregistrer'}</button>
-        </form>
-      )}
-
-      {step === 'done' && (
-        <div className="mt-6" role="status">
-          <p className="text-success">Mot de passe modifié.</p>
-          <Link href="/login" className="mt-4 inline-block underline">Se connecter</Link>
+    {step === 'code' && (
+      <form onSubmit={checkCode} noValidate className="flex flex-col gap-4">
+        {invitationMode && <EmailInput id="invitation-email" value={email} onChange={(value) => { setEmail(value); setError(null) }} autoFocus />}
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor="code" className="auth-label">Code à 6 chiffres</label>
+          <input id="code" name="code" type="text" inputMode="numeric" pattern="[0-9]*" maxLength={6}
+            autoComplete="one-time-code" placeholder="••••••" required autoFocus={!invitationMode}
+            value={code} onChange={(e) => { setCode(e.target.value.replace(/\D/g, '').slice(0, 6)); setError(null) }}
+            aria-describedby="code-hint form-error"
+            className="auth-input auth-code w-full" />
+          <p id="code-hint" className="auth-hint">Pas reçu ? Regarde dans les spams ou les promotions.</p>
         </div>
-      )}
+        <AuthError id="form-error" message={error} />
+        <AuthSubmit loading={loading} loadingLabel="Vérification…" disabled={code.length !== 6}>Valider le code</AuthSubmit>
+        <button type="button" className="auth-link self-center"
+          onClick={() => { setCode(''); setError(null); setInvitationMode(false); setStep('email') }}>
+          {invitationMode ? 'Code expiré ? En recevoir un nouveau' : 'Renvoyer un code'}
+        </button>
+      </form>
+    )}
 
-      {step !== 'done' && (
-        <Link href="/login" className="mt-6 inline-block text-sm text-neutral-600 underline">Retour à la connexion</Link>
-      )}
-    </main>
-  )
+    {step === 'password' && (
+      <form onSubmit={savePassword} noValidate className="flex flex-col gap-4">
+        <PasswordField id="new-password" label="Nouveau mot de passe" value={password}
+          onChange={(value) => { setPassword(value); setError(null) }} autoComplete="new-password" describedBy="password-strength form-error" autoFocus />
+        <PasswordStrength id="password-strength" password={password} email={email} />
+        <div className="flex flex-col gap-1.5">
+          <PasswordField id="confirm-password" label="Confirmer le mot de passe" value={confirm}
+            onChange={(value) => { setConfirm(value); setError(null) }} autoComplete="new-password" invalid={mismatch} describedBy="confirm-hint form-error" />
+          <p id="confirm-hint" className={`auth-hint ${mismatch ? 'text-danger' : ''}`} aria-live="polite">
+            {mismatch ? 'Les deux mots de passe ne correspondent pas.' : confirm && confirm === password ? '✓ Les mots de passe correspondent.' : ''}
+          </p>
+        </div>
+        <AuthError id="form-error" message={error} />
+        <AuthSubmit loading={loading} loadingLabel="Enregistrement…">Enregistrer</AuthSubmit>
+      </form>
+    )}
+
+    {step === 'done' && (
+      <div role="status" className="text-center">
+        <span className="auth-success" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m5 12 5 5L20 7" /></svg>
+        </span>
+        <p className="text-[0.9375rem] text-[var(--ink-soft)]">
+          {invitationMode ? 'Ton mot de passe est enregistré. Connecte-toi pour rejoindre les Lions.' : 'Ton nouveau mot de passe est enregistré. Tu peux te connecter.'}
+        </p>
+        <Link href="/login" className="auth-submit mt-6">Se connecter</Link>
+      </div>
+    )}
+  </AuthShell>
 }

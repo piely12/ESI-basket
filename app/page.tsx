@@ -5,6 +5,7 @@ import MatchCard from '@/components/MatchCard'
 import { getNextMatch, getLastResult, getStandings, getTeams, getPublishedNews } from '@/lib/data/public'
 import TeamLogo from '@/components/TeamLogo'
 import NewsCards from '@/components/NewsCards'
+import PlayerWelcome from '@/components/PlayerWelcome'
 import { withNewsFallback } from '@/lib/data/news-fallback'
 
 export default async function Home() {
@@ -31,6 +32,8 @@ export default async function Home() {
             <div><b>17</b><small>Lions</small></div>
           </div>
         </section>
+
+        <PlayerWelcome />
 
         <section className="grid min-w-0 gap-5 md:grid-cols-2">
           <div className="min-w-0">

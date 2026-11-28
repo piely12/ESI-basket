@@ -3,6 +3,7 @@ import { getAdminAccountData } from './data'
 
 const cards = [
   { href: '/admin/staff', title: 'Staff', description: 'Gérer les comptes du coach principal, du coach adjoint et de la statisticienne.' },
+  { href: '/admin/invitations', title: 'Inviter', description: 'Coller la liste des e-mails et inviter tout l’effectif en une fois.' },
   { href: '/admin/joueurs', title: 'Joueurs', description: 'Rattacher chaque compte au bon profil sportif.' },
   { href: '/admin/messages', title: 'Messages', description: 'Lire les messages anonymes et suivre leur traitement.' },
   { href: '/admin/journal', title: 'Journal', description: 'Consulter les rattachements et les événements de sécurité.' },
@@ -22,7 +23,7 @@ export default async function AdminPage() {
     {mailUsage.sent >= mailUsage.warningAt && <p role="status" className="rounded-xl border border-warning-border bg-warning-bg p-4 text-sm text-warning">
       Le volume d’e-mails approche la limite quotidienne de l’application ({mailUsage.sent}/{mailUsage.limit}). Les nouveaux envois seront bloqués à cette limite.
     </p>}
-    <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4" aria-label="Espaces administratifs">
+    <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" aria-label="Espaces administratifs">
       {cards.map((card) => <Link key={card.href} href={card.href} className="group min-h-48 rounded-2xl border border-[var(--line)] bg-[var(--surface)] p-6 shadow-sm transition hover:-translate-y-1 hover:border-[var(--gold-deep)] hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--gold-deep)]">
         <h2 className="font-display text-3xl text-brand">{card.title}</h2>
         <p className="mt-3 text-sm text-[var(--ink-soft)]">{card.description}</p>

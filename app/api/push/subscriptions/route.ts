@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server'
 import { z } from 'zod'
 import { assertSameOrigin, clientIp, consumeRateLimit, json, rlKey } from '@/lib/security'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { createClient } from '@/lib/supabase/server'
 
 // PushSubscription.toJSON() also contains `expirationTime` (usually null) in
 // Chrome, Edge, Firefox and Safari: it must be accepted, or every browser is refused.
@@ -44,11 +45,19 @@ export async function POST(request: NextRequest) {
     console.error('[push] Rate limiter unavailable, subscription allowed', describe(error))
   }
 
-  const { error } = await admin.from('match_reminder_subscriptions').upsert({
-    endpoint: parsed.data.endpoint,
-    p256dh: parsed.data.keys.p256dh,
-    auth: parsed.data.keys.auth,
-  }, { onConflict: 'endpoint' })
+  // A signed-in account owns the device: its call-ups are sent only there.
+  // A signed-out visit releases the device (general reminders only).
+  const userId = await createClient()
+    .then((supabase) => supabase.auth.getUser())
+    .then(({ data }) => data.user?.id ?? null)
+    .catch(() => null)
+
+  const device = { endpoint: parsed.data.endpoint, p256dh: parsed.data.keys.p256dh, auth: parsed.data.keys.auth }
+  let { error } = await admin.from('match_reminder_subscriptions').upsert({ ...device, user_id: userId }, { onConflict: 'endpoint' })
+  // Before migration 042 the column does not exist: keep notifications working.
+  if (error && ['PGRST204', '42703'].includes((error as { code?: string }).code ?? '')) {
+    ({ error } = await admin.from('match_reminder_subscriptions').upsert(device, { onConflict: 'endpoint' }))
+  }
   if (error) {
     console.error('[push] Subscription could not be stored', describe(error))
     // Postgres/PostgREST codes (e.g. 42P01 = table missing) are not secret and

@@ -1,6 +1,8 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import { after } from 'next/server'
+import { pushConvocations } from '@/lib/push/convocations'
 import { requireRole } from '@/lib/auth/requireUser'
 import { checkConnectedActionLimit } from '@/lib/security/action-rate-limit'
 import type { CourtSlot } from '@/lib/lineup'
@@ -65,6 +67,7 @@ export async function publishAssistantComposition(matchId: string, teamId: strin
   revalidatePath('/adjoint/matchs/' + match.id)
   revalidatePath('/matchs')
   revalidatePath('/matchs/' + match.id)
+  after(() => pushConvocations(matchId, teamId))
   revalidatePath('/joueurs')
   return { ok: true, status: String(data ?? 'publiee') }
 }

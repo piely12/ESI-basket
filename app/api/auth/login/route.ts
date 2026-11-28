@@ -2,7 +2,7 @@ import { after, type NextRequest } from 'next/server'
 import { z } from 'zod'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { getCurrentUserProfile, HOME_SITE, isSingleSessionRole } from '@/lib/auth/roles'
+import { getCurrentUserProfile, homePath, isSingleSessionRole } from '@/lib/auth/roles'
 import { sendAdminLoginAlert, sendFirstLoginOtpEmail } from '@/lib/auth/brevo'
 import { generateOtp, hashFirstLoginOtp, OTP_TTL_MINUTES } from '@/lib/auth/otp'
 import {
@@ -188,5 +188,5 @@ export async function POST(request: NextRequest) {
   }
 
   await audit(admin, 'login_success', data.user.id, { ip, userAgent, metadata: { role } })
-  return json({ ok: true, redirect: `/${HOME_SITE[role]}` })
+  return json({ ok: true, redirect: homePath(role) })
 }

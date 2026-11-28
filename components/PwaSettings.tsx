@@ -41,7 +41,7 @@ export default function PwaSettings() {
   }
 
   return (
-    <section className="theme-card rounded-xl border border-border bg-card p-4 sm:p-5">
+    <section id="installer" className="theme-card scroll-mt-24 rounded-xl border border-border bg-card p-4 sm:p-5">
       <h2 className="font-semibold text-foreground">Ajouter à l’écran d’accueil</h2>
       <p className="mt-1 text-sm text-muted-foreground">Retrouve l’application rapidement depuis ton téléphone.</p>
 

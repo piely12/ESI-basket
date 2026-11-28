@@ -33,7 +33,7 @@ export const fallbackNews: PublishedNews[] = [
     id: 'home-news-next',
     category: 'Prochain match',
     title: 'E. Projet – ESI, samedi 28 novembre',
-    excerpt: 'Coup d’envoi à 21h au Gymnase du Sud.',
+    excerpt: 'Coup d’envoi à 19h au Gymnase du Sud.',
     body: '',
     cover_url: null,
     published_at: null,

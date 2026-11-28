@@ -144,18 +144,56 @@ export async function createOrLinkAccount(
   })
   if (!input.success) return result('Fiche, e-mail ou mode de création invalide.')
 
-  const { admin, userId: actorId, teamId } = context
   try {
-    const limit = await checkAdminRateLimit(actorId, 'account-create')
+    const limit = await checkAdminRateLimit(context.userId, 'account-create')
     if (!limit.ok) return result(limit.message, '', limit)
   } catch {
     return result('Service de sécurité indisponible. Réessaie plus tard.')
   }
+  return attachAccount(context, input.data.profile_ref, input.data.email, input.data.mode)
+}
 
-  const profileRef = input.data.profile_ref
+type AdminContext = NonNullable<Awaited<ReturnType<typeof getAdminContext>>>
+const BULK_FORM = z.array(z.object({
+  profile_ref: ACCOUNT_FORM.shape.profile_ref,
+  email: ACCOUNT_FORM.shape.email,
+}).strict()).min(1).max(40)
+export type BulkInviteResult = { error: string; results: { ref: string; ok: boolean; message: string }[] }
+
+/**
+ * Invite plusieurs fiches en une fois (une adresse par fiche). Chaque compte
+ * est traité comme une invitation individuelle ; un échec n'arrête pas les autres.
+ */
+export async function inviteAccountsInBulk(entries: { profile_ref: string; email: string }[]): Promise<BulkInviteResult> {
+  const context = await getAdminContext()
+  if (!context) return { error: 'Session expirée ou accès administrateur requis.', results: [] }
+  const input = BULK_FORM.safeParse(entries)
+  if (!input.success) return { error: 'Une fiche ou une adresse e-mail est invalide.', results: [] }
+  const emails = input.data.map((entry) => entry.email)
+  if (new Set(emails).size !== emails.length) return { error: 'La même adresse e-mail est utilisée pour deux fiches.', results: [] }
+  if (new Set(input.data.map((entry) => entry.profile_ref)).size !== input.data.length) return { error: 'Une fiche apparaît deux fois.', results: [] }
+  try {
+    const limit = await checkAdminRateLimit(context.userId, 'account-create')
+    if (!limit.ok) return { error: limit.message, results: [] }
+  } catch {
+    return { error: 'Service de sécurité indisponible. Réessaie plus tard.', results: [] }
+  }
+
+  const results: BulkInviteResult['results'] = []
+  for (const entry of input.data) {
+    const outcome = await attachAccount(context, entry.profile_ref, entry.email, 'creer')
+    results.push({ ref: entry.profile_ref, ok: !outcome.error, message: outcome.error || outcome.success })
+  }
+  await audit(context.admin, 'admin_bulk_invitations', context.userId, {
+    metadata: { requested: results.length, succeeded: results.filter((item) => item.ok).length },
+  })
+  revalidateAdmin()
+  return { error: '', results }
+}
+
+async function attachAccount(context: AdminContext, profileRef: string, email: string, mode: 'creer' | 'lier'): Promise<AdminActionState> {
+  const { admin, userId: actorId, teamId } = context
   const [profileType, profileId] = profileRef.split(':')
-  const email = input.data.email
-  const mode = input.data.mode
   if (!isValidEmail(email)) return result('Entrez une adresse e-mail valide.')
 
   let targetName = ''
